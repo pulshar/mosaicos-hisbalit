@@ -1,0 +1,100 @@
+export type MotifFormat = 'round' | 'hexagonal';
+
+export interface EditablePiece {
+  id: string;
+  name: string;
+  originalColor: string;
+}
+
+export interface MotifSvgData {
+  viewBox: string;
+  width: number;
+  height: number;
+  // Background pieces are rendered together with uniform background color
+  backgroundShapes: Array<{
+    type: 'circle' | 'path';
+    cx?: number;
+    cy?: number;
+    r?: number;
+    d?: string;
+  }>;
+  // Pieces of the motif that can be customized individually
+  motifPieces: Array<{
+    id: string;
+    name: string;
+    type: 'circle' | 'path';
+    cx?: number;
+    cy?: number;
+    r?: number;
+    d?: string;
+    originalColor: string;
+  }>;
+}
+
+export interface MotifDefinition {
+  id: string;
+  name: string;
+  catalogueNumber: string;
+  description: string;
+  available: boolean;
+  supportedFormats: MotifFormat[];
+  svgData: Partial<Record<MotifFormat, MotifSvgData>>;
+  provisionalThumbnail?: string;
+}
+
+export interface MotifCustomization {
+  motifId: string;
+  format: MotifFormat;
+  pieceColors: Record<string, string>;
+  backgroundColor: string;
+  rotation: number; // 0, 45, 90, 180, 270
+}
+
+export type PlainTileCadence =
+  | 'none'
+  | 'checkerboard'
+  | 'ratio1_2'
+  | 'ratio1_3'
+  | 'rows'
+  | 'cols';
+
+export interface CompositionSettings {
+  viewMode: 'single' | 'pattern' | 'simulation';
+  repeatX: number;
+  repeatY: number;
+  spacingX: number; // in pixels or unit delta
+  spacingY: number;
+  staggered: boolean;
+  plainTileCadence?: PlainTileCadence;
+  showPlainBackground: boolean;
+  secondaryMotifId: string | null;
+  combineRatio: 'alternate' | 'single';
+  zoom: number;
+  panX: number;
+  panY: number;
+}
+
+export interface SpacePreset {
+  id: string;
+  name: string;
+  category: 'bath' | 'floor' | 'kitchen';
+  image: string;
+  description: string;
+  surfaceLabel: string;
+  // Polygon coordinates [ [x1,y1], [x2,y2], [x3,y3], [x4,y4] ] in percent 0..100
+  polygonPoints: [number, number][];
+  defaultScale: number;
+  blendMode: 'multiply' | 'normal' | 'overlay' | 'soft-light';
+  lightingGradient?: string;
+}
+
+export interface SimulationSettings {
+  activeSpaceId: string;
+  customUploadedImage: string | null;
+  customPolygonPoints: [number, number][];
+  scale: number;
+  opacity: number;
+  blendMode: 'multiply' | 'normal' | 'overlay' | 'soft-light';
+  brightness: number;
+  perspectiveAngle: number;
+}

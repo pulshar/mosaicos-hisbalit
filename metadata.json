@@ -1,0 +1,6 @@
+{
+  "name": "Mosaico Studio",
+  "description": "Configurador visual de mosaicos decorativos e interiorismo inspirado en la colección Petite de Hisbalit.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

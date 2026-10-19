@@ -1,0 +1,442 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { PETITE_MOTIFS, getMotifById, getDefaultCustomization } from './data/motifs';
+import {
+  MotifDefinition,
+  MotifCustomization,
+  CompositionSettings,
+  MotifFormat
+} from './types';
+import { useDesignHistory } from './hooks/useDesignHistory';
+import { Header } from './components/Header';
+import { MotifLibrary } from './components/MotifLibrary';
+import { DesignCanvas } from './components/DesignCanvas';
+import { CustomizationPanel } from './components/CustomizationPanel';
+import { SpaceSimulator } from './components/SpaceSimulator';
+import { ExportModal } from './components/ExportModal';
+import {
+  generateSingleMotifSvg,
+  generateCompositionSvg,
+  downloadFile,
+  downloadSvgAsPng
+} from './utils/exportUtils';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const STORAGE_KEY_CUSTOMIZATION = 'mosaico_studio_customization';
+const STORAGE_KEY_COMPOSITION = 'mosaico_studio_composition';
+const STORAGE_KEY_LIBRARY_OPEN = 'mosaico_studio_library_open';
+
+export default function App() {
+  // 1. Initial State from storage or defaults
+  const [activeMotif, setActiveMotif] = useState<MotifDefinition>(() => {
+    return PETITE_MOTIFS[0]; // Point
+  });
+
+  const getInitialCustomization = (): MotifCustomization => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_CUSTOMIZATION);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.motifId && parsed.pieceColors) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return getDefaultCustomization(activeMotif.id, 'round');
+  };
+
+  const [composition, setComposition] = useState<CompositionSettings>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_COMPOSITION);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.repeatX) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return {
+      viewMode: 'single',
+      repeatX: 3,
+      repeatY: 2,
+      spacingX: 0,
+      spacingY: 0,
+      staggered: false,
+      plainTileCadence: 'none',
+      showPlainBackground: false,
+      secondaryMotifId: null,
+      combineRatio: 'single',
+      zoom: 1.0,
+      panX: 0,
+      panY: 0
+    };
+  });
+
+  // 2. Undo / Redo history for customization
+  const {
+    customization,
+    setCustomization,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    reset
+  } = useDesignHistory(getInitialCustomization());
+
+  // 3. Selection & Viewport States
+  const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isMotifLibraryOpen, setIsMotifLibraryOpen] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_LIBRARY_OPEN);
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  // 4. LocalStorage persistence
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_CUSTOMIZATION, JSON.stringify(customization));
+    } catch {
+      // ignore
+    }
+  }, [customization]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_COMPOSITION, JSON.stringify(composition));
+    } catch {
+      // ignore
+    }
+  }, [composition]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_LIBRARY_OPEN, JSON.stringify(isMotifLibraryOpen));
+    } catch {
+      // ignore
+    }
+  }, [isMotifLibraryOpen]);
+
+  // 5. Keyboard shortcuts for Undo/Redo, Deselect & Library Toggle
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        if (e.shiftKey) {
+          if (canRedo) redo();
+        } else {
+          if (canUndo) undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        if (canRedo) redo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setIsMotifLibraryOpen(prev => !prev);
+      } else if (e.key === 'Escape') {
+        setSelectedPieceId(null);
+        setIsExportModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, undo, redo]);
+
+  // 6. Action Handlers
+  const handleSelectMotif = (motif: MotifDefinition) => {
+    if (!motif.available) return;
+    setActiveMotif(motif);
+    setSelectedPieceId(null);
+    const newCust = getDefaultCustomization(motif.id, customization.format);
+    setCustomization(newCust);
+  };
+
+  const handleUpdatePieceColor = useCallback((pieceId: string, color: string) => {
+    setCustomization(prev => ({
+      ...prev,
+      pieceColors: {
+        ...prev.pieceColors,
+        [pieceId]: color
+      }
+    }));
+  }, [setCustomization]);
+
+  const handleApplyColorToAllMotifPieces = useCallback((color: string) => {
+    const svgData = activeMotif.svgData[customization.format];
+    if (!svgData) return;
+
+    setCustomization(prev => {
+      const nextColors = { ...prev.pieceColors };
+      svgData.motifPieces.forEach(p => {
+        nextColors[p.id] = color;
+      });
+      return {
+        ...prev,
+        pieceColors: nextColors
+      };
+    });
+  }, [activeMotif, customization.format, setCustomization]);
+
+  const handleUpdateBackgroundColor = useCallback((color: string) => {
+    setCustomization(prev => ({
+      ...prev,
+      backgroundColor: color
+    }));
+  }, [setCustomization]);
+
+  const handleUpdateFormat = useCallback((format: MotifFormat) => {
+    if (customization.format === format) return;
+
+    const targetMotif = activeMotif;
+    const currentSvg = targetMotif.svgData[customization.format];
+    const targetSvg = targetMotif.svgData[format];
+
+    // Maintain selection state smoothly across format switch
+    if (selectedPieceId === 'background') {
+      setSelectedPieceId('background');
+    } else if (selectedPieceId && currentSvg && targetSvg) {
+      const currentIdx = currentSvg.motifPieces.findIndex(p => p.id === selectedPieceId);
+      if (currentIdx !== -1 && targetSvg.motifPieces[currentIdx]) {
+        setSelectedPieceId(targetSvg.motifPieces[currentIdx].id);
+      } else {
+        setSelectedPieceId(null);
+      }
+    } else {
+      setSelectedPieceId(null);
+    }
+
+    setCustomization(prev => {
+      const newPieceColors: Record<string, string> = {};
+
+      if (targetSvg) {
+        const prevSvg = targetMotif.svgData[prev.format];
+        targetSvg.motifPieces.forEach((targetPiece, index) => {
+          // Map homologous piece from previous format by position/index (e.g. p1 <-> h1, p4 <-> h4)
+          const prevPiece = prevSvg?.motifPieces[index];
+          if (prevPiece && prev.pieceColors[prevPiece.id]) {
+            newPieceColors[targetPiece.id] = prev.pieceColors[prevPiece.id];
+          } else if (prev.pieceColors[targetPiece.id]) {
+            newPieceColors[targetPiece.id] = prev.pieceColors[targetPiece.id];
+          } else {
+            const existingColors = Object.values(prev.pieceColors);
+            newPieceColors[targetPiece.id] = existingColors[0] || targetPiece.originalColor || '#000000';
+          }
+        });
+      }
+
+      return {
+        ...prev,
+        format,
+        pieceColors: newPieceColors
+      };
+    });
+  }, [activeMotif, customization.format, selectedPieceId, setCustomization]);
+
+  const handleUpdateRotation = useCallback((rotation: number) => {
+    setCustomization(prev => ({
+      ...prev,
+      rotation
+    }));
+  }, [setCustomization]);
+
+  const handleResetMotifOriginalColors = useCallback(() => {
+    const def = getDefaultCustomization(activeMotif.id, customization.format);
+    setCustomization(def);
+  }, [activeMotif.id, customization.format, setCustomization]);
+
+  const [isConfirmNewModalOpen, setIsConfirmNewModalOpen] = useState(false);
+
+  const handleResetColorsOnly = useCallback(() => {
+    handleResetMotifOriginalColors();
+  }, [handleResetMotifOriginalColors]);
+
+  const handleConfirmNewDesign = useCallback(() => {
+    const def = getDefaultCustomization(PETITE_MOTIFS[0].id, 'round');
+    setActiveMotif(PETITE_MOTIFS[0]);
+    reset(def);
+    setComposition(prev => ({
+      ...prev,
+      viewMode: 'single',
+      repeatX: 3,
+      repeatY: 2,
+      spacingX: 0,
+      spacingY: 0,
+      staggered: false,
+      zoom: 1.0,
+      panX: 0,
+      panY: 0
+    }));
+    setSelectedPieceId(null);
+    setIsConfirmNewModalOpen(false);
+  }, [reset]);
+
+  const handleNewDesign = useCallback(() => {
+    setIsConfirmNewModalOpen(true);
+  }, []);
+
+  const handleUpdateComposition = useCallback((settings: Partial<CompositionSettings>) => {
+    setComposition(prev => ({ ...prev, ...settings }));
+  }, []);
+
+  // Quick Direct Downloads from Panel
+  const handleDownloadSvgDirect = () => {
+    const svgStr = composition.viewMode === 'single'
+      ? generateSingleMotifSvg(activeMotif, customization, true)
+      : generateCompositionSvg(activeMotif, customization, composition);
+    const fileName = `Mosaico-Studio_${activeMotif.name}_${customization.format}.svg`;
+    downloadFile(svgStr, fileName, 'image/svg+xml');
+  };
+
+  const handleDownloadPngDirect = async () => {
+    const svgStr = composition.viewMode === 'single'
+      ? generateSingleMotifSvg(activeMotif, customization, true)
+      : generateCompositionSvg(activeMotif, customization, composition);
+    const fileName = `Mosaico-Studio_${activeMotif.name}_${customization.format}_4K.png`;
+    await downloadSvgAsPng(svgStr, fileName, 3840);
+  };
+
+  return (
+    <div className="w-screen h-screen flex flex-col bg-[#F7F6F2] overflow-hidden">
+      {/* 1. Header (Follows anti-slop 3-zone contract) */}
+      <Header
+        onNewDesign={handleNewDesign}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        viewMode={composition.viewMode}
+        onChangeViewMode={(mode) => setComposition(prev => ({ ...prev, viewMode: mode }))}
+        onOpenExport={() => setIsExportModalOpen(true)}
+      />
+
+      {/* 2. Main Workspace */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {composition.viewMode === 'simulation' ? (
+          /* Simulation Mode */
+          <SpaceSimulator
+            motif={activeMotif}
+            customization={customization}
+            composition={composition}
+            onClose={() => setComposition(prev => ({ ...prev, viewMode: 'single' }))}
+          />
+        ) : (
+          /* Design Mode: Left Panel, Center Canvas, Right Panel */
+          <>
+            {/* Left Panel: Motifs Library (smooth collapsible animation) */}
+            <div
+              className={`h-full shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex relative z-10 ${
+                isMotifLibraryOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+              }`}
+            >
+              <div className="w-80 h-full">
+                <MotifLibrary
+                  activeMotifId={activeMotif.id}
+                  onSelectMotif={handleSelectMotif}
+                  activeFormat={customization.format}
+                  onToggleCollapse={() => setIsMotifLibraryOpen(false)}
+                />
+              </div>
+            </div>
+
+            {/* Subtle edge toggle handle button on the seam */}
+            <button
+              onClick={() => setIsMotifLibraryOpen(prev => !prev)}
+              className={`absolute z-30 top-1/2 -translate-y-1/2 w-4 h-12 bg-white/95 backdrop-blur-xs border border-[#E7E4DE] rounded-r-md shadow-xs hover:bg-[#F7F6F2] text-[#77736C] hover:text-[#242424] flex items-center justify-center transition-all duration-300 ease-in-out group cursor-pointer ${
+                isMotifLibraryOpen ? 'left-80' : 'left-0'
+              }`}
+              title={isMotifLibraryOpen ? "Ocultar biblioteca de motivos (Ctrl+B)" : "Mostrar biblioteca de motivos (Ctrl+B)"}
+              aria-label={isMotifLibraryOpen ? "Ocultar biblioteca de motivos" : "Mostrar biblioteca de motivos"}
+            >
+              {isMotifLibraryOpen ? (
+                <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              )}
+            </button>
+
+            {/* Center Canvas */}
+            <DesignCanvas
+              motif={activeMotif}
+              customization={customization}
+              composition={composition}
+              selectedPieceId={selectedPieceId}
+              onSelectPiece={setSelectedPieceId}
+              onUpdatePieceColor={handleUpdatePieceColor}
+              onUpdateBackgroundColor={handleUpdateBackgroundColor}
+              onChangeZoom={(zoom) => setComposition(prev => ({ ...prev, zoom }))}
+              onResetView={() => setComposition(prev => ({ ...prev, zoom: 1.0, panX: 0, panY: 0 }))}
+              viewMode={composition.viewMode}
+              onChangeViewMode={(mode) => setComposition(prev => ({ ...prev, viewMode: mode }))}
+              isMotifLibraryOpen={isMotifLibraryOpen}
+              onToggleMotifLibrary={() => setIsMotifLibraryOpen(prev => !prev)}
+            />
+
+            {/* Right Panel: Customization Controls */}
+            <CustomizationPanel
+              motif={activeMotif}
+              customization={customization}
+              composition={composition}
+              selectedPieceId={selectedPieceId}
+              onSelectPiece={setSelectedPieceId}
+              onUpdatePieceColor={handleUpdatePieceColor}
+              onApplyColorToAllMotifPieces={handleApplyColorToAllMotifPieces}
+              onUpdateBackgroundColor={handleUpdateBackgroundColor}
+              onUpdateFormat={handleUpdateFormat}
+              onUpdateRotation={handleUpdateRotation}
+              onUpdateComposition={handleUpdateComposition}
+              onResetMotifOriginalColors={handleResetMotifOriginalColors}
+              onDownloadSvg={handleDownloadSvgDirect}
+              onDownloadPng={handleDownloadPngDirect}
+              onChangeViewMode={(mode) => setComposition(prev => ({ ...prev, viewMode: mode }))}
+            />
+          </>
+        )}
+      </div>
+
+      {/* 3. Export Modal */}
+      {isExportModalOpen && (
+        <ExportModal
+          motif={activeMotif}
+          customization={customization}
+          composition={composition}
+          onClose={() => setIsExportModalOpen(false)}
+          onOpenSimulation={() => setComposition(prev => ({ ...prev, viewMode: 'simulation' }))}
+        />
+      )}
+
+      {/* 4. Confirmation Dialog for Nuevo diseño */}
+      {isConfirmNewModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in select-none">
+          <div className="bg-white rounded-2xl border border-[#E7E4DE] shadow-2xl max-w-sm w-full p-6 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-[#F7F6F2] border border-[#E7E4DE] mx-auto flex items-center justify-center text-[#242424] font-bold text-lg">
+              ✨
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[#242424]">
+                ¿Iniciar un nuevo diseño?
+              </h3>
+              <p className="text-xs text-[#77736C] mt-1.5 leading-relaxed">
+                Esto reiniciará el proyecto desde cero: los colores volverán a los tonos originales, la rotación a 0°, y la cuadrícula a la vista individual por defecto.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                onClick={() => setIsConfirmNewModalOpen(false)}
+                className="py-2.5 px-3 rounded-xl border border-[#E7E4DE] bg-white hover:bg-[#F7F6F2] text-xs font-semibold text-[#77736C] hover:text-[#242424] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmNewDesign}
+                className="py-2.5 px-3 rounded-xl bg-[#242424] hover:bg-black text-white text-xs font-semibold transition-colors shadow-xs"
+              >
+                Sí, nuevo diseño
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -13,7 +13,6 @@ import {
   Shapes,
   Grid,
   RotateCw,
-  Sliders,
   Download,
   ChevronDown,
   ChevronUp,
@@ -22,11 +21,9 @@ import {
   Check,
   Circle,
   Hexagon,
-  Link2,
   Layers,
   Search,
   X,
-  PanelRightClose
 } from 'lucide-react';
 
 interface CustomizationPanelProps {
@@ -365,7 +362,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     className="w-full py-1.5 px-2 text-[11px] font-medium text-[#242424] bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-[#77736C]" />
-                    <span>Aplicar este material a todo el motivo</span>
+                    <span>Aplicar este color a todo el motivo</span>
                   </button>
                 )}
               </div>

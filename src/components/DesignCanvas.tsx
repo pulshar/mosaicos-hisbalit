@@ -10,17 +10,9 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  RotateCw,
-  Palette,
-  Eye,
   Layers,
   HelpCircle,
-  PanelLeftOpen,
-  Sparkles,
-  MousePointerClick,
-  Info,
-  X,
-  Check
+  Check,
 } from 'lucide-react';
 
 interface DesignCanvasProps {
@@ -159,7 +151,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             </div>
             <p className="text-[11px] text-[#77736C]">
               {viewMode === 'single'
-                ? 'Vista detallada de motivo único'
+                ? 'Vista detallada'
                 : `Composición ${composition.repeatX}×${composition.repeatY} repeticiones`}
             </p>
           </div>
@@ -727,34 +719,31 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
       {/* Floating Onboarding / Instructions Helper (shown first time, dismissable, stored in localStorage) */}
       {showHelpBanner && (
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 max-w-xl w-[92%] sm:w-auto bg-white/95 backdrop-blur-md border border-[#E7E4DE] shadow-xl rounded-2xl p-3 px-4 flex items-center gap-3.5 animate-fade-in transition-all">
-          <div className="w-8 h-8 rounded-xl bg-[#242424] text-[#DDA743] flex items-center justify-center shrink-0 shadow-xs">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 max-w-xl w-[92%] sm:w-auto bg-white/95 backdrop-blur-md border border-[#E7E4DE] shadow-xl rounded-2xl p-5 flex items-center gap-3.5 animate-fade-in transition-all">
+          {/* <div className="w-8 h-8 rounded-xl bg-[#242424] text-[#DDA743] flex items-center justify-center shrink-0 shadow-xs">
             {viewMode === 'pattern' ? (
               <MousePointerClick className="w-4 h-4" />
             ) : (
-              <Sparkles className="w-4 h-4" />
+              <PaletteIcon className="w-4 h-4" />
             )}
-          </div>
+          </div> */}
 
           <div className="text-xs text-[#242424] min-w-0 pr-1">
             <div className="font-semibold flex items-center gap-2">
               <span>
                 {viewMode === 'pattern'
-                  ? 'Composición interactiva en cuadrícula'
-                  : 'Personalización en lienzo'}
-              </span>
-              <span className="text-[10px] font-mono font-medium text-[#77736C] bg-[#F7F6F2] px-1.5 py-0.5 rounded border border-[#E7E4DE]">
-                Guía de uso
+                  ? 'Personalización de composición'
+                  : 'Personalización de motivo'}
               </span>
             </div>
             <p className="text-[#77736C] text-[11px] mt-0.5 leading-normal">
               {viewMode === 'pattern'
-                ? 'Haz clic en cualquier celda para encender o apagar el motivo en esa posición exacta.'
-                : 'Haz clic en una pieza (o mantén Ctrl para seleccionar varias) para colorearlas juntas, o en el fondo para la base.'}
+                ? 'Haz clic en cualquier celda para quitar o añadir el motivo en esa celda.'
+                : 'Haz clic en una pieza del motivo para editarla, usa Ctrl + clic para seleccionar varias o haz clic en el fondo para cambiar su color.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-[#E7E4DE]">
+          <div className="flex items-center gap-1.5 shrink-0 pl-2">
             <button
               onClick={handleDismissHelp}
               className="px-2.5 py-1.5 rounded-lg bg-[#242424] hover:bg-black text-white text-[11px] font-medium transition-colors cursor-pointer shadow-xs flex items-center gap-1"
@@ -762,14 +751,6 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             >
               <Check className="w-3.5 h-3.5 text-[#DDA743]" />
               <span>Entendido</span>
-            </button>
-            <button
-              onClick={handleDismissHelp}
-              className="p-1.5 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
-              title="Cerrar ayuda"
-              aria-label="Cerrar ayuda"
-            >
-              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

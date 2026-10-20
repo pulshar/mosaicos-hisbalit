@@ -24,6 +24,8 @@ import {
   Layers,
   Search,
   X,
+  Info,
+  MousePointerClick,
 } from 'lucide-react';
 
 interface CustomizationPanelProps {
@@ -124,20 +126,49 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   // Category filter and search state for materials palette
   const [materialCategory, setMaterialCategory] = useState<'Todos' | 'Neutros' | 'Tierras' | 'Mediterráneo' | 'Acentos'>('Todos');
   const [searchQuery, setSearchQuery] = useState('');
+  const [noSelectionNotice, setNoSelectionNotice] = useState(false);
+  const pendingColorRef = React.useRef<string | null>(null);
+  const noticeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const selectedPieces = svgData?.motifPieces.filter(p => selectedPieceIds.includes(p.id)) || [];
-  const selectedPiece = selectedPieces[0] || svgData?.motifPieces.find(p => p.id === selectedPieceId);
+  // Clear notice when pieces become selected
+  useEffect(() => {
+    if (selectedPieceIds.length > 0 && !selectedPieceIds.includes('background')) {
+      setNoSelectionNotice(false);
+    }
+  }, [selectedPieceIds]);
+
+  const hasPieceSelection = selectedPieceIds.length > 0 && !selectedPieceIds.includes('background');
+  const selectedPieces = hasPieceSelection
+    ? (svgData?.motifPieces.filter(p => selectedPieceIds.includes(p.id)) || [])
+    : [];
+  const selectedPiece = hasPieceSelection
+    ? (selectedPieces[0] || (selectedPieceId && selectedPieceId !== 'background' ? svgData?.motifPieces.find(p => p.id === selectedPieceId) : null))
+    : null;
+
+  // Determine if all pieces share the exact same color
+  const allPiecesSameColor = svgData?.motifPieces.length
+    ? svgData.motifPieces.every(p => {
+      const col = (customization.pieceColors[p.id] || p.originalColor).toLowerCase();
+      const firstCol = (customization.pieceColors[svgData.motifPieces[0].id] || svgData.motifPieces[0].originalColor).toLowerCase();
+      return col === firstCol;
+    })
+    : false;
+  const commonMotifColor = allPiecesSameColor && svgData?.motifPieces[0]
+    ? (customization.pieceColors[svgData.motifPieces[0].id] || svgData.motifPieces[0].originalColor)
+    : null;
+
+  // Active color for piece: only defined if there is an active piece selection
   const activeColorForPiece = selectedPiece
     ? customization.pieceColors[selectedPiece.id] || selectedPiece.originalColor
-    : (svgData?.motifPieces[0] ? customization.pieceColors[svgData.motifPieces[0].id] || svgData.motifPieces[0].originalColor : '#000000');
+    : null;
 
   const currentColor = colorTarget === 'background'
     ? (customization.backgroundColor || '#D9D9D9')
     : activeColorForPiece;
 
-  const activeMaterial = HISBALIT_PALETTE.find(
-    s => s.hex.toUpperCase() === currentColor.toUpperCase()
-  );
+  const activeMaterial = currentColor
+    ? HISBALIT_PALETTE.find(s => s.hex.toUpperCase() === currentColor.toUpperCase())
+    : null;
 
   const handleSelectMaterial = (hex: string) => {
     saveRecentColor(hex);
@@ -153,9 +184,14 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         }
       } else if (selectedPieceId && selectedPieceId !== 'background') {
         onUpdatePieceColor(selectedPieceId, hex);
-      } else if (svgData?.motifPieces[0]) {
-        // Apply to first piece if none specifically selected
-        onUpdatePieceColor(svgData.motifPieces[0].id, hex);
+      } else {
+        // Opción A: Estado neutro estricto - No teñir arbitrariamente ninguna pieza
+        pendingColorRef.current = hex;
+        setNoSelectionNotice(true);
+        if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+        noticeTimerRef.current = setTimeout(() => {
+          setNoSelectionNotice(false);
+        }, 5000);
       }
     }
   };
@@ -227,17 +263,17 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     onClick={() => {
                       setColorTarget('piece');
                       if (selectedPieceId === 'background') {
-                        onSelectPiece(svgData?.motifPieces[0]?.id || null);
+                        onSelectPiece(null);
                       }
                     }}
-                    className={`py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${colorTarget === 'piece'
+                    className={`py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer ${colorTarget === 'piece'
                       ? 'bg-white text-[#242424] shadow-xs font-semibold'
                       : 'text-[#77736C] hover:text-[#242424]'
                       }`}
                   >
                     <div
-                      className="w-3 h-3 rounded-full border border-black/10"
-                      style={{ backgroundColor: activeColorForPiece }}
+                      className="w-3 h-3 rounded-full border border-black/10 shrink-0"
+                      style={{ backgroundColor: activeColorForPiece || commonMotifColor || '#D9D9D9' }}
                     />
                     <span>Piezas ({svgData?.motifPieces.length || 7})</span>
                   </button>
@@ -348,40 +384,104 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
 
               {/* Active Material Display Card */}
               <div className="p-3 bg-[#FAF9F5] rounded-xl border border-[#E7E4DE] space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className="w-8 h-8 rounded-lg border border-black/15 shadow-2xs shrink-0 flex items-center justify-center"
-                      style={{ backgroundColor: currentColor }}
-                    />
-                    <div>
-                      <div className="text-xs font-bold text-[#242424]">
-                        {activeMaterial ? `Ref. ${activeMaterial.code} · ${activeMaterial.name}` : 'Color personalizado'}
-                      </div>
-                      <div className="text-[11px] text-[#77736C]">
-                        {colorTarget === 'background'
-                          ? 'Fondo de la malla'
-                          : selectedPieceIds.length > 1
-                            ? `${selectedPieceIds.length} piezas seleccionadas`
-                            : selectedPiece
-                              ? selectedPiece.name
-                              : 'Piezas del motivo'}
+                {colorTarget === 'background' ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="w-8 h-8 rounded-lg border border-black/15 shadow-2xs shrink-0 flex items-center justify-center"
+                        style={{ backgroundColor: currentColor || '#D9D9D9' }}
+                      />
+                      <div>
+                        <div className="text-xs font-bold text-[#242424]">
+                          {activeMaterial ? `Ref. ${activeMaterial.code} · ${activeMaterial.name}` : 'Color personalizado'}
+                        </div>
+                        <div className="text-[11px] text-[#77736C]">
+                          Fondo de la malla
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ) : hasPieceSelection ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="w-8 h-8 rounded-lg border border-black/15 shadow-2xs shrink-0 flex items-center justify-center"
+                          style={{ backgroundColor: currentColor || '#000000' }}
+                        />
+                        <div>
+                          <div className="text-xs font-bold text-[#242424]">
+                            {activeMaterial ? `Ref. ${activeMaterial.code} · ${activeMaterial.name}` : 'Color personalizado'}
+                          </div>
+                          <div className="text-[11px] text-[#77736C]">
+                            {selectedPieceIds.length > 1
+                              ? `${selectedPieceIds.length} piezas seleccionadas`
+                              : selectedPiece
+                                ? selectedPiece.name
+                                : 'Pieza seleccionada'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-                {/* If coloring piece: button to apply this material to ALL pieces */}
-                {colorTarget === 'piece' && (
-                  <button
-                    onClick={() => onApplyColorToAllMotifPieces(currentColor)}
-                    className="w-full py-1.5 px-2 text-[11px] font-medium text-[#242424] bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-[#77736C]" />
-                    <span>Aplicar este color a todo el motivo</span>
-                  </button>
+                    {/* If coloring piece: button to apply this material to ALL pieces */}
+                    {currentColor && (
+                      <button
+                        onClick={() => onApplyColorToAllMotifPieces(currentColor)}
+                        className="w-full py-1.5 px-2 text-[11px] font-medium text-[#242424] bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-[#77736C]" />
+                        <span>Aplicar este color a todo el motivo</span>
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg border border-dashed border-[#AFAAA0] bg-white/80 shrink-0 flex items-center justify-center text-[#77736C]">
+                        <MousePointerClick className="w-4 h-4 text-[#77736C]" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-[#242424]">
+                          Ninguna pieza seleccionada
+                        </div>
+                        <div className="text-[11px] text-[#77736C]">
+                          Utiliza el dibujo o los números de arriba
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (svgData) {
+                          const allIds = svgData.motifPieces.map(p => p.id);
+                          if (onSelectMultiplePieces) {
+                            onSelectMultiplePieces(allIds);
+                          } else {
+                            onSelectPiece(allIds);
+                          }
+                        }
+                      }}
+                      className="w-full py-1.5 px-2 text-[11px] font-medium text-[#242424] bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-[#77736C]" />
+                      <span>Seleccionar todas las piezas del motivo</span>
+                    </button>
+                  </div>
                 )}
               </div>
+
+              {/* Notice when clicking a material swatch with no selection */}
+              {noSelectionNotice && !hasPieceSelection && colorTarget === 'piece' && (
+                <div className="p-2.5 bg-amber-50/90 border border-amber-200/90 rounded-xl text-amber-950 text-xs flex items-center justify-between gap-2 animate-fadeIn transition-all">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Info className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span className="text-[11px] font-medium text-amber-950">
+                      Selecciona antes las piezas para aplicar el color
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Material Palette Selection */}
               <div>
@@ -437,7 +537,9 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                 {/* Swatches Grid */}
                 <div className="grid grid-cols-6 gap-x-1.5 gap-y-2 max-h-80 overflow-y-auto p-0.5 pr-1">
                   {filteredMaterials.map((swatch) => {
-                    const isSelected = swatch.hex.toUpperCase() === currentColor.toUpperCase();
+                    const isSelected = currentColor
+                      ? swatch.hex.toUpperCase() === currentColor.toUpperCase()
+                      : false;
                     const isLight = [
                       '#FFFFFF', '#F8F6A8', '#F7DF00', '#DDE6EA', '#D2DFE8', '#D9D9D9',
                       '#F3EEDA', '#C7DFD5', '#E5D5B9', '#EBDEB3', '#DED7BF', '#F5D79B',

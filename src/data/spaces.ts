@@ -5,7 +5,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     id: 'bathroom_wall',
     name: 'Baño Principal — Frontal Lavabo',
     category: 'bath',
-    image: '/src/assets/images/bathroom_wall_space_1791898954529.jpg',
+    image: '/assets/images/bathroom_wall_space_1791898954529.jpg',
     description: 'Paramento vertical continuo sobre lavabo exento de piedra caliza con iluminación natural lateral.',
     surfaceLabel: 'Pared Frontal',
     // [[x, y] in %]
@@ -22,7 +22,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     id: 'living_floor',
     name: 'Estancia Interior — Pavimento Suelo',
     category: 'floor',
-    image: '/src/assets/images/modern_floor_space_1791898955696.jpg',
+    image: '/assets/images/modern_floor_space_1791898955696.jpg',
     description: 'Superficie de pavimento continuo en estancia amplia y luminosa con mobiliario nórdico.',
     surfaceLabel: 'Suelo / Pavimento',
     polygonPoints: [
@@ -38,7 +38,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     id: 'shower_wall',
     name: 'Ducha de Obra — Paramento & Hornacina',
     category: 'bath',
-    image: '/src/assets/images/shower_vanity_space_1791898956491.jpg',
+    image: '/assets/images/shower_vanity_space_1791898956491.jpg',
     description: 'Zona de ducha estilo boutique con grifería en latón cepillado y luz indirecta perimetral.',
     surfaceLabel: 'Pared Ducha',
     polygonPoints: [
@@ -54,7 +54,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     id: 'kitchen_backsplash',
     name: 'Cocina de Diseño — Frontal Antepecho',
     category: 'kitchen',
-    image: '/src/assets/images/kitchen_backsplash_space_1791898956129.jpg',
+    image: '/assets/images/kitchen_backsplash_space_1791898956129.jpg',
     description: 'Frontal entre encimera de mármol y repisa de roble natural con iluminación cálida.',
     surfaceLabel: 'Antepecho Cocina',
     polygonPoints: [

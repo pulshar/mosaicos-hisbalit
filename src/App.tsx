@@ -24,6 +24,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 const STORAGE_KEY_CUSTOMIZATION = 'mosaico_studio_customization';
 const STORAGE_KEY_COMPOSITION = 'mosaico_studio_composition';
 const STORAGE_KEY_LIBRARY_OPEN = 'mosaico_studio_library_open';
+const STORAGE_KEY_CUSTOMIZATION_PANEL_OPEN = 'mosaico_studio_customization_panel_open';
 
 export default function App() {
   // 1. Initial State from storage or defaults
@@ -93,6 +94,14 @@ export default function App() {
       return true;
     }
   });
+  const [isCustomizationPanelOpen, setIsCustomizationPanelOpen] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_CUSTOMIZATION_PANEL_OPEN);
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
 
   // 4. LocalStorage persistence
   useEffect(() => {
@@ -119,7 +128,15 @@ export default function App() {
     }
   }, [isMotifLibraryOpen]);
 
-  // 5. Keyboard shortcuts for Undo/Redo, Deselect & Library Toggle
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_CUSTOMIZATION_PANEL_OPEN, JSON.stringify(isCustomizationPanelOpen));
+    } catch {
+      // ignore
+    }
+  }, [isCustomizationPanelOpen]);
+
+  // 5. Keyboard shortcuts for Undo/Redo, Deselect & Panels Toggle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -132,7 +149,10 @@ export default function App() {
         if (canRedo) redo();
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        setIsMotifLibraryOpen(prev => !prev);
+        // El shortcut Ctrl + b ocultará y/o mostrará ambos paneles
+        const shouldOpen = !isMotifLibraryOpen && !isCustomizationPanelOpen;
+        setIsMotifLibraryOpen(shouldOpen);
+        setIsCustomizationPanelOpen(shouldOpen);
       } else if (e.key === 'Escape') {
         setSelectedPieceId(null);
         setIsExportModalOpen(false);
@@ -141,7 +161,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canUndo, canRedo, undo, redo]);
+  }, [canUndo, canRedo, undo, redo, isMotifLibraryOpen, isCustomizationPanelOpen]);
 
   // 6. Action Handlers
   const handleSelectMotif = (motif: MotifDefinition) => {
@@ -257,6 +277,7 @@ export default function App() {
     reset(def);
     setComposition(prev => ({
       ...prev,
+      cellOverrides: {},
       viewMode: 'single',
       repeatX: 3,
       repeatY: 2,
@@ -265,7 +286,8 @@ export default function App() {
       staggered: false,
       zoom: 1.0,
       panX: 0,
-      panY: 0
+      panY: 0,
+      plainTileCadence: "none"
     }));
     setSelectedPieceId(null);
     setIsConfirmNewModalOpen(false);
@@ -325,16 +347,14 @@ export default function App() {
           <>
             {/* Left Panel: Motifs Library (smooth collapsible animation) */}
             <div
-              className={`h-full shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex relative z-10 ${
-                isMotifLibraryOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 pointer-events-none'
-              }`}
+              className={`h-full shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex relative z-10 ${isMotifLibraryOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+                }`}
             >
               <div className="w-80 h-full">
                 <MotifLibrary
                   activeMotifId={activeMotif.id}
                   onSelectMotif={handleSelectMotif}
                   activeFormat={customization.format}
-                  onToggleCollapse={() => setIsMotifLibraryOpen(false)}
                 />
               </div>
             </div>
@@ -342,9 +362,8 @@ export default function App() {
             {/* Subtle edge toggle handle button on the seam */}
             <button
               onClick={() => setIsMotifLibraryOpen(prev => !prev)}
-              className={`absolute z-30 top-1/2 -translate-y-1/2 w-4 h-12 bg-white/95 backdrop-blur-xs border border-[#E7E4DE] rounded-r-md shadow-xs hover:bg-[#F7F6F2] text-[#77736C] hover:text-[#242424] flex items-center justify-center transition-all duration-300 ease-in-out group cursor-pointer ${
-                isMotifLibraryOpen ? 'left-80' : 'left-0'
-              }`}
+              className={`absolute z-30 top-1/2 -translate-y-1/2 w-4 h-12 bg-white/95 backdrop-blur-xs border border-[#E7E4DE] rounded-r-md shadow-xs hover:bg-[#F7F6F2] text-[#77736C] hover:text-[#242424] flex items-center justify-center transition-all duration-300 ease-in-out group cursor-pointer ${isMotifLibraryOpen ? 'left-80' : 'left-0'
+                }`}
               title={isMotifLibraryOpen ? "Ocultar biblioteca de motivos (Ctrl+B)" : "Mostrar biblioteca de motivos (Ctrl+B)"}
               aria-label={isMotifLibraryOpen ? "Ocultar biblioteca de motivos" : "Mostrar biblioteca de motivos"}
             >
@@ -368,28 +387,49 @@ export default function App() {
               onResetView={() => setComposition(prev => ({ ...prev, zoom: 1.0, panX: 0, panY: 0 }))}
               viewMode={composition.viewMode}
               onChangeViewMode={(mode) => setComposition(prev => ({ ...prev, viewMode: mode }))}
-              isMotifLibraryOpen={isMotifLibraryOpen}
-              onToggleMotifLibrary={() => setIsMotifLibraryOpen(prev => !prev)}
+              onUpdateComposition={handleUpdateComposition}
             />
 
-            {/* Right Panel: Customization Controls */}
-            <CustomizationPanel
-              motif={activeMotif}
-              customization={customization}
-              composition={composition}
-              selectedPieceId={selectedPieceId}
-              onSelectPiece={setSelectedPieceId}
-              onUpdatePieceColor={handleUpdatePieceColor}
-              onApplyColorToAllMotifPieces={handleApplyColorToAllMotifPieces}
-              onUpdateBackgroundColor={handleUpdateBackgroundColor}
-              onUpdateFormat={handleUpdateFormat}
-              onUpdateRotation={handleUpdateRotation}
-              onUpdateComposition={handleUpdateComposition}
-              onResetMotifOriginalColors={handleResetMotifOriginalColors}
-              onDownloadSvg={handleDownloadSvgDirect}
-              onDownloadPng={handleDownloadPngDirect}
-              onChangeViewMode={(mode) => setComposition(prev => ({ ...prev, viewMode: mode }))}
-            />
+            {/* Right Panel: Customization Controls (smooth collapsible animation) */}
+            <div
+              className={`h-full shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex relative z-10 ${isCustomizationPanelOpen ? 'w-94 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+                }`}
+            >
+              <div className="w-94 h-full">
+                <CustomizationPanel
+                  motif={activeMotif}
+                  customization={customization}
+                  composition={composition}
+                  selectedPieceId={selectedPieceId}
+                  onSelectPiece={setSelectedPieceId}
+                  onUpdatePieceColor={handleUpdatePieceColor}
+                  onApplyColorToAllMotifPieces={handleApplyColorToAllMotifPieces}
+                  onUpdateBackgroundColor={handleUpdateBackgroundColor}
+                  onUpdateFormat={handleUpdateFormat}
+                  onUpdateRotation={handleUpdateRotation}
+                  onUpdateComposition={handleUpdateComposition}
+                  onResetMotifOriginalColors={handleResetMotifOriginalColors}
+                  onDownloadSvg={handleDownloadSvgDirect}
+                  onDownloadPng={handleDownloadPngDirect}
+                  onChangeViewMode={(mode) => setComposition(prev => ({ ...prev, viewMode: mode }))}
+                />
+              </div>
+            </div>
+
+            {/* Subtle edge toggle handle button on the right seam */}
+            <button
+              onClick={() => setIsCustomizationPanelOpen(prev => !prev)}
+              className={`absolute z-30 top-1/2 -translate-y-1/2 w-4 h-12 bg-white/95 backdrop-blur-xs border border-[#E7E4DE] rounded-l-md shadow-xs hover:bg-[#F7F6F2] text-[#77736C] hover:text-[#242424] flex items-center justify-center transition-all duration-300 ease-in-out group cursor-pointer ${isCustomizationPanelOpen ? 'right-94' : 'right-0'
+                }`}
+              title={isCustomizationPanelOpen ? "Ocultar panel de personalización (Ctrl+B)" : "Mostrar panel de personalización (Ctrl+B)"}
+              aria-label={isCustomizationPanelOpen ? "Ocultar panel de personalización" : "Mostrar panel de personalización"}
+            >
+              {isCustomizationPanelOpen ? (
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              ) : (
+                <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+              )}
+            </button>
           </>
         )}
       </div>

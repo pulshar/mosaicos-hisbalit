@@ -7,8 +7,15 @@ export function isCellWithMotif(
   rowIndex: number,
   colIndex: number,
   cadence: PlainTileCadence = 'none',
-  repeatX: number = 3
+  repeatX: number = 3,
+  cellOverrides?: Record<string, boolean>
 ): boolean {
+  // If user explicitly toggled this cell directly on the canvas, override takes precedence
+  const key = `${rowIndex}-${colIndex}`;
+  if (cellOverrides && cellOverrides[key] !== undefined) {
+    return cellOverrides[key];
+  }
+
   switch (cadence) {
     case 'none':
       return true;
@@ -35,13 +42,14 @@ export function isCellWithMotif(
 export function getCompositionPlatesCount(
   repeatX: number,
   repeatY: number,
-  cadence: PlainTileCadence = 'none'
+  cadence: PlainTileCadence = 'none',
+  cellOverrides?: Record<string, boolean>
 ): { motifCount: number; plainCount: number; totalCount: number } {
   let motifCount = 0;
   const totalCount = repeatX * repeatY;
   for (let r = 0; r < repeatY; r++) {
     for (let c = 0; c < repeatX; c++) {
-      if (isCellWithMotif(r, c, cadence, repeatX)) {
+      if (isCellWithMotif(r, c, cadence, repeatX, cellOverrides)) {
         motifCount++;
       }
     }
@@ -239,7 +247,13 @@ export function generateCompositionSvg(
       const offsetX = c * unitW + (composition.staggered && r % 2 === 1 ? staggerShiftX : 0);
       const offsetY = r * unitH;
 
-      const hasMotif = isCellWithMotif(r, c, composition.plainTileCadence || 'none', cols);
+      const hasMotif = isCellWithMotif(
+        r,
+        c,
+        composition.plainTileCadence || 'none',
+        cols,
+        composition.cellOverrides
+      );
 
       let content: string;
       if (!hasMotif) {

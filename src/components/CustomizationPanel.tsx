@@ -25,7 +25,8 @@ import {
   Link2,
   Layers,
   Search,
-  X
+  X,
+  PanelRightClose
 } from 'lucide-react';
 
 interface CustomizationPanelProps {
@@ -52,13 +53,13 @@ const CADENCE_PRESETS: Array<{
   subtitle: string;
   badge: string;
 }> = [
-  { id: 'none', label: 'Continuo', subtitle: 'Todas con motivo', badge: '100%' },
-  { id: 'checkerboard', label: 'Ajedrezado', subtitle: 'Damero alterno', badge: '1 : 1' },
-  { id: 'ratio1_2', label: 'Intercalado', subtitle: '1 motivo / 2 lisas', badge: '1 : 2' },
-  { id: 'ratio1_3', label: 'Espaciado', subtitle: '1 motivo / 3 lisas', badge: '1 : 3' },
-  { id: 'rows', label: 'Franjas H.', subtitle: 'Filas alternas', badge: 'Filas' },
-  { id: 'cols', label: 'Franjas V.', subtitle: 'Columnas alternas', badge: 'Col.' }
-];
+    { id: 'none', label: 'Continuo', subtitle: 'Todas con motivo', badge: '100%' },
+    { id: 'checkerboard', label: 'Ajedrezado', subtitle: 'Damero alterno', badge: '1 : 1' },
+    { id: 'ratio1_2', label: 'Intercalado', subtitle: '1 motivo / 2 lisas', badge: '1 : 2' },
+    { id: 'ratio1_3', label: 'Espaciado', subtitle: '1 motivo / 3 lisas', badge: '1 : 3' },
+    { id: 'rows', label: 'Franjas H.', subtitle: 'Filas alternas', badge: 'Filas' },
+    { id: 'cols', label: 'Franjas V.', subtitle: 'Columnas alternas', badge: 'Col.' }
+  ];
 
 export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   motif,
@@ -99,7 +100,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   const plates = getCompositionPlatesCount(
     composition.repeatX,
     composition.repeatY,
-    composition.plainTileCadence || 'none'
+    composition.plainTileCadence || 'none',
+    composition.cellOverrides
   );
 
   // Active target for coloring: either the selected piece or the background
@@ -218,11 +220,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         onSelectPiece(svgData?.motifPieces[0]?.id || null);
                       }
                     }}
-                    className={`py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${
-                      colorTarget === 'piece'
-                        ? 'bg-white text-[#242424] shadow-xs font-semibold'
-                        : 'text-[#77736C] hover:text-[#242424]'
-                    }`}
+                    className={`py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${colorTarget === 'piece'
+                      ? 'bg-white text-[#242424] shadow-xs font-semibold'
+                      : 'text-[#77736C] hover:text-[#242424]'
+                      }`}
                   >
                     <div
                       className="w-3 h-3 rounded-full border border-black/10"
@@ -235,17 +236,17 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       setColorTarget('background');
                       onSelectPiece('background');
                     }}
-                    className={`py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${
-                      colorTarget === 'background'
-                        ? 'bg-white text-[#242424] shadow-xs font-semibold'
-                        : 'text-[#77736C] hover:text-[#242424]'
-                    }`}
+                    className={`py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${colorTarget === 'background'
+                      ? 'bg-white text-[#242424] shadow-xs font-semibold'
+                      : 'text-[#77736C] hover:text-[#242424]'
+                      }`}
                   >
                     <div
                       className="w-3 h-3 rounded-full border border-black/10"
                       style={{ backgroundColor: customization.backgroundColor || '#D9D9D9' }}
                     />
-                    <span>Fondo ({svgData?.backgroundShapes.length || 118})</span>
+                    {/* <span>Fondo ({svgData?.backgroundShapes.length || 118})</span> */}
+                    <span>Fondo</span>
                   </button>
                 </div>
               </div>
@@ -271,20 +272,18 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         <button
                           key={p.id}
                           onClick={() => onSelectPiece(p.id)}
-                          className={`h-8 rounded-lg border flex items-center justify-center relative transition-all ${
-                            isSel
-                              ? 'border-[#242424] ring-2 ring-[#242424]/20 scale-105 z-10'
-                              : 'border-[#E7E4DE] hover:border-[#AFAAA0]'
-                          }`}
+                          className={`h-8 rounded-lg border flex items-center justify-center relative transition-all ${isSel
+                            ? 'border-[#242424] ring-2 ring-[#242424]/20 scale-105 z-10'
+                            : 'border-[#E7E4DE] hover:border-[#AFAAA0]'
+                            }`}
                           style={{ backgroundColor: col }}
                           title={`${p.name} (${col})`}
                         >
                           <span
-                            className={`text-[9px] font-bold ${
-                              col.toLowerCase() === '#ffffff' || col.toLowerCase() === '#f5f3ec'
-                                ? 'text-black'
-                                : 'text-white'
-                            }`}
+                            className={`text-[9px] font-bold ${col.toLowerCase() === '#ffffff' || col.toLowerCase() === '#f5f3ec'
+                              ? 'text-black'
+                              : 'text-white'
+                              }`}
                           >
                             {idx + 1}
                           </span>
@@ -311,8 +310,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         {colorTarget === 'background'
                           ? 'Fondo de la malla'
                           : selectedPiece
-                          ? selectedPiece.name
-                          : 'Piezas del motivo'}
+                            ? selectedPiece.name
+                            : 'Piezas del motivo'}
                       </div>
                     </div>
                   </div>
@@ -370,11 +369,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           setMaterialCategory(cat);
                           setSearchQuery('');
                         }}
-                        className={`px-2 py-0.5 text-[10px] font-medium rounded-md whitespace-nowrap transition-colors ${
-                          materialCategory === cat && !searchQuery
-                            ? 'bg-[#242424] text-white shadow-2xs'
-                            : 'bg-[#F7F6F2] text-[#77736C] hover:text-[#242424] hover:bg-[#EFECE6]'
-                        }`}
+                        className={`px-2 py-0.5 text-[10px] font-medium rounded-md whitespace-nowrap transition-colors ${materialCategory === cat && !searchQuery
+                          ? 'bg-[#242424] text-white shadow-2xs'
+                          : 'bg-[#F7F6F2] text-[#77736C] hover:text-[#242424] hover:bg-[#EFECE6]'
+                          }`}
                       >
                         {cat}
                       </button>
@@ -397,35 +395,31 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       <button
                         key={swatch.code}
                         onClick={() => handleSelectMaterial(swatch.hex)}
-                        className={`group relative flex flex-col items-center rounded-lg p-0.5 border transition-all text-center ${
-                          isSelected
-                            ? 'border-[#242424] bg-[#FAF9F5] ring-2 ring-[#242424]/20 shadow-xs scale-105 z-10'
-                            : 'border-transparent hover:border-[#E7E4DE] hover:bg-[#FBFBFA]'
-                        }`}
+                        className={`group relative flex flex-col items-center rounded-lg p-0.5 border transition-all text-center ${isSelected
+                          ? 'border-[#242424] bg-[#FAF9F5] ring-2 ring-[#242424]/20 shadow-xs scale-105 z-10'
+                          : 'border-transparent hover:border-[#E7E4DE] hover:bg-[#FBFBFA]'
+                          }`}
                         title={`Ref. ${swatch.code} - ${swatch.name} (${swatch.hex})`}
                       >
                         <div
-                          className={`w-full aspect-square rounded-md border flex items-center justify-center relative transition-transform ${
-                            isSelected
-                              ? 'border-[#242424]/40 shadow-xs'
-                              : 'border-black/10 group-hover:scale-105'
-                          }`}
+                          className={`w-full aspect-square rounded-md border flex items-center justify-center relative transition-transform ${isSelected
+                            ? 'border-[#242424]/40 shadow-xs'
+                            : 'border-black/10 group-hover:scale-105'
+                            }`}
                           style={{ backgroundColor: swatch.hex }}
                         >
                           {isSelected && (
                             <Check
-                              className={`w-3.5 h-3.5 stroke-[3] ${
-                                isLight ? 'text-black' : 'text-white'
-                              }`}
+                              className={`w-3.5 h-3.5 stroke-[3] ${isLight ? 'text-black' : 'text-white'
+                                }`}
                             />
                           )}
                         </div>
                         <span
-                          className={`mt-1 text-[9px] font-mono leading-none tracking-tight transition-colors ${
-                            isSelected
-                              ? 'font-bold text-[#242424]'
-                              : 'text-[#77736C] group-hover:text-[#242424]'
-                          }`}
+                          className={`mt-1 text-[9px] font-mono leading-none tracking-tight transition-colors ${isSelected
+                            ? 'font-bold text-[#242424]'
+                            : 'text-[#77736C] group-hover:text-[#242424]'
+                            }`}
                         >
                           {swatch.code}
                         </span>
@@ -471,11 +465,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => onUpdateFormat('round')}
-                  className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-center transition-all ${
-                    activeFormat === 'round'
-                      ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
-                      : 'border-[#E7E4DE] hover:border-[#C5C1BA] bg-white'
-                  }`}
+                  className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-center transition-all ${activeFormat === 'round'
+                    ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
+                    : 'border-[#E7E4DE] hover:border-[#C5C1BA] bg-white'
+                    }`}
                 >
                   <Circle className="w-5 h-5 text-[#242424]" />
                   <div>
@@ -488,11 +481,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
 
                 <button
                   onClick={() => onUpdateFormat('hexagonal')}
-                  className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-center transition-all ${
-                    activeFormat === 'hexagonal'
-                      ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
-                      : 'border-[#E7E4DE] hover:border-[#C5C1BA] bg-white'
-                  }`}
+                  className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-center transition-all ${activeFormat === 'hexagonal'
+                    ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
+                    : 'border-[#E7E4DE] hover:border-[#C5C1BA] bg-white'
+                    }`}
                 >
                   <Hexagon className="w-5 h-5 text-[#242424]" />
                   <div>
@@ -539,11 +531,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   <button
                     key={angle}
                     onClick={() => onUpdateRotation(angle)}
-                    className={`py-2 text-xs font-medium rounded-lg border transition-all ${
-                      customization.rotation === angle
-                        ? 'border-[#242424] bg-[#242424] text-white shadow-xs font-semibold'
-                        : 'border-[#E7E4DE] bg-white text-[#242424] hover:bg-[#FAF9F5]'
-                    }`}
+                    className={`py-2 text-xs font-medium rounded-lg border transition-all ${customization.rotation === angle
+                      ? 'border-[#242424] bg-[#242424] text-white shadow-xs font-semibold'
+                      : 'border-[#E7E4DE] bg-white text-[#242424] hover:bg-[#FAF9F5]'
+                      }`}
                   >
                     {angle}°
                   </button>
@@ -557,9 +548,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         {/* 4. DISTRIBUCIÓN Y ESCALA                                 */}
         {/* ======================================================== */}
         <div
-          className={`border rounded-xl overflow-hidden transition-all ${
-            isSingleMode ? 'border-[#E7E4DE] bg-[#FAF9F5]' : 'border-[#E7E4DE] bg-white'
-          }`}
+          className={`border rounded-xl overflow-hidden transition-all ${isSingleMode ? 'border-[#E7E4DE] bg-[#FAF9F5]' : 'border-[#E7E4DE] bg-white'
+            }`}
         >
           <button
             onClick={() => toggleSection('distribution')}
@@ -570,7 +560,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               <span className={`text-xs font-semibold ${isSingleMode ? 'text-[#77736C]' : 'text-[#242424]'}`}>
                 Distribución y escala
               </span>
-               {/*
+              {/*
               {isSingleMode && (
                 <span className="text-[10px] text-[#8C8880] bg-[#EFECE6] px-1.5 py-0.5 rounded font-medium">
                   Solo en repetición
@@ -593,7 +583,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   <div className="flex items-start gap-2">
                     <Layers className="w-4 h-4 text-[#77736C] shrink-0 mt-0.5" />
                     <p className="text-[11px] text-[#77736C] leading-relaxed">
-                      La cuadrícula de repeticiones y la alineación al tresbolillo se configuran en la <strong>Composición repetida</strong>.
+                      La cuadrícula de repeticiones y la alineación se configuran en la <strong>Composición repetida</strong>.
                     </p>
                   </div>
                   {onChangeViewMode && (
@@ -650,23 +640,21 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F7F6F2] rounded-lg border border-[#E7E4DE]">
                       <button
                         disabled
-                        className={`py-1.5 text-xs font-medium rounded-md ${
-                          !composition.staggered
-                            ? 'bg-white text-[#242424] shadow-xs'
-                            : 'text-[#77736C]'
-                        }`}
+                        className={`py-1.5 text-xs font-medium rounded-md ${!composition.staggered
+                          ? 'bg-white text-[#242424] shadow-xs'
+                          : 'text-[#77736C]'
+                          }`}
                       >
                         Regular
                       </button>
                       <button
                         disabled
-                        className={`py-1.5 text-xs font-medium rounded-md ${
-                          composition.staggered
-                            ? 'bg-white text-[#242424] shadow-xs'
-                            : 'text-[#77736C]'
-                        }`}
+                        className={`py-1.5 text-xs font-medium rounded-md ${composition.staggered
+                          ? 'bg-white text-[#242424] shadow-xs'
+                          : 'text-[#77736C]'
+                          }`}
                       >
-                        Alternada (Tresbolillo)
+                        Alternada
                       </button>
                     </div>
                   </div>
@@ -749,23 +737,21 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F7F6F2] rounded-lg border border-[#E7E4DE]">
                     <button
                       onClick={() => onUpdateComposition({ staggered: false })}
-                      className={`py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
-                        !composition.staggered
-                          ? 'bg-white text-[#242424] shadow-xs'
-                          : 'text-[#77736C] hover:text-[#242424]'
-                      }`}
+                      className={`py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${!composition.staggered
+                        ? 'bg-white text-[#242424] shadow-xs'
+                        : 'text-[#77736C] hover:text-[#242424]'
+                        }`}
                     >
                       Regular
                     </button>
                     <button
                       onClick={() => onUpdateComposition({ staggered: true })}
-                      className={`py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
-                        composition.staggered
-                          ? 'bg-white text-[#242424] shadow-xs'
-                          : 'text-[#77736C] hover:text-[#242424]'
-                      }`}
+                      className={`py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${composition.staggered
+                        ? 'bg-white text-[#242424] shadow-xs'
+                        : 'text-[#77736C] hover:text-[#242424]'
+                        }`}
                     >
-                      Alternada (Tresbolillo)
+                      Alternada
                     </button>
                   </div>
                 </div>
@@ -780,33 +766,32 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
 
                   <div className="grid grid-cols-2 gap-1.5">
                     {CADENCE_PRESETS.map((preset) => {
-                      const isActive = (composition.plainTileCadence || 'none') === preset.id;
+                      const isActive =
+                        (composition.plainTileCadence || 'none') === preset.id &&
+                        (!composition.cellOverrides || Object.keys(composition.cellOverrides).length === 0);
                       return (
                         <button
                           key={preset.id}
-                          onClick={() => onUpdateComposition({ plainTileCadence: preset.id })}
-                          className={`p-2 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                            isActive
-                              ? 'border-[#242424] bg-[#242424] text-white shadow-xs'
-                              : 'border-[#E7E4DE] bg-white text-[#242424] hover:bg-[#FAF9F5]'
-                          }`}
+                          onClick={() => onUpdateComposition({ plainTileCadence: preset.id, cellOverrides: {} })}
+                          className={`p-2 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${isActive
+                            ? 'border-[#242424] bg-[#242424] text-white shadow-xs'
+                            : 'border-[#E7E4DE] bg-white text-[#242424] hover:bg-[#FAF9F5]'
+                            }`}
                         >
                           <div className="flex items-center justify-between gap-1 w-full">
                             <span className="text-xs font-semibold leading-tight">{preset.label}</span>
                             <span
-                              className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-semibold ${
-                                isActive
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-[#F7F6F2] text-[#77736C] border border-[#E7E4DE]'
-                              }`}
+                              className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-semibold ${isActive
+                                ? 'bg-white/20 text-white'
+                                : 'bg-[#F7F6F2] text-[#77736C] border border-[#E7E4DE]'
+                                }`}
                             >
                               {preset.badge}
                             </span>
                           </div>
                           <span
-                            className={`text-[10px] mt-0.5 leading-snug ${
-                              isActive ? 'text-white/80' : 'text-[#77736C]'
-                            }`}
+                            className={`text-[10px] mt-0.5 leading-snug ${isActive ? 'text-white/80' : 'text-[#77736C]'
+                              }`}
                           >
                             {preset.subtitle}
                           </span>
@@ -814,6 +799,27 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       );
                     })}
                   </div>
+
+                  {/* Manual canvas override indicator banner */}
+                  {composition.cellOverrides && Object.keys(composition.cellOverrides).length > 0 && (
+                    <div className="p-2.5 rounded-lg border-[#242424] bg-[#242424] shadow-xs flex items-center justify-between text-[11px] animate-fade-in">
+                      <div className="flex items-center gap-1.5 text-white">
+                        <div>
+                          <p className="font-semibold">Personalizado</p>
+                          <span className="text-white/80 text-[10px] mt-0.5 leading-snug">
+                            {Object.keys(composition.cellOverrides).length} celda{Object.keys(composition.cellOverrides).length > 1 ? 's' : ''} modificada{Object.keys(composition.cellOverrides).length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => onUpdateComposition({ cellOverrides: {} })}
+                        className="text-[10px] font-semibold text-[#242424] hover:text-black bg-white hover:bg-[#F0EEE9] px-2 py-0.5 rounded border border-[#E7E4DE] transition-colors"
+                        title="Restablecer patrón automático sin modificaciones manuales"
+                      >
+                        Restablecer
+                      </button>
+                    </div>
+                  )}
 
                   {/* Resumen de placas de producción */}
                   <div className="p-2.5 bg-[#FAF9F5] rounded-lg border border-[#E7E4DE] flex items-center justify-between text-[11px]">
@@ -851,7 +857,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
           </button>
 
           {openSections.export && (
-            <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-2">
+            <div className="p-3.5 pt-3 border-t border-[#E7E4DE] space-y-2">
               <button
                 onClick={onDownloadSvg}
                 className="w-full py-2.5 px-3 border border-[#E7E4DE] hover:border-[#242424] bg-white hover:bg-[#FAF9F5] rounded-lg text-xs font-semibold text-[#242424] transition-colors flex items-center justify-between"

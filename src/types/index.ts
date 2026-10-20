@@ -66,6 +66,7 @@ export interface CompositionSettings {
   spacingY: number;
   staggered: boolean;
   plainTileCadence?: PlainTileCadence;
+  cellOverrides?: Record<string, boolean>; // Overrides per cell "row-col": true (motif on) | false (plain)
   showPlainBackground: boolean;
   secondaryMotifId: string | null;
   combineRatio: 'alternate' | 'single';

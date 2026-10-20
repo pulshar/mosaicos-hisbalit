@@ -54,9 +54,10 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const activeImageUrl = customPhotoUrl || activePreset.image;
 
   // Generate SVG pattern tile data URL for CSS background
-  const isCadenceActive = composition.plainTileCadence && composition.plainTileCadence !== 'none';
+  const hasCustomOverrides = Boolean(composition.cellOverrides && Object.keys(composition.cellOverrides).length > 0);
+  const isCadenceActive = (composition.plainTileCadence && composition.plainTileCadence !== 'none') || hasCustomOverrides;
   const simulationSvgStr = isCadenceActive
-    ? generateCompositionSvg(motif, customization, { ...composition, repeatX: 4, repeatY: 4 })
+    ? generateCompositionSvg(motif, customization, { ...composition, repeatX: Math.max(4, composition.repeatX), repeatY: Math.max(4, composition.repeatY) })
     : generateSingleMotifSvg(motif, customization, true);
   const svgDataUri = `data:image/svg+xml;utf8,${encodeURIComponent(simulationSvgStr)}`;
 
@@ -152,11 +153,10 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsAdjustingSurface(!isAdjustingSurface)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
-                isAdjustingSurface
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${isAdjustingSurface
                   ? 'bg-amber-400 text-black font-semibold'
                   : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
+                }`}
             >
               <Move className="w-3.5 h-3.5" />
               <span>{isAdjustingSurface ? 'Finalizar ajuste' : 'Ajustar superficie'}</span>
@@ -289,11 +289,10 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       setCustomPhotoUrl(null);
                       setSelectedSpaceId(preset.id);
                     }}
-                    className={`relative rounded-lg overflow-hidden border p-1 text-left transition-all ${
-                      isSelected
+                    className={`relative rounded-lg overflow-hidden border p-1 text-left transition-all ${isSelected
                         ? 'border-amber-400 ring-2 ring-amber-400/20 bg-white/10'
                         : 'border-white/10 bg-white/5 hover:border-white/30'
-                    }`}
+                      }`}
                   >
                     <div className="aspect-video w-full rounded overflow-hidden mb-1.5 bg-black/40">
                       <img
@@ -389,11 +388,10 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                   <button
                     key={mode.id}
                     onClick={() => setBlendMode(mode.id as any)}
-                    className={`py-1.5 px-2 text-[11px] rounded-lg border text-left font-medium transition-all ${
-                      blendMode === mode.id
+                    className={`py-1.5 px-2 text-[11px] rounded-lg border text-left font-medium transition-all ${blendMode === mode.id
                         ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold'
                         : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
-                    }`}
+                      }`}
                   >
                     {mode.label}
                   </button>

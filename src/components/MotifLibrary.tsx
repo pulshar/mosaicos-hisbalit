@@ -8,15 +8,13 @@ interface MotifLibraryProps {
   onSelectMotif: (motif: MotifDefinition) => void;
   activeFormat: MotifFormat;
   onCustomSvgUpload?: (file: File) => void;
-  onToggleCollapse?: () => void;
 }
 
 export const MotifLibrary: React.FC<MotifLibraryProps> = ({
   activeMotifId,
   onSelectMotif,
   activeFormat,
-  onCustomSvgUpload,
-  onToggleCollapse
+  onCustomSvgUpload
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,16 +37,6 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
             Colección Petite · 10 diseños de autor
           </p>
         </div>
-          {onToggleCollapse && (
-            <button
-              onClick={onToggleCollapse}
-              className="p-1 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-md border border-transparent hover:border-[#E7E4DE] transition-all cursor-pointer"
-              title="Ocultar biblioteca de motivos"
-              aria-label="Ocultar biblioteca de motivos"
-            >
-              <PanelLeftClose className="w-5 h-5" />
-            </button>
-          )}
       </div>
 
       {/* Motif items list */}
@@ -72,24 +60,22 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                   onSelectMotif(motif);
                 }
               }}
-              className={`group relative p-3 rounded-xl border transition-all text-left ${
-                isActive
-                  ? 'border-[#242424] bg-[#FBFBFA] shadow-xs ring-1 ring-[#242424]/10'
-                  : isAvailable
+              className={`group relative p-3 rounded-xl border transition-all text-left ${isActive
+                ? 'border-[#242424] bg-[#FBFBFA] shadow-xs ring-1 ring-[#242424]/10'
+                : isAvailable
                   ? 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA] hover:bg-[#FAF9F5] cursor-pointer'
                   : 'border-[#EDEBE6] bg-[#FCFCFB] opacity-75 cursor-default'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 {/* Thumbnail container */}
                 <div
-                  className={`w-14 h-14 rounded-lg border flex items-center justify-center shrink-0 overflow-hidden relative ${
-                    isActive
-                      ? 'border-[#242424] bg-white'
-                      : isAvailable
+                  className={`w-14 h-14 rounded-lg border flex items-center justify-center shrink-0 overflow-hidden relative ${isActive
+                    ? 'border-[#242424] bg-white'
+                    : isAvailable
                       ? 'border-[#E7E4DE] bg-[#F7F6F2] group-hover:border-[#C5C1BA]'
                       : 'border-[#EDEBE6] bg-[#F4F3EF]'
-                  }`}
+                    }`}
                 >
                   {isAvailable && (motif.svgData[activeFormat] || motif.svgData.round) ? (() => {
                     const thumbSvg = motif.svgData[activeFormat] || motif.svgData.round!;

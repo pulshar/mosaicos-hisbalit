@@ -84,7 +84,31 @@ export default function App() {
   } = useDesignHistory(getInitialCustomization());
 
   // 3. Selection & Viewport States
-  const [selectedPieceId, setSelectedPieceId] = useState<string | null>(null);
+  const [selectedPieceIds, setSelectedPieceIds] = useState<string[]>([]);
+  const selectedPieceId = selectedPieceIds[0] || null;
+
+  const handleSelectPiece = useCallback((pieceId: string | null, isMulti = false) => {
+    if (!pieceId) {
+      setSelectedPieceIds([]);
+      return;
+    }
+    if (pieceId === 'background') {
+      setSelectedPieceIds(['background']);
+      return;
+    }
+    setSelectedPieceIds(prev => {
+      const withoutBg = prev.filter(id => id !== 'background');
+      if (!isMulti) {
+        return [pieceId];
+      }
+      if (withoutBg.includes(pieceId)) {
+        return withoutBg.filter(id => id !== pieceId);
+      } else {
+        return [...withoutBg, pieceId];
+      }
+    });
+  }, []);
+
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isMotifLibraryOpen, setIsMotifLibraryOpen] = useState<boolean>(() => {
     try {
@@ -154,7 +178,7 @@ export default function App() {
         setIsMotifLibraryOpen(shouldOpen);
         setIsCustomizationPanelOpen(shouldOpen);
       } else if (e.key === 'Escape') {
-        setSelectedPieceId(null);
+        setSelectedPieceIds([]);
         setIsExportModalOpen(false);
       }
     };
@@ -167,19 +191,42 @@ export default function App() {
   const handleSelectMotif = (motif: MotifDefinition) => {
     if (!motif.available) return;
     setActiveMotif(motif);
-    setSelectedPieceId(null);
+    setSelectedPieceIds([]);
     const newCust = getDefaultCustomization(motif.id, customization.format);
     setCustomization(newCust);
   };
 
   const handleUpdatePieceColor = useCallback((pieceId: string, color: string) => {
-    setCustomization(prev => ({
-      ...prev,
-      pieceColors: {
-        ...prev.pieceColors,
-        [pieceId]: color
-      }
-    }));
+    setCustomization(prev => {
+      const targetIds = (selectedPieceIds.length > 1 && selectedPieceIds.includes(pieceId))
+        ? selectedPieceIds
+        : [pieceId];
+      const nextColors = { ...prev.pieceColors };
+      targetIds.forEach(id => {
+        if (id !== 'background') {
+          nextColors[id] = color;
+        }
+      });
+      return {
+        ...prev,
+        pieceColors: nextColors
+      };
+    });
+  }, [selectedPieceIds, setCustomization]);
+
+  const handleUpdatePieceColors = useCallback((pieceIds: string[], color: string) => {
+    setCustomization(prev => {
+      const nextColors = { ...prev.pieceColors };
+      pieceIds.forEach(id => {
+        if (id !== 'background') {
+          nextColors[id] = color;
+        }
+      });
+      return {
+        ...prev,
+        pieceColors: nextColors
+      };
+    });
   }, [setCustomization]);
 
   const handleApplyColorToAllMotifPieces = useCallback((color: string) => {
@@ -213,17 +260,19 @@ export default function App() {
     const targetSvg = targetMotif.svgData[format];
 
     // Maintain selection state smoothly across format switch
-    if (selectedPieceId === 'background') {
-      setSelectedPieceId('background');
-    } else if (selectedPieceId && currentSvg && targetSvg) {
-      const currentIdx = currentSvg.motifPieces.findIndex(p => p.id === selectedPieceId);
-      if (currentIdx !== -1 && targetSvg.motifPieces[currentIdx]) {
-        setSelectedPieceId(targetSvg.motifPieces[currentIdx].id);
-      } else {
-        setSelectedPieceId(null);
-      }
+    if (selectedPieceIds.includes('background')) {
+      setSelectedPieceIds(['background']);
+    } else if (selectedPieceIds.length > 0 && currentSvg && targetSvg) {
+      const nextIds: string[] = [];
+      selectedPieceIds.forEach(id => {
+        const currentIdx = currentSvg.motifPieces.findIndex(p => p.id === id);
+        if (currentIdx !== -1 && targetSvg.motifPieces[currentIdx]) {
+          nextIds.push(targetSvg.motifPieces[currentIdx].id);
+        }
+      });
+      setSelectedPieceIds(nextIds);
     } else {
-      setSelectedPieceId(null);
+      setSelectedPieceIds([]);
     }
 
     setCustomization(prev => {
@@ -289,7 +338,7 @@ export default function App() {
       panY: 0,
       plainTileCadence: "none"
     }));
-    setSelectedPieceId(null);
+    setSelectedPieceIds([]);
     setIsConfirmNewModalOpen(false);
   }, [reset]);
 
@@ -380,8 +429,10 @@ export default function App() {
               customization={customization}
               composition={composition}
               selectedPieceId={selectedPieceId}
-              onSelectPiece={setSelectedPieceId}
+              selectedPieceIds={selectedPieceIds}
+              onSelectPiece={handleSelectPiece}
               onUpdatePieceColor={handleUpdatePieceColor}
+              onUpdatePieceColors={handleUpdatePieceColors}
               onUpdateBackgroundColor={handleUpdateBackgroundColor}
               onChangeZoom={(zoom) => setComposition(prev => ({ ...prev, zoom }))}
               onResetView={() => setComposition(prev => ({ ...prev, zoom: 1.0, panX: 0, panY: 0 }))}
@@ -401,8 +452,10 @@ export default function App() {
                   customization={customization}
                   composition={composition}
                   selectedPieceId={selectedPieceId}
-                  onSelectPiece={setSelectedPieceId}
+                  selectedPieceIds={selectedPieceIds}
+                  onSelectPiece={handleSelectPiece}
                   onUpdatePieceColor={handleUpdatePieceColor}
+                  onUpdatePieceColors={handleUpdatePieceColors}
                   onApplyColorToAllMotifPieces={handleApplyColorToAllMotifPieces}
                   onUpdateBackgroundColor={handleUpdateBackgroundColor}
                   onUpdateFormat={handleUpdateFormat}

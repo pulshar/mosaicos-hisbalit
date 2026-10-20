@@ -18,16 +18,20 @@ import {
   PanelLeftOpen,
   Sparkles,
   MousePointerClick,
-  Info
+  Info,
+  X,
+  Check
 } from 'lucide-react';
 
 interface DesignCanvasProps {
   motif: MotifDefinition;
   customization: MotifCustomization;
   composition: CompositionSettings;
-  selectedPieceId: string | null;
-  onSelectPiece: (pieceId: string | null) => void;
+  selectedPieceId?: string | null;
+  selectedPieceIds?: string[];
+  onSelectPiece: (pieceId: string | null, isMulti?: boolean) => void;
   onUpdatePieceColor: (pieceId: string, color: string) => void;
+  onUpdatePieceColors?: (pieceIds: string[], color: string) => void;
   onUpdateBackgroundColor: (color: string) => void;
   onChangeZoom: (zoom: number) => void;
   onResetView: () => void;
@@ -41,8 +45,10 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   customization,
   composition,
   selectedPieceId,
+  selectedPieceIds = [],
   onSelectPiece,
   onUpdatePieceColor,
+  onUpdatePieceColors,
   onUpdateBackgroundColor,
   onChangeZoom,
   onResetView,
@@ -54,6 +60,29 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   const [hoveredPieceId, setHoveredPieceId] = useState<string | null>(null);
   const [hoveredGridCell, setHoveredGridCell] = useState<{ row: number; col: number } | null>(null);
   const [backgroundNotice, setBackgroundNotice] = useState<string | null>(null);
+
+  const HELP_STORAGE_KEY = 'mosaico_canvas_help_dismissed';
+
+  const [showHelpBanner, setShowHelpBanner] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(HELP_STORAGE_KEY) !== 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const handleDismissHelp = () => {
+    setShowHelpBanner(false);
+    try {
+      localStorage.setItem(HELP_STORAGE_KEY, 'true');
+    } catch (e) {
+      console.error('Failed to save help preference to localStorage:', e);
+    }
+  };
+
+  const handleToggleHelp = () => {
+    setShowHelpBanner(prev => !prev);
+  };
 
   const activeFormat: MotifFormat = customization.format;
   const svgData = motif.svgData[activeFormat];
@@ -68,12 +97,13 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
   const handlePieceClick = (e: React.MouseEvent, pieceId: string) => {
     e.stopPropagation();
-    onSelectPiece(pieceId);
+    const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
+    onSelectPiece(pieceId, isMulti);
   };
 
   const handleBackgroundClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onSelectPiece('background');
+    onSelectPiece('background', false);
   };
 
   const overrideCount = composition.cellOverrides
@@ -104,7 +134,8 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     );
   };
 
-  const selectedPiece = svgData?.motifPieces.find(p => p.id === selectedPieceId);
+  const selectedPieces = svgData?.motifPieces.filter(p => selectedPieceIds.includes(p.id)) || [];
+  const selectedPiece = selectedPieces[0] || svgData?.motifPieces.find(p => p.id === selectedPieceId);
 
   return (
     <main
@@ -167,6 +198,20 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
           >
             <Maximize2 className="w-4 h-4" />
           </button>
+
+          <div className="w-[1px] h-4 bg-[#E7E4DE] mx-1" />
+
+          <button
+            onClick={handleToggleHelp}
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${showHelpBanner
+              ? 'bg-[#242424] text-[#DDA743] shadow-xs'
+              : 'text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2]'
+              }`}
+            title={showHelpBanner ? "Ocultar guía de ayuda" : "Ver guía de ayuda e instrucciones"}
+            aria-label="Guía de ayuda e instrucciones"
+          >
+            <HelpCircle className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -178,32 +223,71 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         </div>
       )}
 
-      {/* Floating Selected Piece Tooltip / Quick Info */}
-      {selectedPiece && viewMode !== 'simulation' && (
-        <div className="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-[#242424] shadow-md flex items-center gap-3">
-          <div
-            className="w-7 h-7 rounded-full border border-black/10 shadow-xs"
-            style={{ backgroundColor: customization.pieceColors[selectedPiece.id] || selectedPiece.originalColor }}
-          />
+      {/* Floating Selected Piece(s) Tooltip / Quick Info */}
+      {selectedPieceIds.length > 1 && !selectedPieceIds.includes('background') && viewMode !== 'simulation' && (
+        <div className="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-md p-3 px-4 rounded-xl border border-[#242424] shadow-md flex items-center gap-3 animate-fade-in">
+          <div className="flex -space-x-1.5 overflow-hidden">
+            {selectedPieceIds.slice(0, 5).map(id => (
+              <div
+                key={id}
+                className="w-6 h-6 rounded-full border-2 border-white shadow-xs shrink-0"
+                style={{ backgroundColor: customization.pieceColors[id] || '#DDA743' }}
+              />
+            ))}
+            {selectedPieceIds.length > 5 && (
+              <div className="w-6 h-6 rounded-full bg-[#242424] text-white text-[9px] font-bold flex items-center justify-center border-2 border-white shrink-0">
+                +{selectedPieceIds.length - 5}
+              </div>
+            )}
+          </div>
           <div>
-            <div className="text-xs font-bold text-[#242424]">{selectedPiece.name}</div>
-            <div className="text-[11px] font-mono text-[#77736C]">
-              {customization.pieceColors[selectedPiece.id] || selectedPiece.originalColor}
+            <div className="text-xs font-bold text-[#242424]">
+              {selectedPieceIds.length} piezas seleccionadas
+            </div>
+            <div className="text-[11px] text-[#77736C]">
+              Ctrl + clic para añadir o quitar piezas
             </div>
           </div>
           <button
-            onClick={() => onSelectPiece(null)}
-            className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE]"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectPiece(null);
+            }}
+            className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2.5 py-1 rounded-lg bg-[#F7F6F2] hover:bg-[#EDEBE6] border border-[#E7E4DE] cursor-pointer transition-colors"
           >
             Deseleccionar
           </button>
         </div>
       )}
 
-      {selectedPieceId === 'background' && viewMode !== 'simulation' && (
+      {selectedPieceIds.length === 1 && selectedPiece && !selectedPieceIds.includes('background') && viewMode !== 'simulation' && (
         <div className="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-[#242424] shadow-md flex items-center gap-3 animate-fade-in">
           <div
-            className="w-7 h-7 rounded-full border border-black/10 shadow-xs"
+            className="w-7 h-7 rounded-full border border-black/10 shadow-xs shrink-0"
+            style={{ backgroundColor: customization.pieceColors[selectedPiece.id] || selectedPiece.originalColor }}
+          />
+          <div>
+            <div className="text-xs font-bold text-[#242424]">{selectedPiece.name}</div>
+            <div className="text-[11px] text-[#77736C]">
+              Ctrl + clic para añadir más
+            </div>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectPiece(null);
+            }}
+            className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
+          >
+            Deseleccionar
+          </button>
+        </div>
+      )}
+
+      {(selectedPieceIds.includes('background') || selectedPieceId === 'background') && viewMode !== 'simulation' && (
+        <div className="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-[#242424] shadow-md flex items-center gap-3 animate-fade-in">
+          <div
+            className="w-7 h-7 rounded-full border border-black/10 shadow-xs shrink-0"
             style={{ backgroundColor: customization.backgroundColor || '#D9D9D9' }}
           />
           <div>
@@ -213,8 +297,11 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             </div>
           </div>
           <button
-            onClick={() => onSelectPiece(null)}
-            className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE]"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectPiece(null);
+            }}
+            className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
           >
             Deseleccionar
           </button>
@@ -252,7 +339,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
               return (
                 <div
-                  className={`bg-white rounded-2xl p-8 shadow-sm transition-all duration-150 relative ${selectedPieceId === 'background'
+                  className={`bg-white rounded-2xl p-8 shadow-sm transition-all duration-150 relative ${selectedPieceIds.includes('background') || selectedPieceId === 'background'
                     ? 'border-2 border-[#242424] ring-4 ring-[#242424]/10 shadow-md'
                     : 'border border-[#E7E4DE]'
                     }`}
@@ -314,7 +401,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                       {/* Editable motif pieces (7 individual pieces) */}
                       <g id="motif-pieces">
                         {svgData.motifPieces.map((piece) => {
-                          const isSelected = selectedPieceId === piece.id;
+                          const isSelected = selectedPieceIds.includes(piece.id) || selectedPieceId === piece.id;
                           const isHovered = hoveredPieceId === piece.id;
                           const currentColor =
                             customization.pieceColors[piece.id] || piece.originalColor;
@@ -638,34 +725,55 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         </div>
       </div>
 
-      {/* Footer Helper Strip */}
+      {/* Floating Onboarding / Instructions Helper (shown first time, dismissable, stored in localStorage) */}
+      {showHelpBanner && (
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 max-w-xl w-[92%] sm:w-auto bg-white/95 backdrop-blur-md border border-[#E7E4DE] shadow-xl rounded-2xl p-3 px-4 flex items-center gap-3.5 animate-fade-in transition-all">
+          <div className="w-8 h-8 rounded-xl bg-[#242424] text-[#DDA743] flex items-center justify-center shrink-0 shadow-xs">
+            {viewMode === 'pattern' ? (
+              <MousePointerClick className="w-4 h-4" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+          </div>
 
-      <footer className="h-10 border-t border-[#E7E4DE] bg-white px-6 flex items-center justify-between text-[11px] text-[#77736C]">
-        {/* Center Pill: Interactive grid mode indicator in repeated composition */}
-        {viewMode === 'pattern' ? (
-          <div className="pointer-events-auto hidden md:flex items-center gap-2 text-xs animate-fade-in">
-            <div className="flex items-center gap-1.5 text-[#242424]">
-              <MousePointerClick className="w-4 h-4 text-[#DDA743]" />
-              <span className="font-semibold">Modo personalizado:</span>
+          <div className="text-xs text-[#242424] min-w-0 pr-1">
+            <div className="font-semibold flex items-center gap-2">
+              <span>
+                {viewMode === 'pattern'
+                  ? 'Composición interactiva en cuadrícula'
+                  : 'Personalización en lienzo'}
+              </span>
+              <span className="text-[10px] font-mono font-medium text-[#77736C] bg-[#F7F6F2] px-1.5 py-0.5 rounded border border-[#E7E4DE]">
+                Guía de uso
+              </span>
             </div>
-            <span className="text-[#77736C]">
-              Haz clic en cualquier celda para encender o apagar el motivo
-            </span>
+            <p className="text-[#77736C] text-[11px] mt-0.5 leading-normal">
+              {viewMode === 'pattern'
+                ? 'Haz clic en cualquier celda para encender o apagar el motivo en esa posición exacta.'
+                : 'Haz clic en una pieza (o mantén Ctrl para seleccionar varias) para colorearlas juntas, o en el fondo para la base.'}
+            </p>
           </div>
-        ) : (
-          <div className="pointer-events-auto hidden md:flex items-center gap-2 text-xs animate-fade-in">
-            <div className="flex items-center gap-1.5 text-[#242424]">
-              <Info className="w-4 h-4 text-[#DDA743]" />
-            </div>
-            <span className="text-[#77736C]">
-              Haz clic en cualquier pieza del motivo para editarla individualmente o en el fondo para editarlas en grupo
-            </span>
+
+          <div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-[#E7E4DE]">
+            <button
+              onClick={handleDismissHelp}
+              className="px-2.5 py-1.5 rounded-lg bg-[#242424] hover:bg-black text-white text-[11px] font-medium transition-colors cursor-pointer shadow-xs flex items-center gap-1"
+              title="Entendido, guardar preferencia"
+            >
+              <Check className="w-3.5 h-3.5 text-[#DDA743]" />
+              <span>Entendido</span>
+            </button>
+            <button
+              onClick={handleDismissHelp}
+              className="p-1.5 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
+              title="Cerrar ayuda"
+              aria-label="Cerrar ayuda"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-[#242424]">Colección Petite</span>
         </div>
-      </footer>
+      )}
 
     </main>
   );

@@ -33,9 +33,11 @@ interface CustomizationPanelProps {
   motif: MotifDefinition;
   customization: MotifCustomization;
   composition: CompositionSettings;
-  selectedPieceId: string | null;
-  onSelectPiece: (id: string | null) => void;
+  selectedPieceId?: string | null;
+  selectedPieceIds?: string[];
+  onSelectPiece: (id: string | null, isMulti?: boolean) => void;
   onUpdatePieceColor: (pieceId: string, color: string) => void;
+  onUpdatePieceColors?: (pieceIds: string[], color: string) => void;
   onApplyColorToAllMotifPieces: (color: string) => void;
   onUpdateBackgroundColor: (color: string) => void;
   onUpdateFormat: (format: MotifFormat) => void;
@@ -66,8 +68,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   customization,
   composition,
   selectedPieceId,
+  selectedPieceIds = [],
   onSelectPiece,
   onUpdatePieceColor,
+  onUpdatePieceColors,
   onApplyColorToAllMotifPieces,
   onUpdateBackgroundColor,
   onUpdateFormat,
@@ -107,22 +111,23 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   // Active target for coloring: either the selected piece or the background
   const [colorTarget, setColorTarget] = useState<'piece' | 'background'>('piece');
 
-  // Sync color target when selectedPieceId changes (e.g. clicking background or piece on SVG canvas)
+  // Sync color target when selectedPieceId or selectedPieceIds changes (e.g. clicking background or piece on SVG canvas)
   useEffect(() => {
-    if (selectedPieceId === 'background') {
+    if (selectedPieceIds.includes('background') || selectedPieceId === 'background') {
       setColorTarget('background');
       setOpenSections(prev => ({ ...prev, colors: true }));
-    } else if (selectedPieceId) {
+    } else if (selectedPieceIds.length > 0 || selectedPieceId) {
       setColorTarget('piece');
       setOpenSections(prev => ({ ...prev, colors: true }));
     }
-  }, [selectedPieceId]);
+  }, [selectedPieceId, selectedPieceIds]);
 
   // Category filter and search state for materials palette
   const [materialCategory, setMaterialCategory] = useState<'Todos' | 'Neutros' | 'Tierras' | 'Mediterráneo' | 'Acentos'>('Todos');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const selectedPiece = svgData?.motifPieces.find(p => p.id === selectedPieceId);
+  const selectedPieces = svgData?.motifPieces.filter(p => selectedPieceIds.includes(p.id)) || [];
+  const selectedPiece = selectedPieces[0] || svgData?.motifPieces.find(p => p.id === selectedPieceId);
   const activeColorForPiece = selectedPiece
     ? customization.pieceColors[selectedPiece.id] || selectedPiece.originalColor
     : (svgData?.motifPieces[0] ? customization.pieceColors[svgData.motifPieces[0].id] || svgData.motifPieces[0].originalColor : '#000000');
@@ -141,7 +146,13 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
     if (colorTarget === 'background') {
       onUpdateBackgroundColor(hex);
     } else {
-      if (selectedPieceId && selectedPieceId !== 'background') {
+      if (selectedPieceIds.length > 0 && !selectedPieceIds.includes('background')) {
+        if (onUpdatePieceColors) {
+          onUpdatePieceColors(selectedPieceIds, hex);
+        } else {
+          selectedPieceIds.forEach(id => onUpdatePieceColor(id, hex));
+        }
+      } else if (selectedPieceId && selectedPieceId !== 'background') {
         onUpdatePieceColor(selectedPieceId, hex);
       } else if (svgData?.motifPieces[0]) {
         // Apply to first piece if none specifically selected
@@ -254,30 +265,36 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               {/* If ColorTarget is PIECE: Show piece selector tabs */}
               {colorTarget === 'piece' && svgData && (
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
+                  {/* <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[11px] font-medium text-[#77736C]">
-                      Selecciona una pieza editable:
+                      Piezas editables:
                     </span>
-                    {selectedPieceId && (
-                      <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-medium">
-                        Seleccionada
-                      </span>
-                    )}
-                  </div>
+                    <div className="flex items-center gap-1.5">
+                      {selectedPieceIds.length > 1 ? (
+                        <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">
+                          {selectedPieceIds.length} seleccionadas
+                        </span>
+                      ) : selectedPieceIds.length === 1 ? (
+                        <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">
+                          1 seleccionada
+                        </span>
+                      ) : null}
+                    </div>
+                  </div> */}
                   <div className="grid grid-cols-7 gap-1">
                     {svgData.motifPieces.map((p, idx) => {
-                      const isSel = selectedPieceId === p.id;
+                      const isSel = selectedPieceIds.includes(p.id) || selectedPieceId === p.id;
                       const col = customization.pieceColors[p.id] || p.originalColor;
                       return (
                         <button
                           key={p.id}
-                          onClick={() => onSelectPiece(p.id)}
-                          className={`h-8 rounded-lg border flex items-center justify-center relative transition-all ${isSel
-                            ? 'border-[#242424] ring-2 ring-[#242424]/20 scale-105 z-10'
+                          onClick={(e) => onSelectPiece(p.id, e.ctrlKey || e.metaKey || e.shiftKey)}
+                          className={`h-8 rounded-lg border flex items-center justify-center relative transition-all cursor-pointer ${isSel
+                            ? 'border-[#242424] ring-2 ring-[#242424]/30 scale-105 z-10 shadow-xs'
                             : 'border-[#E7E4DE] hover:border-[#AFAAA0]'
                             }`}
                           style={{ backgroundColor: col }}
-                          title={`${p.name} (${col})`}
+                          title={`${p.name} - Pulsa Ctrl+Clic para selección múltiple`}
                         >
                           <span
                             className={`text-[9px] font-bold ${col.toLowerCase() === '#ffffff' || col.toLowerCase() === '#f5f3ec'
@@ -290,6 +307,28 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* Quick actions for multi-selection */}
+                  <div className="flex items-center justify-between mt-1.5 text-[10px] text-[#77736C] font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        svgData.motifPieces.forEach(p => onSelectPiece(p.id, true));
+                      }}
+                      className="hover:text-[#242424] underline underline-offset-2 cursor-pointer"
+                    >
+                      Seleccionar todas
+                    </button>
+                    {selectedPieceIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => onSelectPiece(null)}
+                        className="hover:text-[#242424] underline underline-offset-2 cursor-pointer"
+                      >
+                        Limpiar selección
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -309,9 +348,11 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       <div className="text-[11px] text-[#77736C]">
                         {colorTarget === 'background'
                           ? 'Fondo de la malla'
-                          : selectedPiece
-                            ? selectedPiece.name
-                            : 'Piezas del motivo'}
+                          : selectedPieceIds.length > 1
+                            ? `${selectedPieceIds.length} piezas seleccionadas`
+                            : selectedPiece
+                              ? selectedPiece.name
+                              : 'Piezas del motivo'}
                       </div>
                     </div>
                   </div>
@@ -331,7 +372,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
 
               {/* Material Palette Selection */}
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[11px] font-semibold text-[#242424]">
                     Paleta Unicolor Hisbalit:
                   </span>
@@ -654,7 +695,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           : 'text-[#77736C]'
                           }`}
                       >
-                        Alternada
+                        Alternada (Tresbolillo)
                       </button>
                     </div>
                   </div>
@@ -751,7 +792,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         : 'text-[#77736C] hover:text-[#242424]'
                         }`}
                     >
-                      Alternada
+                      Alternada (Tresbolillo)
                     </button>
                   </div>
                 </div>

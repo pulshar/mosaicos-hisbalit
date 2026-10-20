@@ -32,7 +32,8 @@ interface CustomizationPanelProps {
   composition: CompositionSettings;
   selectedPieceId?: string | null;
   selectedPieceIds?: string[];
-  onSelectPiece: (id: string | null, isMulti?: boolean) => void;
+  onSelectPiece: (id: string | string[] | null, isMulti?: boolean) => void;
+  onSelectMultiplePieces?: (pieceIds: string[]) => void;
   onUpdatePieceColor: (pieceId: string, color: string) => void;
   onUpdatePieceColors?: (pieceIds: string[], color: string) => void;
   onApplyColorToAllMotifPieces: (color: string) => void;
@@ -67,6 +68,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   selectedPieceId,
   selectedPieceIds = [],
   onSelectPiece,
+  onSelectMultiplePieces,
   onUpdatePieceColor,
   onUpdatePieceColors,
   onApplyColorToAllMotifPieces,
@@ -307,21 +309,35 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   </div>
 
                   {/* Quick actions for multi-selection */}
-                  <div className="flex items-center justify-between mt-1.5 text-[10px] text-[#77736C] font-semibold">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        svgData.motifPieces.forEach(p => onSelectPiece(p.id, true));
-                      }}
-                      className="hover:text-[#242424] underline underline-offset-2 cursor-pointer"
-                    >
-                      Seleccionar todas
-                    </button>
+                  <div className="flex items-center justify-between mt-1.5 text-[10px] text-[#77736C]">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setColorTarget('piece');
+                          const allIds = svgData.motifPieces.map(p => p.id);
+                          if (onSelectMultiplePieces) {
+                            onSelectMultiplePieces(allIds);
+                          } else {
+                            onSelectPiece(allIds);
+                          }
+                        }}
+                        className="font-semibold text-[#77736C] hover:text-[#242424] underline underline-offset-2 cursor-pointer transition-colors"
+                        title="Seleccionar todas las piezas del motivo"
+                      >
+                        Seleccionar todas
+                      </button>
+                      {selectedPieceIds.length > 0 && !selectedPieceIds.includes('background') && (
+                        <span className="text-[#9E9B95]">
+                          ({selectedPieceIds.length} de {svgData.motifPieces.length})
+                        </span>
+                      )}
+                    </div>
                     {selectedPieceIds.length > 0 && (
                       <button
                         type="button"
                         onClick={() => onSelectPiece(null)}
-                        className="hover:text-[#242424] underline underline-offset-2 cursor-pointer"
+                        className="font-semibold hover:text-[#242424] underline underline-offset-2 cursor-pointer transition-colors"
                       >
                         Limpiar selección
                       </button>
@@ -692,7 +708,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           : 'text-[#77736C]'
                           }`}
                       >
-                        Alternada (Tresbolillo)
+                        Alternada
                       </button>
                     </div>
                   </div>
@@ -767,7 +783,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   </div>
                 </div>
 
-                {/* Alignment: Regular vs Staggered (al tresbolillo) */}
+                {/* Alignment: Regular vs Staggered */}
                 <div>
                   <span className="text-[11px] font-medium text-[#77736C] block mb-1.5">
                     Alineación de teselas:
@@ -789,7 +805,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         : 'text-[#77736C] hover:text-[#242424]'
                         }`}
                     >
-                      Alternada (Tresbolillo)
+                      Alternada
                     </button>
                   </div>
                 </div>

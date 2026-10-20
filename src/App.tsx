@@ -87,9 +87,13 @@ export default function App() {
   const [selectedPieceIds, setSelectedPieceIds] = useState<string[]>([]);
   const selectedPieceId = selectedPieceIds[0] || null;
 
-  const handleSelectPiece = useCallback((pieceId: string | null, isMulti = false) => {
+  const handleSelectPiece = useCallback((pieceId: string | string[] | null, isMulti = false) => {
     if (!pieceId) {
       setSelectedPieceIds([]);
+      return;
+    }
+    if (Array.isArray(pieceId)) {
+      setSelectedPieceIds(pieceId);
       return;
     }
     if (pieceId === 'background') {
@@ -107,6 +111,10 @@ export default function App() {
         return [...withoutBg, pieceId];
       }
     });
+  }, []);
+
+  const handleSelectMultiplePieces = useCallback((pieceIds: string[]) => {
+    setSelectedPieceIds(pieceIds);
   }, []);
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -177,6 +185,16 @@ export default function App() {
         const shouldOpen = !isMotifLibraryOpen && !isCustomizationPanelOpen;
         setIsMotifLibraryOpen(shouldOpen);
         setIsCustomizationPanelOpen(shouldOpen);
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+        const target = e.target as HTMLElement | null;
+        const tag = target?.tagName?.toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea') {
+          e.preventDefault();
+          const currentSvg = activeMotif.svgData[customization.format];
+          if (currentSvg && currentSvg.motifPieces.length > 0) {
+            setSelectedPieceIds(currentSvg.motifPieces.map(p => p.id));
+          }
+        }
       } else if (e.key === 'Escape') {
         setSelectedPieceIds([]);
         setIsExportModalOpen(false);
@@ -185,7 +203,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canUndo, canRedo, undo, redo, isMotifLibraryOpen, isCustomizationPanelOpen]);
+  }, [canUndo, canRedo, undo, redo, isMotifLibraryOpen, isCustomizationPanelOpen, activeMotif, customization.format]);
 
   // 6. Action Handlers
   const handleSelectMotif = (motif: MotifDefinition) => {
@@ -431,6 +449,7 @@ export default function App() {
               selectedPieceId={selectedPieceId}
               selectedPieceIds={selectedPieceIds}
               onSelectPiece={handleSelectPiece}
+              onSelectMultiplePieces={handleSelectMultiplePieces}
               onUpdatePieceColor={handleUpdatePieceColor}
               onUpdatePieceColors={handleUpdatePieceColors}
               onUpdateBackgroundColor={handleUpdateBackgroundColor}
@@ -454,6 +473,7 @@ export default function App() {
                   selectedPieceId={selectedPieceId}
                   selectedPieceIds={selectedPieceIds}
                   onSelectPiece={handleSelectPiece}
+                  onSelectMultiplePieces={handleSelectMultiplePieces}
                   onUpdatePieceColor={handleUpdatePieceColor}
                   onUpdatePieceColors={handleUpdatePieceColors}
                   onApplyColorToAllMotifPieces={handleApplyColorToAllMotifPieces}

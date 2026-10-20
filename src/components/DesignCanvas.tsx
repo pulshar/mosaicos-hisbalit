@@ -21,7 +21,8 @@ interface DesignCanvasProps {
   composition: CompositionSettings;
   selectedPieceId?: string | null;
   selectedPieceIds?: string[];
-  onSelectPiece: (pieceId: string | null, isMulti?: boolean) => void;
+  onSelectPiece: (pieceId: string | string[] | null, isMulti?: boolean) => void;
+  onSelectMultiplePieces?: (pieceIds: string[]) => void;
   onUpdatePieceColor: (pieceId: string, color: string) => void;
   onUpdatePieceColors?: (pieceIds: string[], color: string) => void;
   onUpdateBackgroundColor: (color: string) => void;

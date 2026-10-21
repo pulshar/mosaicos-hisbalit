@@ -1,29 +1,19 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { PETITE_MOTIFS } from '../data/motifs';
 import { MotifDefinition, MotifFormat } from '../types';
-import { Check, Upload, Info, Sparkles, PanelLeftClose } from 'lucide-react';
+import { Check, Info } from 'lucide-react';
 
 interface MotifLibraryProps {
   activeMotifId: string;
   onSelectMotif: (motif: MotifDefinition) => void;
   activeFormat: MotifFormat;
-  onCustomSvgUpload?: (file: File) => void;
 }
 
 export const MotifLibrary: React.FC<MotifLibraryProps> = ({
   activeMotifId,
   onSelectMotif,
-  activeFormat,
-  onCustomSvgUpload
+  activeFormat
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && onCustomSvgUpload) {
-      onCustomSvgUpload(file);
-    }
-  };
 
   return (
     <aside className="w-80 h-full border-r border-[#E7E4DE] bg-[#FFFFFF] flex flex-col shrink-0 select-none">
@@ -169,31 +159,6 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
             </div>
           );
         })}
-      </div>
-
-      {/* Footer / Extensibility helper */}
-      <div className="p-3 border-t border-[#E7E4DE] bg-[#FBFBFA]">
-        <div className="text-[11px] text-[#77736C] mb-2 flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-[#242424]" />
-          <span>Arquitectura modular de motivos</span>
-        </div>
-        <p className="text-[10px] text-[#8C8880] leading-relaxed mb-2.5">
-          Lista para incorporar los archivos SVG oficiales de los 10 motivos según se suministren.
-        </p>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full py-1.5 px-2.5 border border-[#E7E4DE] bg-white hover:bg-[#F7F6F2] text-[#242424] rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
-        >
-          <Upload className="w-3.5 h-3.5 text-[#77736C]" />
-          <span>Probar cargar archivo SVG</span>
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".svg"
-          className="hidden"
-          onChange={handleFileUpload}
-        />
       </div>
     </aside>
   );

@@ -316,7 +316,15 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       ) : null}
                     </div>
                   </div> */}
-                  <div className="grid grid-cols-7 gap-1">
+                  <div
+                    className="grid gap-1"
+                    style={{
+                      gridTemplateColumns: `repeat(${svgData.motifPieces.length <= 7
+                          ? svgData.motifPieces.length
+                          : (svgData.motifPieces.length === 8 ? 4 : (svgData.motifPieces.length <= 10 ? 5 : (svgData.motifPieces.length === 12 ? 6 : 7)))
+                        }, minmax(0, 1fr))`
+                    }}
+                  >
                     {svgData.motifPieces.map((p, idx) => {
                       const isSel = selectedPieceIds.includes(p.id) || selectedPieceId === p.id;
                       const col = customization.pieceColors[p.id] || p.originalColor;
@@ -332,12 +340,15 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           title={`${p.name} - Pulsa Ctrl+Clic para selección múltiple`}
                         >
                           <span
-                            className={`text-[9px] font-bold ${col.toLowerCase() === '#ffffff' || col.toLowerCase() === '#f5f3ec'
+                            className={`text-[9px] font-bold flex items-center justify-center gap-1.5 ${col.toLowerCase() === '#ffffff' || col.toLowerCase() === '#f5f3ec'
                               ? 'text-black'
                               : 'text-white'
                               }`}
                           >
-                            {idx + 1}
+                            <span>{idx + 1}</span>
+                            {svgData.motifPieces.length === 1 && (
+                              <span className="text-[11px] font-semibold tracking-normal">{p.name}</span>
+                            )}
                           </span>
                         </button>
                       );

@@ -964,25 +964,35 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   </div>
 
                   {/* Manual canvas override indicator banner */}
-                  {composition.cellOverrides && Object.keys(composition.cellOverrides).length > 0 && (
-                    <div className="p-2.5 rounded-lg border-[#242424] bg-[#242424] shadow-xs flex items-center justify-between text-[11px] animate-fade-in">
-                      <div className="flex items-center gap-1.5 text-white">
-                        <div>
-                          <p className="font-semibold">Personalizado</p>
-                          <span className="text-white/80 text-[10px] mt-0.5 leading-snug">
-                            {Object.keys(composition.cellOverrides).length} celda{Object.keys(composition.cellOverrides).length > 1 ? 's' : ''} modificada{Object.keys(composition.cellOverrides).length > 1 ? 's' : ''}
-                          </span>
+                  {Boolean(
+                    (composition.cellOverrides && Object.keys(composition.cellOverrides).length > 0) ||
+                    (composition.cellRotations && Object.keys(composition.cellRotations).length > 0)
+                  ) && (() => {
+                    const customCellKeys = new Set([
+                      ...Object.keys(composition.cellOverrides || {}),
+                      ...Object.keys(composition.cellRotations || {})
+                    ]);
+                    const count = customCellKeys.size;
+                    return (
+                      <div className="p-2.5 rounded-lg border-[#242424] bg-[#242424] shadow-xs flex items-center justify-between text-[11px] animate-fade-in">
+                        <div className="flex items-center gap-1.5 text-white">
+                          <div>
+                            <p className="font-semibold">Personalizado</p>
+                            <span className="text-white/80 text-[10px] mt-0.5 leading-snug">
+                              {count} celda{count > 1 ? 's' : ''} modificada{count > 1 ? 's' : ''}
+                            </span>
+                          </div>
                         </div>
+                        <button
+                          onClick={() => onUpdateComposition({ cellOverrides: {}, cellRotations: {} })}
+                          className="text-[10px] font-semibold text-[#242424] hover:text-black bg-white hover:bg-[#F0EEE9] px-2 py-0.5 rounded border border-[#E7E4DE] transition-colors"
+                          title="Restablecer patrón automático sin modificaciones manuales"
+                        >
+                          Restablecer
+                        </button>
                       </div>
-                      <button
-                        onClick={() => onUpdateComposition({ cellOverrides: {} })}
-                        className="text-[10px] font-semibold text-[#242424] hover:text-black bg-white hover:bg-[#F0EEE9] px-2 py-0.5 rounded border border-[#E7E4DE] transition-colors"
-                        title="Restablecer patrón automático sin modificaciones manuales"
-                      >
-                        Restablecer
-                      </button>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Resumen de placas de producción */}
                   <div className="p-2.5 bg-[#FAF9F5] rounded-lg border border-[#E7E4DE] text-[11px] space-y-1.5">

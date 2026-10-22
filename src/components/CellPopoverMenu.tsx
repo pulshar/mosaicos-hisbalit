@@ -473,23 +473,29 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                         <div className="flex items-center justify-between">
                             <label className="text-[11px] font-medium text-[#77736C] flex items-center gap-1">
                                 <RotateCw className="w-3 h-3 text-[#242424]" />
-                                <span>{isBatch ? 'Giro para la selección' : 'Giro de esta placa'}</span>
+                                <span>{isBatch ? 'Orientación de la selección' : 'Orientación de esta placa'}</span>
                             </label>
                             <span className="text-[10px] font-mono text-[#77736C] font-medium">
-                                {currentRotation >= 0 ? `${currentRotation}°` : 'Varios'}
+                                {currentRotation === 0 ? 'Normal (0°)' : (currentRotation === 180 ? 'Invertido (+180°)' : (currentRotation >= 0 ? `+${currentRotation}°` : 'Varios'))}
                             </span>
                         </div>
-                        <div className="grid grid-cols-4 gap-1.5">
-                            {[0, 90, 180, 270].map((angle) => (
+                        <div className="grid grid-cols-2 gap-2">
+                            {[
+                                { angle: 0, label: '0° · Normal', sublabel: 'Sigue el motivo' },
+                                { angle: 180, label: '180° · Invertido', sublabel: 'Dirección opuesta' }
+                            ].map(({ angle, label, sublabel }) => (
                                 <button
                                     key={angle}
                                     onClick={() => onSelectRotation(angle)}
-                                    className={`py-1.5 text-xs font-medium rounded-md border transition-all cursor-pointer ${currentRotation === angle
+                                    className={`py-2 px-2 text-xs font-medium rounded-lg border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${currentRotation === angle
                                         ? 'border-[#242424] bg-[#242424] text-white font-semibold shadow-xs'
                                         : 'border-[#E7E4DE] bg-white text-[#242424] hover:bg-[#FAF9F5]'
                                         }`}
                                 >
-                                    {angle}°
+                                    <span>{label}</span>
+                                    <span className={`text-[9px] ${currentRotation === angle ? 'text-white/80' : 'text-[#77736C]'}`}>
+                                        {sublabel}
+                                    </span>
                                 </button>
                             ))}
                         </div>

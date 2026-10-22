@@ -225,15 +225,20 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
     targets.forEach(({ row, col }) => {
       const key = `${row}-${col}`;
-      nextRotations[key] = rotation;
+      if (rotation === 0) {
+        delete nextRotations[key];
+      } else {
+        nextRotations[key] = rotation;
+      }
     });
 
     onUpdateComposition({ cellRotations: nextRotations });
 
+    const rotLabel = rotation === 180 ? 'Invertida (+180°)' : 'Normal (0°)';
     if (targets.length > 1) {
-      setBackgroundNotice(`Giro de ${rotation}° aplicado a ${targets.length} placas`);
+      setBackgroundNotice(`Orientación ${rotLabel} aplicada a ${targets.length} placas`);
     } else {
-      setBackgroundNotice(`Celda (${targets[0].row + 1}, ${targets[0].col + 1}): Giro ${rotation}°`);
+      setBackgroundNotice(`Celda (${targets[0].row + 1}, ${targets[0].col + 1}): Orientación ${rotLabel}`);
     }
   };
 
@@ -246,7 +251,11 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     for (let c = 0; c < composition.repeatX; c++) {
       const key = `${row}-${c}`;
       nextOverrides[key] = motifId === null ? false : (motifId || motif.id);
-      nextRotations[key] = rotation;
+      if (rotation === 0) {
+        delete nextRotations[key];
+      } else {
+        nextRotations[key] = rotation;
+      }
     }
 
     onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
@@ -262,7 +271,11 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     for (let r = 0; r < composition.repeatY; r++) {
       const key = `${r}-${col}`;
       nextOverrides[key] = motifId === null ? false : (motifId || motif.id);
-      nextRotations[key] = rotation;
+      if (rotation === 0) {
+        delete nextRotations[key];
+      } else {
+        nextRotations[key] = rotation;
+      }
     }
 
     onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
@@ -280,7 +293,11 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         const key = `${r}-${c}`;
         if (isMatch) {
           nextOverrides[key] = motifId === null ? false : (motifId || motif.id);
-          nextRotations[key] = rotation;
+          if (rotation === 0) {
+            delete nextRotations[key];
+          } else {
+            nextRotations[key] = rotation;
+          }
         } else {
           nextOverrides[key] = false;
         }
@@ -793,7 +810,8 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                           motif.id
                         );
                         const hasMotif = cellMotifId !== null;
-                        const cellRot = composition.cellRotations?.[cellKey] ?? customization.rotation ?? 0;
+                        const cellOffset = composition.cellRotations?.[cellKey] ?? 0;
+                        const cellRot = ((customization.rotation ?? 0) + cellOffset) % 360;
                         const cellMotifDef = cellMotifId ? (getMotifById(cellMotifId) || motif) : motif;
                         const cellSvgData = cellMotifDef.svgData[activeFormat] || svgData;
                         const cellCust = cellMotifId
@@ -997,12 +1015,12 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
           });
           currentMotifId = allSameMotif ? firstMotifId : undefined as unknown as string | null;
 
-          const firstRot = composition.cellRotations?.[`${firstCell.row}-${firstCell.col}`] ?? customization.rotation ?? 0;
+          const firstOffset = composition.cellRotations?.[`${firstCell.row}-${firstCell.col}`] ?? 0;
           const allSameRot = selectedGridCells.every(c => {
-            const r = composition.cellRotations?.[`${c.row}-${c.col}`] ?? customization.rotation ?? 0;
-            return r === firstRot;
+            const r = composition.cellRotations?.[`${c.row}-${c.col}`] ?? 0;
+            return r === firstOffset;
           });
-          currentRotation = allSameRot ? firstRot : -1;
+          currentRotation = allSameRot ? firstOffset : -1;
         } else {
           currentMotifId = getCellMotif(
             refRow,
@@ -1012,10 +1030,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             composition.cellOverrides,
             motif.id
           );
-          currentRotation =
-            composition.cellRotations?.[`${refRow}-${refCol}`] ??
-            customization.rotation ??
-            0;
+          currentRotation = composition.cellRotations?.[`${refRow}-${refCol}`] ?? 0;
         }
 
         return (

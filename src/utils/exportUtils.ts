@@ -333,7 +333,8 @@ export function generateCompositionSvg(
         motif.id
       );
 
-      const cellRot = composition.cellRotations?.[cellKey] ?? baseRotation;
+      const cellOffset = composition.cellRotations?.[cellKey] ?? 0;
+      const cellRot = ((baseRotation ?? 0) + cellOffset) % 360;
 
       let content: string;
       if (!cellMotifId) {

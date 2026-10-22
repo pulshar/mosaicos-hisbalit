@@ -95,6 +95,9 @@ export default function App() {
       setSelectedPieceIds([]);
       return;
     }
+    // When user selects a piece or background, automatically open customization panel if hidden
+    setIsCustomizationPanelOpen(true);
+
     if (Array.isArray(pieceId)) {
       setSelectedPieceIds(pieceId);
       return;
@@ -118,6 +121,9 @@ export default function App() {
 
   const handleSelectMultiplePieces = useCallback((pieceIds: string[]) => {
     setSelectedPieceIds(pieceIds);
+    if (pieceIds.length > 0) {
+      setIsCustomizationPanelOpen(true);
+    }
   }, []);
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -496,8 +502,6 @@ export default function App() {
             motif={activeMotif}
             customization={customization}
             composition={composition}
-            customizationsMap={customizationsMap}
-            editedMotifIds={editedMotifIds}
             onClose={() => setComposition(prev => ({ ...prev, viewMode: 'single' }))}
           />
         ) : (

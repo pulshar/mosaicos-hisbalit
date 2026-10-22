@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   MotifDefinition,
   MotifCustomization,
@@ -63,31 +63,14 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   const [hoveredPieceId, setHoveredPieceId] = useState<string | null>(null);
   const [hoveredGridCell, setHoveredGridCell] = useState<{ row: number; col: number } | null>(null);
   const [backgroundNotice, setBackgroundNotice] = useState<string | null>(null);
+  const [selectedGridCells, setSelectedGridCells] = useState<Array<{ row: number; col: number }>>([]);
+  const [popoverCustomPos, setPopoverCustomPos] = useState<{ x: number; y: number } | null>(null);
   const [activeCellMenu, setActiveCellMenu] = useState<{
     row: number;
     col: number;
     x: number;
     y: number;
   } | null>(null);
-
-  const [savedCellMenuPosition, setSavedCellMenuPosition] = useState<{ x: number; y: number } | null>(() => {
-    try {
-      const saved = localStorage.getItem('mosaico_studio_cell_menu_pos');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return null;
-  });
-
-  const handleCellMenuPositionChange = useCallback((pos: { x: number; y: number }) => {
-    setSavedCellMenuPosition(pos);
-    try {
-      localStorage.setItem('mosaico_studio_cell_menu_pos', JSON.stringify(pos));
-    } catch {
-      // ignore
-    }
-  }, []);
 
   const HELP_STORAGE_KEY = 'mosaico_canvas_help_dismissed';
 
@@ -123,6 +106,21 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     }
   }, [backgroundNotice]);
 
+  // Clear pattern cell selection if switching away from pattern view
+  useEffect(() => {
+    if (viewMode !== 'pattern') {
+      setActiveCellMenu(null);
+      setSelectedGridCells([]);
+    }
+  }, [viewMode]);
+
+  // Keep selected cells within valid grid bounds if grid size changes
+  useEffect(() => {
+    setSelectedGridCells(prev =>
+      prev.filter(c => c.row < composition.repeatY && c.col < composition.repeatX)
+    );
+  }, [composition.repeatX, composition.repeatY]);
+
   const handlePieceClick = (e: React.MouseEvent, pieceId: string) => {
     e.stopPropagation();
     const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
@@ -152,29 +150,34 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     e.stopPropagation();
     if (!onUpdateComposition) return;
 
-    if (e.shiftKey) {
-      // Shift + click: quick toggle without opening popover
-      const currentMotifId = getCellMotif(
-        rowIndex,
-        colIndex,
-        composition.plainTileCadence || 'none',
-        composition.repeatX,
-        composition.cellOverrides,
-        motif.id
-      );
-      const nextOverrides = { ...(composition.cellOverrides || {}) };
-      const cellKey = `${rowIndex}-${colIndex}`;
-      if (currentMotifId) {
-        nextOverrides[cellKey] = false;
-        setBackgroundNotice(`Celda (${rowIndex + 1}, ${colIndex + 1}): Sin motivo`);
-      } else {
-        nextOverrides[cellKey] = motif.id;
-        setBackgroundNotice(`Celda (${rowIndex + 1}, ${colIndex + 1}): Con motivo ${motif.name}`);
-      }
-      onUpdateComposition({ cellOverrides: nextOverrides });
+    const isMultiKey = e.shiftKey || e.ctrlKey || e.metaKey;
+
+    if (isMultiKey) {
+      // Toggle cell in multi-selection atomically
+      setSelectedGridCells(prev => {
+        const alreadySelected = prev.some(c => c.row === rowIndex && c.col === colIndex);
+        const nextCells = alreadySelected
+          ? prev.filter(c => !(c.row === rowIndex && c.col === colIndex))
+          : [...prev, { row: rowIndex, col: colIndex }];
+
+        if (nextCells.length === 0) {
+          setActiveCellMenu(null);
+        } else {
+          const lastCell = nextCells[nextCells.length - 1];
+          setActiveCellMenu(curr => ({
+            row: lastCell.row,
+            col: lastCell.col,
+            x: curr ? curr.x : e.clientX,
+            y: curr ? curr.y : e.clientY
+          }));
+        }
+        return nextCells;
+      });
       return;
     }
 
+    // Normal click without modifiers: single selection
+    setSelectedGridCells([{ row: rowIndex, col: colIndex }]);
     setActiveCellMenu({
       row: rowIndex,
       col: colIndex,
@@ -184,31 +187,54 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   };
 
   const handleSelectCellMotif = (motifId: string | null) => {
-    if (!activeCellMenu || !onUpdateComposition) return;
-    const { row, col } = activeCellMenu;
-    const key = `${row}-${col}`;
+    if (!onUpdateComposition) return;
+    const targets = selectedGridCells.length > 0
+      ? selectedGridCells
+      : (activeCellMenu ? [{ row: activeCellMenu.row, col: activeCellMenu.col }] : []);
+    if (targets.length === 0) return;
+
     const nextOverrides = { ...(composition.cellOverrides || {}) };
 
-    if (motifId === null) {
-      nextOverrides[key] = false;
-      setBackgroundNotice(`Celda (${row + 1}, ${col + 1}): Fondo liso`);
-    } else {
-      nextOverrides[key] = motifId;
-      const mDef = getMotifById(motifId);
-      setBackgroundNotice(`Celda (${row + 1}, ${col + 1}): Motivo ${mDef?.name || motifId}`);
-    }
+    targets.forEach(({ row, col }) => {
+      const key = `${row}-${col}`;
+      if (motifId === null) {
+        nextOverrides[key] = false;
+      } else {
+        nextOverrides[key] = motifId;
+      }
+    });
 
     onUpdateComposition({ cellOverrides: nextOverrides });
+
+    const motifName = motifId === null ? 'Fondo liso' : (getMotifById(motifId)?.name || motifId);
+    if (targets.length > 1) {
+      setBackgroundNotice(`${targets.length} placas actualizadas: "${motifName}"`);
+    } else {
+      setBackgroundNotice(`Celda (${targets[0].row + 1}, ${targets[0].col + 1}): ${motifName}`);
+    }
   };
 
   const handleSelectCellRotation = (rotation: number) => {
-    if (!activeCellMenu || !onUpdateComposition) return;
-    const { row, col } = activeCellMenu;
-    const key = `${row}-${col}`;
+    if (!onUpdateComposition) return;
+    const targets = selectedGridCells.length > 0
+      ? selectedGridCells
+      : (activeCellMenu ? [{ row: activeCellMenu.row, col: activeCellMenu.col }] : []);
+    if (targets.length === 0) return;
+
     const nextRotations = { ...(composition.cellRotations || {}) };
-    nextRotations[key] = rotation;
+
+    targets.forEach(({ row, col }) => {
+      const key = `${row}-${col}`;
+      nextRotations[key] = rotation;
+    });
+
     onUpdateComposition({ cellRotations: nextRotations });
-    setBackgroundNotice(`Celda (${row + 1}, ${col + 1}): Giro ${rotation}°`);
+
+    if (targets.length > 1) {
+      setBackgroundNotice(`Giro de ${rotation}° aplicado a ${targets.length} placas`);
+    } else {
+      setBackgroundNotice(`Celda (${targets[0].row + 1}, ${targets[0].col + 1}): Giro ${rotation}°`);
+    }
   };
 
   const handleApplyToRow = (motifId: string | null, rotation: number) => {
@@ -266,24 +292,76 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   };
 
   const handleResetCell = () => {
-    if (!activeCellMenu || !onUpdateComposition) return;
-    const { row, col } = activeCellMenu;
-    const key = `${row}-${col}`;
+    if (!onUpdateComposition) return;
+    const targets = selectedGridCells.length > 0
+      ? selectedGridCells
+      : (activeCellMenu ? [{ row: activeCellMenu.row, col: activeCellMenu.col }] : []);
+    if (targets.length === 0) return;
+
     const nextOverrides = { ...(composition.cellOverrides || {}) };
-    delete nextOverrides[key];
     const nextRotations = { ...(composition.cellRotations || {}) };
-    delete nextRotations[key];
+
+    targets.forEach(({ row, col }) => {
+      const key = `${row}-${col}`;
+      delete nextOverrides[key];
+      delete nextRotations[key];
+    });
+
     onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
-    setBackgroundNotice(`Celda (${row + 1}, ${col + 1}) restablecida`);
+
+    if (targets.length > 1) {
+      setBackgroundNotice(`${targets.length} placas restablecidas`);
+    } else {
+      setBackgroundNotice(`Celda (${targets[0].row + 1}, ${targets[0].col + 1}) restablecida`);
+    }
+  };
+
+  const handleSelectAllCells = () => {
+    const allCells: Array<{ row: number; col: number }> = [];
+    for (let r = 0; r < composition.repeatY; r++) {
+      for (let c = 0; c < composition.repeatX; c++) {
+        allCells.push({ row: r, col: c });
+      }
+    }
+    setSelectedGridCells(allCells);
+    if (!activeCellMenu && allCells.length > 0) {
+      setActiveCellMenu({
+        row: 0,
+        col: 0,
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2
+      });
+    }
+    setBackgroundNotice(`Todas las placas (${allCells.length}) seleccionadas`);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedGridCells([]);
+    setActiveCellMenu(null);
   };
 
   const selectedPieces = svgData?.motifPieces.filter(p => selectedPieceIds.includes(p.id)) || [];
   const selectedPiece = selectedPieces[0] || svgData?.motifPieces.find(p => p.id === selectedPieceId);
 
+  const handleMainCanvasClick = (e: React.MouseEvent) => {
+    if (viewMode === 'pattern') {
+      // If clicking outside any tile without Shift/Ctrl/Cmd modifiers, clear selection
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        const target = e.target as HTMLElement | null;
+        if (target && !target.closest?.('[data-grid-tile]') && !target.closest?.('[data-popover-menu]')) {
+          setSelectedGridCells([]);
+          setActiveCellMenu(null);
+        }
+      }
+    } else {
+      onSelectPiece(null);
+    }
+  };
+
   return (
     <main
       ref={containerRef}
-      onClick={() => onSelectPiece(null)}
+      onClick={handleMainCanvasClick}
       className="flex-1 h-full bg-[#F7F6F2] relative overflow-hidden flex flex-col select-none"
     >
       {/* Top Floating Controls Bar */}
@@ -684,6 +762,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
               return (
                 <div
+                  data-pattern-canvas="true"
                   className="bg-white rounded-2xl p-6 shadow-sm border border-[#E7E4DE] overflow-hidden flex items-center justify-center"
                   style={{
                     width: Math.min(1300, totalWidth + 48),
@@ -691,6 +770,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                   }}
                 >
                   <svg
+                    data-pattern-canvas="true"
                     width="100%"
                     height="100%"
                     viewBox={`0 0 ${totalWidth} ${totalHeight}`}
@@ -720,13 +800,11 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                           ? getCustomizationForMotif(cellMotifId)
                           : customization;
 
+                        const isSelected = selectedGridCells.some(
+                          c => c.row === rowIndex && c.col === colIndex
+                        );
                         const isHovered =
                           hoveredGridCell?.row === rowIndex && hoveredGridCell?.col === colIndex;
-
-                        const isSelected =
-                          activeCellMenu?.row === rowIndex && activeCellMenu?.col === colIndex;
-
-                        const isHighlighted = isHovered || isSelected;
 
                         const isOverridden =
                           composition.cellOverrides &&
@@ -735,6 +813,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                         return (
                           <g
                             key={`cell-${rowIndex}-${colIndex}`}
+                            data-grid-tile="true"
                             transform={`translate(${offsetX}, ${offsetY})`}
                             onClick={(e) => handleGridCellClick(rowIndex, colIndex, e)}
                             onMouseEnter={() => setHoveredGridCell({ row: rowIndex, col: colIndex })}
@@ -792,6 +871,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
                             {/* Transparent click catch area covering the full tile box */}
                             <rect
+                              data-grid-tile="true"
                               x={0}
                               y={0}
                               width={tileW}
@@ -800,8 +880,45 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                               className="cursor-pointer"
                             />
 
-                            {/* Interactive Hover & Active Feedback Indicator */}
-                            {isHighlighted && (
+                            {/* Interactive Hover & Selection Feedback Indicator */}
+                            {isSelected && (
+                              <g className="pointer-events-none">
+                                {/* Solid ring for selected tiles */}
+                                <rect
+                                  x={1.5}
+                                  y={1.5}
+                                  width={tileW - 3}
+                                  height={tileH - 3}
+                                  rx={8}
+                                  fill="rgba(36, 36, 36, 0.1)"
+                                // stroke="#242424"
+                                // strokeWidth={3}
+                                />
+                                {/* Selection Checkmark Badge */}
+                                <g transform={`translate(${Math.max(10, tileW - 34)}, 8)`}>
+                                  <rect
+                                    x={0}
+                                    y={0}
+                                    width={24}
+                                    height={24}
+                                    rx={12}
+                                    fill="#242424"
+                                    stroke="#FFFFFF"
+                                    strokeWidth={1.5}
+                                  />
+                                  <path
+                                    d="M7 12l3.5 3.5 6.5-7"
+                                    fill="none"
+                                    stroke="#FFFFFF"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </g>
+                              </g>
+                            )}
+
+                            {isHovered && !isSelected && (
                               <g className="pointer-events-none">
                                 {/* Distinct dashed perimeter border */}
                                 <rect
@@ -810,31 +927,11 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                                   width={tileW - 3}
                                   height={tileH - 3}
                                   rx={8}
-                                  fill="rgba(36, 36, 36, 0.04)"
-                                  stroke="#242424"
-                                  strokeWidth={2}
-                                  strokeDasharray="6 4"
+                                  fill="rgba(36, 36, 36, 0.1)"
+                                // stroke="#242424"
+                                // strokeWidth={2}
+                                // strokeDasharray="6 4"
                                 />
-
-                                {/* Floating badge with active motif / action indicator */}
-                                <g transform={`translate(${Math.max(10, tileW - 36)}, 10)`}>
-                                  <rect
-                                    x={0}
-                                    y={0}
-                                    width={26}
-                                    height={26}
-                                    rx={13}
-                                    fill="#242424"
-                                    stroke="#FFFFFF"
-                                    strokeWidth={1.5}
-                                  />
-                                  <circle
-                                    cx={13}
-                                    cy={13}
-                                    r={3.5}
-                                    fill={hasMotif ? '#10B981' : '#DDA743'}
-                                  />
-                                </g>
                               </g>
                             )}
                           </g>
@@ -849,51 +946,110 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         </div>
       </div>
 
+      {/* Floating Multi-selection Toolbar / Chip */}
+      {viewMode === 'pattern' && selectedGridCells.length > 1 && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 bg-[#242424]/95 backdrop-blur-md text-white px-4 py-2 rounded-xl shadow-lg border border-black/10 flex items-center gap-3 animate-fade-in select-none">
+          <div className="w-2 h-2 rounded-full bg-[#DDA743]" />
+          <span className="text-xs font-semibold">
+            {selectedGridCells.length} placas seleccionadas
+          </span>
+          <span className="text-[11px] text-[#A8A49C] hidden sm:inline">
+            (Ctrl + clic para añadir o quitar)
+          </span>
+          <button
+            onClick={handleClearSelection}
+            className="text-[11px] font-semibold text-[#DDA743] hover:text-white transition-colors cursor-pointer pl-2"
+          >
+            Deseleccionar
+          </button>
+        </div>
+      )}
+
       {/* Contextual Cell Popover Menu */}
-      {activeCellMenu && viewMode === 'pattern' && (
-        <CellPopoverMenu
-          row={activeCellMenu.row}
-          col={activeCellMenu.col}
-          currentMotifId={getCellMotif(
-            activeCellMenu.row,
-            activeCellMenu.col,
+      {activeCellMenu && viewMode === 'pattern' && (() => {
+        const isBatch = selectedGridCells.length > 1;
+        const refRow = activeCellMenu.row;
+        const refCol = activeCellMenu.col;
+
+        let currentMotifId: string | null = null;
+        let currentRotation = 0;
+
+        if (isBatch) {
+          const firstCell = selectedGridCells[0];
+          const firstMotifId = getCellMotif(
+            firstCell.row,
+            firstCell.col,
             composition.plainTileCadence || 'none',
             composition.repeatX,
             composition.cellOverrides,
             motif.id
-          )}
-          currentRotation={
-            composition.cellRotations?.[`${activeCellMenu.row}-${activeCellMenu.col}`] ??
+          );
+          const allSameMotif = selectedGridCells.every(c => {
+            const mId = getCellMotif(
+              c.row,
+              c.col,
+              composition.plainTileCadence || 'none',
+              composition.repeatX,
+              composition.cellOverrides,
+              motif.id
+            );
+            return mId === firstMotifId;
+          });
+          currentMotifId = allSameMotif ? firstMotifId : undefined as unknown as string | null;
+
+          const firstRot = composition.cellRotations?.[`${firstCell.row}-${firstCell.col}`] ?? customization.rotation ?? 0;
+          const allSameRot = selectedGridCells.every(c => {
+            const r = composition.cellRotations?.[`${c.row}-${c.col}`] ?? customization.rotation ?? 0;
+            return r === firstRot;
+          });
+          currentRotation = allSameRot ? firstRot : -1;
+        } else {
+          currentMotifId = getCellMotif(
+            refRow,
+            refCol,
+            composition.plainTileCadence || 'none',
+            composition.repeatX,
+            composition.cellOverrides,
+            motif.id
+          );
+          currentRotation =
+            composition.cellRotations?.[`${refRow}-${refCol}`] ??
             customization.rotation ??
-            0
-          }
-          activeFormat={activeFormat}
-          primaryMotif={motif}
-          clickPosition={{ x: activeCellMenu.x, y: activeCellMenu.y }}
-          initialPosition={savedCellMenuPosition}
-          boundaryRef={containerRef}
-          getCustomizationForMotif={getCustomizationForMotif}
-          onSelectMotif={handleSelectCellMotif}
-          onSelectRotation={handleSelectCellRotation}
-          onApplyToRow={handleApplyToRow}
-          onApplyToCol={handleApplyToCol}
-          onResetCell={handleResetCell}
-          onPositionChange={handleCellMenuPositionChange}
-          onClose={() => setActiveCellMenu(null)}
-        />
-      )}
+            0;
+        }
+
+        return (
+          <CellPopoverMenu
+            row={refRow}
+            col={refCol}
+            selectedCells={selectedGridCells}
+            currentMotifId={currentMotifId}
+            currentRotation={currentRotation}
+            activeFormat={activeFormat}
+            primaryMotif={motif}
+            clickPosition={{ x: activeCellMenu.x, y: activeCellMenu.y }}
+            initialPosition={popoverCustomPos}
+            boundaryRef={containerRef}
+            getCustomizationForMotif={getCustomizationForMotif}
+            onSelectMotif={handleSelectCellMotif}
+            onSelectRotation={handleSelectCellRotation}
+            onApplyToRow={handleApplyToRow}
+            onApplyToCol={handleApplyToCol}
+            onResetCell={handleResetCell}
+            onClearSelection={handleClearSelection}
+            onSelectAll={handleSelectAllCells}
+            onPositionChange={setPopoverCustomPos}
+            onClose={() => {
+              setActiveCellMenu(null);
+              setSelectedGridCells([]);
+            }}
+          />
+        );
+      })()}
 
       {/* Floating Onboarding / Instructions Helper (shown first time, dismissable, stored in localStorage) */}
       {showHelpBanner && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 max-w-xl w-[92%] sm:w-auto bg-white/95 backdrop-blur-md border border-[#E7E4DE] shadow-xl rounded-2xl p-5 flex items-center gap-3.5 animate-fade-in transition-all">
-          {/* <div className="w-8 h-8 rounded-xl bg-[#242424] text-[#DDA743] flex items-center justify-center shrink-0 shadow-xs">
-            {viewMode === 'pattern' ? (
-              <MousePointerClick className="w-4 h-4" />
-            ) : (
-              <PaletteIcon className="w-4 h-4" />
-            )}
-          </div> */}
-
           <div className="text-xs text-[#242424] min-w-0 pr-1">
             <div className="font-semibold flex items-center gap-2">
               <span>
@@ -904,7 +1060,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             </div>
             <p className="text-[#77736C] text-[11px] mt-0.5 leading-normal">
               {viewMode === 'pattern'
-                ? 'Haz clic en cualquier celda para quitar o añadir el motivo en esa celda.'
+                ? 'Haz clic en una placa para personalizarla, o usa Shift / Ctrl + clic para seleccionar varias placas y aplicar cambios en lote.'
                 : 'Haz clic en una pieza del motivo para editarla, usa Ctrl + clic para seleccionar varias o haz clic en el fondo para cambiar su color.'}
             </p>
           </div>

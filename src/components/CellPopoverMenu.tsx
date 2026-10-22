@@ -14,6 +14,7 @@ import {
 interface CellPopoverMenuProps {
     row: number;
     col: number;
+    selectedCells?: Array<{ row: number; col: number }>;
     currentMotifId: string | null;
     currentRotation: number;
     activeFormat: MotifFormat;
@@ -27,6 +28,8 @@ interface CellPopoverMenuProps {
     onApplyToRow: (motifId: string | null, rotation: number) => void;
     onApplyToCol: (motifId: string | null, rotation: number) => void;
     onResetCell: () => void;
+    onClearSelection?: () => void;
+    onSelectAll?: () => void;
     onPositionChange?: (position: { x: number; y: number }) => void;
     onClose: () => void;
 }
@@ -34,6 +37,7 @@ interface CellPopoverMenuProps {
 export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
     row,
     col,
+    selectedCells,
     currentMotifId,
     currentRotation,
     activeFormat,
@@ -47,6 +51,8 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
     onApplyToRow,
     onApplyToCol,
     onResetCell,
+    onClearSelection,
+    onSelectAll,
     onPositionChange,
     onClose
 }) => {
@@ -256,9 +262,25 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
             if (e.key === 'Escape') onClose();
         };
         const handleClickOutside = (e: MouseEvent) => {
-            if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-                onClose();
+            // Never close if user is holding Shift, Ctrl or Cmd (multi-selecting tiles)
+            if (e.shiftKey || e.ctrlKey || e.metaKey) {
+                return;
             }
+
+            const target = e.target as Element | null;
+            if (!target) return;
+
+            // If click is inside the popover itself, do not close
+            if (popoverRef.current && popoverRef.current.contains(target)) {
+                return;
+            }
+
+            // If click is on a grid tile or within the canvas grid, let tile click handler take care of it
+            if (target.closest?.('[data-grid-tile]') || target.closest?.('[data-pattern-canvas]')) {
+                return;
+            }
+
+            onClose();
         };
 
         window.addEventListener('keydown', handleKeyDown);
@@ -273,12 +295,15 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
         };
     }, [onClose]);
 
+    const isBatch = Boolean(selectedCells && selectedCells.length > 1);
+    const cellCount = selectedCells?.length || 1;
     const isPlain = currentMotifId === null;
     const currentMotif = currentMotifId ? PETITE_MOTIFS.find(m => m.id === currentMotifId) : null;
 
     return (
         <div
             ref={popoverRef}
+            data-popover-menu="true"
             style={{ left: `${position.x}px`, top: `${position.y}px` }}
             className={`fixed z-50 w-[350px] bg-white rounded-2xl shadow-2xl border border-[#D7D3CA] flex flex-col overflow-hidden select-none text-[#242424] transition-shadow duration-150 ${isDragging ? 'shadow-2xl ring-2 ring-[#242424]/20' : ''
                 }`}
@@ -296,23 +321,44 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                         <GripVertical className="w-4 h-4" />
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[#242424]">
-                            Placa ({row + 1}, {col + 1})
-                        </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-[#E7E4DE] text-[#77736C]">
-                            {isPlain ? 'Fondo liso' : (currentMotif?.name || currentMotifId)}
-                        </span>
+                        {isBatch ? (
+                            <>
+                                <span className="text-xs font-bold text-[#242424]">
+                                    {cellCount} placas seleccionadas
+                                </span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-xs font-bold text-[#242424]">
+                                    Placa ({row + 1}, {col + 1})
+                                </span>
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-[#E7E4DE] text-[#77736C]">
+                                    {isPlain ? 'Fondo liso' : (currentMotif?.name || currentMotifId)}
+                                </span>
+                            </>
+                        )}
                     </div>
                 </div>
 
-                <button
-                    onClick={onClose}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    className="p-1 rounded-lg text-[#77736C] hover:text-[#242424] hover:bg-[#EFECE6] transition-colors cursor-pointer"
-                    title="Cerrar menú"
-                >
-                    <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                    {isBatch && onClearSelection && (
+                        <button
+                            onClick={onClearSelection}
+                            className="text-[11px] text-[#77736C] hover:text-[#242424] px-1.5 py-0.5 rounded hover:bg-[#EFECE6] transition-colors cursor-pointer"
+                            title="Deseleccionar todas las placas"
+                        >
+                            Deseleccionar
+                        </button>
+                    )}
+                    <button
+                        onClick={onClose}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="p-1 rounded-lg text-[#77736C] hover:text-[#242424] hover:bg-[#EFECE6] transition-colors cursor-pointer"
+                        title="Cerrar menú"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
 
             {/* Scrollable Body */}
@@ -320,7 +366,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                 {/* Fast Tile Presets: Plain vs Active Primary */}
                 <div className="space-y-1.5">
                     <label className="text-[11px] font-medium text-[#77736C] block">
-                        Estado de la placa
+                        {isBatch ? 'Estado de las placas' : 'Estado de la placa'}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                         <button
@@ -333,9 +379,6 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                             <CircleOff className={`w-4 h-4 shrink-0 ${isPlain ? 'text-white' : 'text-[#77736C]'}`} />
                             <div className="truncate">
                                 <div className="text-xs font-semibold">Liso</div>
-                                {/* <div className={`text-[10px] truncate ${isPlain ? 'text-white/80' : 'text-[#8C8880]'}`}>
-                                    Sin motivo
-                                </div> */}
                             </div>
                             {isPlain && <Check className="w-3.5 h-3.5 ml-auto text-white shrink-0" />}
                         </button>
@@ -350,9 +393,6 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                             <Sparkles className={`w-4 h-4 shrink-0 ${currentMotifId === primaryMotif.id ? 'text-[#DDA743]' : 'text-[#77736C]'}`} />
                             <div className="truncate">
                                 <div className="text-xs font-semibold truncate">{primaryMotif.name}</div>
-                                {/* <div className={`text-[10px] truncate ${currentMotifId === primaryMotif.id ? 'text-white/80' : 'text-[#8C8880]'}`}>
-                                    Principal ({primaryMotif.catalogueNumber})
-                                </div> */}
                             </div>
                             {currentMotifId === primaryMotif.id && <Check className="w-3.5 h-3.5 ml-auto text-white shrink-0" />}
                         </button>
@@ -363,9 +403,8 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                 <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                         <label className="text-[11px] font-medium text-[#77736C] block">
-                            Seleccionar motivo
+                            {isBatch ? `Aplicar motivo a las ${cellCount} placas` : 'Seleccionar motivo'}
                         </label>
-                        {/* <span className="text-[10px] text-[#8C8880]">10 modelos</span> */}
                     </div>
 
                     <div className="grid grid-cols-2 gap-1.5">
@@ -373,7 +412,6 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                             const isSelected = currentMotifId === m.id;
                             const cust = getCustomizationForMotif(m.id);
                             const svg = m.svgData[activeFormat];
-                            const pieceCount = svg?.motifPieces.length || 0;
 
                             return (
                                 <button
@@ -391,7 +429,6 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                                                 viewBox={`0 0 ${svg.width} ${svg.height}`}
                                                 className="w-full h-full"
                                             >
-                                                {/* Background shapes subtle */}
                                                 {svg.backgroundShapes.slice(0, 30).map((b, i) =>
                                                     b.type === 'circle' ? (
                                                         <circle key={i} cx={b.cx} cy={b.cy} r={b.r} fill="#E7E4DE" />
@@ -399,7 +436,6 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                                                         <path key={i} d={b.d} fill="#E7E4DE" />
                                                     )
                                                 )}
-                                                {/* Motif pieces with rendered colors */}
                                                 {svg.motifPieces.map(p => {
                                                     const col = cust.pieceColors[p.id] || p.originalColor;
                                                     return p.type === 'circle' ? (
@@ -424,9 +460,6 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                                                 <span className="w-1.5 h-1.5 rounded-full bg-[#242424] shrink-0" />
                                             )}
                                         </div>
-                                        {/* <div className="text-[10px] text-[#77736C] font-mono">
-                                            Nº {m.catalogueNumber} · {pieceCount}p
-                                        </div> */}
                                     </div>
                                 </button>
                             );
@@ -435,15 +468,15 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                 </div>
 
                 {/* Cell Rotation Options */}
-                {!isPlain && (
+                {(!isPlain || isBatch) && (
                     <div className="space-y-1.5 pt-3 border-t border-[#E7E4DE]">
                         <div className="flex items-center justify-between">
                             <label className="text-[11px] font-medium text-[#77736C] flex items-center gap-1">
                                 <RotateCw className="w-3 h-3 text-[#242424]" />
-                                <span>Giro de esta placa</span>
+                                <span>{isBatch ? 'Giro para la selección' : 'Giro de esta placa'}</span>
                             </label>
                             <span className="text-[10px] font-mono text-[#77736C] font-medium">
-                                {currentRotation}°
+                                {currentRotation >= 0 ? `${currentRotation}°` : 'Varios'}
                             </span>
                         </div>
                         <div className="grid grid-cols-4 gap-1.5">
@@ -463,29 +496,53 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                     </div>
                 )}
 
-                {/* Grid Replication Actions */}
+                {/* Grid Replication Actions or Multi-Select Actions */}
                 <div className="space-y-1.5 pt-3 border-t border-[#E7E4DE]">
-                    <label className="text-[11px] font-medium text-[#77736C] block">
-                        Acciones rápidas de réplica
-                    </label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                        <button
-                            onClick={() => onApplyToRow(currentMotifId, currentRotation)}
-                            className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-lg text-[11px] font-medium text-[#242424] transition-colors text-left flex items-center justify-between cursor-pointer"
-                            title={`Aplicar este motivo y giro a toda la fila ${row + 1}`}
-                        >
-                            <span>Fila {row + 1} completa</span>
-                            <ArrowRight className="w-3 h-3 text-[#77736C]" />
-                        </button>
-                        <button
-                            onClick={() => onApplyToCol(currentMotifId, currentRotation)}
-                            className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-lg text-[11px] font-medium text-[#242424] transition-colors text-left flex items-center justify-between cursor-pointer"
-                            title={`Aplicar este motivo y giro a toda la columna ${col + 1}`}
-                        >
-                            <span>Columna {col + 1} completa</span>
-                            <ArrowRight className="w-3 h-3 text-[#77736C]" />
-                        </button>
+                    <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-medium text-[#77736C] block">
+                            {isBatch ? 'Acciones sobre la cuadrícula' : 'Acciones rápidas de réplica'}
+                        </label>
                     </div>
+
+                    {isBatch ? (
+                        <div className="grid grid-cols-2 gap-1.5">
+                            {onSelectAll && (
+                                <button
+                                    onClick={onSelectAll}
+                                    className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-lg text-[11px] font-medium text-[#242424] transition-colors text-center cursor-pointer"
+                                >
+                                    Seleccionar todas
+                                </button>
+                            )}
+                            {onClearSelection && (
+                                <button
+                                    onClick={onClearSelection}
+                                    className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-lg text-[11px] font-medium text-[#242424] transition-colors text-center cursor-pointer"
+                                >
+                                    Deseleccionar
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                                onClick={() => onApplyToRow(currentMotifId, currentRotation)}
+                                className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-lg text-[11px] font-medium text-[#242424] transition-colors text-left flex items-center justify-between cursor-pointer"
+                                title={`Aplicar este motivo y giro a toda la fila ${row + 1}`}
+                            >
+                                <span>Fila {row + 1} completa</span>
+                                <ArrowRight className="w-3 h-3 text-[#77736C]" />
+                            </button>
+                            <button
+                                onClick={() => onApplyToCol(currentMotifId, currentRotation)}
+                                className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-lg text-[11px] font-medium text-[#242424] transition-colors text-left flex items-center justify-between cursor-pointer"
+                                title={`Aplicar este motivo y giro a toda la columna ${col + 1}`}
+                            >
+                                <span>Columna {col + 1} completa</span>
+                                <ArrowRight className="w-3 h-3 text-[#77736C]" />
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -498,7 +555,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                     }}
                     className="text-[#77736C] hover:text-[#242424] underline cursor-pointer"
                 >
-                    Restablecer celda
+                    {isBatch ? `Restablecer ${cellCount} placas` : 'Restablecer celda'}
                 </button>
                 <button
                     onClick={onClose}

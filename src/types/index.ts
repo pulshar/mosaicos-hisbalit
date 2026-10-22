@@ -78,15 +78,6 @@ export interface CompositionSettings {
   panY: number;
 }
 
-export interface SpaceMaskCutout {
-  id: string;
-  label: string;
-  type: 'polygon' | 'circle';
-  points?: [number, number][]; // in percent 0..100
-  cx?: number; // in percent 0..100
-  cy?: number; // in percent 0..100
-  r?: number; // in percent 0..100
-}
 
 export interface SpacePreset {
   id: string;
@@ -98,7 +89,6 @@ export interface SpacePreset {
   aspectRatio?: string;
   // Polygon coordinates [ [x1,y1], [x2,y2], [x3,y3], [x4,y4] ] in percent 0..100
   polygonPoints: [number, number][];
-  cutouts?: SpaceMaskCutout[];
   defaultScale: number;
   blendMode: 'multiply' | 'normal' | 'overlay' | 'soft-light';
   lightingGradient?: string;

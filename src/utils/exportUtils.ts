@@ -1,4 +1,4 @@
-import { MotifDefinition, MotifCustomization, CompositionSettings, SpacePreset, PlainTileCadence, SpaceMaskCutout } from '../types';
+import { MotifDefinition, MotifCustomization, CompositionSettings, SpacePreset, PlainTileCadence } from '../types';
 import { getMotifById } from '../data/motifs';
 import { resolveEffectiveMotifCustomization } from './motifColorUtils';
 
@@ -450,8 +450,7 @@ export async function exportSimulationAsPng(
   scale = 1.0,
   blendMode: 'multiply' | 'normal' | 'overlay' | 'soft-light' = 'multiply',
   fileName = 'Mosaico-Studio_Simulacion_Espacio_4K.png',
-  resolution: '4k' | '2k' = '4k',
-  cutouts?: SpaceMaskCutout[]
+  resolution: '4k' | '2k' = '4k'
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const roomImg = new Image();
@@ -491,30 +490,7 @@ export async function exportSimulationAsPng(
             else ctx.lineTo(x, y);
           });
           ctx.closePath();
-
-          if (cutouts && cutouts.length > 0) {
-            cutouts.forEach((cutout) => {
-              if (cutout.type === 'circle' && cutout.cx !== undefined && cutout.cy !== undefined && cutout.r !== undefined) {
-                const cx = (cutout.cx / 100) * targetW;
-                const cy = (cutout.cy / 100) * targetH;
-                const rx = (cutout.r / 100) * targetW;
-                const ry = (cutout.r / 100) * targetH;
-                ctx.moveTo(cx + rx, cy);
-                ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-              } else if (cutout.type === 'polygon' && cutout.points && cutout.points.length > 0) {
-                cutout.points.forEach(([px, py], pidx) => {
-                  const x = (px / 100) * targetW;
-                  const y = (py / 100) * targetH;
-                  if (pidx === 0) ctx.moveTo(x, y);
-                  else ctx.lineTo(x, y);
-                });
-                ctx.closePath();
-              }
-            });
-            ctx.clip('evenodd');
-          } else {
-            ctx.clip();
-          }
+          ctx.clip();
         };
 
         // 2. Setup polygon clipping region with foreground object holes

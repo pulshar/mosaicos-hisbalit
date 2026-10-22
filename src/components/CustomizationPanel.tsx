@@ -322,8 +322,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     className="grid gap-1"
                     style={{
                       gridTemplateColumns: `repeat(${svgData.motifPieces.length <= 7
-                          ? svgData.motifPieces.length
-                          : (svgData.motifPieces.length === 8 ? 4 : (svgData.motifPieces.length <= 10 ? 5 : (svgData.motifPieces.length === 12 ? 6 : 7)))
+                        ? svgData.motifPieces.length
+                        : (svgData.motifPieces.length === 8 ? 4 : (svgData.motifPieces.length <= 10 ? 5 : (svgData.motifPieces.length === 12 ? 6 : 7)))
                         }, minmax(0, 1fr))`
                     }}
                   >
@@ -642,9 +642,6 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   <Circle className="w-5 h-5 text-[#242424]" />
                   <div>
                     <div className="text-xs font-bold text-[#242424]">Redondo</div>
-                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded font-medium">
-                      Disponible
-                    </span>
                   </div>
                 </button>
 
@@ -658,9 +655,6 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   <Hexagon className="w-5 h-5 text-[#242424]" />
                   <div>
                     <div className="text-xs font-bold text-[#242424]">Hexagonal</div>
-                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded font-medium">
-                      Disponible
-                    </span>
                   </div>
                 </button>
               </div>

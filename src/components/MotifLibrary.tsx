@@ -126,7 +126,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                     <span className="text-xs font-semibold text-[#242424] truncate">
                       {motif.catalogueNumber}. {motif.name}
                     </span>
-                    {isAvailable ? (
+                    {/* {isAvailable ? (
                       <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-medium shrink-0">
                         Disponible
                       </span>
@@ -134,7 +134,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                       <span className="text-[10px] text-[#8C8880] bg-[#EFECE6] px-1.5 py-0.2 rounded font-medium shrink-0">
                         Pendiente
                       </span>
-                    )}
+                    )} */}
                   </div>
 
                   <p className="text-[11px] text-[#77736C] line-clamp-1 mt-0.5">

@@ -1,11 +1,14 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   MotifDefinition,
   MotifCustomization,
   CompositionSettings,
   MotifFormat
 } from '../types';
-import { getTileRotationTransform, isCellWithMotif } from '../utils/exportUtils';
+import { getTileRotationTransform, isCellWithMotif, getCellMotif } from '../utils/exportUtils';
+import { getMotifById } from '../data/motifs';
+import { resolveEffectiveMotifCustomization } from '../utils/motifColorUtils';
+import { CellPopoverMenu } from './CellPopoverMenu';
 import {
   ZoomIn,
   ZoomOut,
@@ -13,6 +16,7 @@ import {
   Layers,
   HelpCircle,
   Check,
+  Sparkles,
 } from 'lucide-react';
 
 interface DesignCanvasProps {
@@ -21,6 +25,8 @@ interface DesignCanvasProps {
   composition: CompositionSettings;
   selectedPieceId?: string | null;
   selectedPieceIds?: string[];
+  customizationsMap?: Record<string, MotifCustomization>;
+  editedMotifIds?: Record<string, boolean>;
   onSelectPiece: (pieceId: string | string[] | null, isMulti?: boolean) => void;
   onSelectMultiplePieces?: (pieceIds: string[]) => void;
   onUpdatePieceColor: (pieceId: string, color: string) => void;
@@ -31,6 +37,7 @@ interface DesignCanvasProps {
   viewMode: 'single' | 'pattern' | 'simulation';
   onChangeViewMode: (mode: 'single' | 'pattern' | 'simulation') => void;
   onUpdateComposition?: (settings: Partial<CompositionSettings>) => void;
+  onGoToCustomizeMotif?: (motifId: string) => void;
 }
 
 export const DesignCanvas: React.FC<DesignCanvasProps> = ({
@@ -39,6 +46,8 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   composition,
   selectedPieceId,
   selectedPieceIds = [],
+  customizationsMap = {},
+  editedMotifIds = {},
   onSelectPiece,
   onUpdatePieceColor,
   onUpdatePieceColors,
@@ -47,12 +56,38 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   onResetView,
   viewMode,
   onChangeViewMode,
-  onUpdateComposition
+  onUpdateComposition,
+  onGoToCustomizeMotif
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredPieceId, setHoveredPieceId] = useState<string | null>(null);
   const [hoveredGridCell, setHoveredGridCell] = useState<{ row: number; col: number } | null>(null);
   const [backgroundNotice, setBackgroundNotice] = useState<string | null>(null);
+  const [activeCellMenu, setActiveCellMenu] = useState<{
+    row: number;
+    col: number;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const [savedCellMenuPosition, setSavedCellMenuPosition] = useState<{ x: number; y: number } | null>(() => {
+    try {
+      const saved = localStorage.getItem('mosaico_studio_cell_menu_pos');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return null;
+  });
+
+  const handleCellMenuPositionChange = useCallback((pos: { x: number; y: number }) => {
+    setSavedCellMenuPosition(pos);
+    try {
+      localStorage.setItem('mosaico_studio_cell_menu_pos', JSON.stringify(pos));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const HELP_STORAGE_KEY = 'mosaico_canvas_help_dismissed';
 
@@ -103,28 +138,143 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     ? Object.keys(composition.cellOverrides).length
     : 0;
 
+  const getCustomizationForMotif = (targetMotifId: string) => {
+    return resolveEffectiveMotifCustomization(
+      targetMotifId,
+      activeFormat,
+      customization,
+      customizationsMap,
+      editedMotifIds
+    );
+  };
+
   const handleGridCellClick = (rowIndex: number, colIndex: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onUpdateComposition) return;
 
-    const currentHasMotif = isCellWithMotif(
-      rowIndex,
-      colIndex,
-      composition.plainTileCadence || 'none',
-      composition.repeatX,
-      composition.cellOverrides
-    );
-    const nextHasMotif = !currentHasMotif;
-    const key = `${rowIndex}-${colIndex}`;
+    if (e.shiftKey) {
+      // Shift + click: quick toggle without opening popover
+      const currentMotifId = getCellMotif(
+        rowIndex,
+        colIndex,
+        composition.plainTileCadence || 'none',
+        composition.repeatX,
+        composition.cellOverrides,
+        motif.id
+      );
+      const nextOverrides = { ...(composition.cellOverrides || {}) };
+      const cellKey = `${rowIndex}-${colIndex}`;
+      if (currentMotifId) {
+        nextOverrides[cellKey] = false;
+        setBackgroundNotice(`Celda (${rowIndex + 1}, ${colIndex + 1}): Sin motivo`);
+      } else {
+        nextOverrides[cellKey] = motif.id;
+        setBackgroundNotice(`Celda (${rowIndex + 1}, ${colIndex + 1}): Con motivo ${motif.name}`);
+      }
+      onUpdateComposition({ cellOverrides: nextOverrides });
+      return;
+    }
+
+    setActiveCellMenu({
+      row: rowIndex,
+      col: colIndex,
+      x: e.clientX,
+      y: e.clientY
+    });
+  };
+
+  const handleSelectCellMotif = (motifId: string | null) => {
+    if (!activeCellMenu || !onUpdateComposition) return;
+    const { row, col } = activeCellMenu;
+    const key = `${row}-${col}`;
     const nextOverrides = { ...(composition.cellOverrides || {}) };
-    nextOverrides[key] = nextHasMotif;
+
+    if (motifId === null) {
+      nextOverrides[key] = false;
+      setBackgroundNotice(`Celda (${row + 1}, ${col + 1}): Fondo liso`);
+    } else {
+      nextOverrides[key] = motifId;
+      const mDef = getMotifById(motifId);
+      setBackgroundNotice(`Celda (${row + 1}, ${col + 1}): Motivo ${mDef?.name || motifId}`);
+    }
 
     onUpdateComposition({ cellOverrides: nextOverrides });
-    setBackgroundNotice(
-      nextHasMotif
-        ? `Celda (${rowIndex + 1}, ${colIndex + 1}): Con motivo`
-        : `Celda (${rowIndex + 1}, ${colIndex + 1}): Sin motivo`
-    );
+  };
+
+  const handleSelectCellRotation = (rotation: number) => {
+    if (!activeCellMenu || !onUpdateComposition) return;
+    const { row, col } = activeCellMenu;
+    const key = `${row}-${col}`;
+    const nextRotations = { ...(composition.cellRotations || {}) };
+    nextRotations[key] = rotation;
+    onUpdateComposition({ cellRotations: nextRotations });
+    setBackgroundNotice(`Celda (${row + 1}, ${col + 1}): Giro ${rotation}°`);
+  };
+
+  const handleApplyToRow = (motifId: string | null, rotation: number) => {
+    if (!activeCellMenu || !onUpdateComposition) return;
+    const { row } = activeCellMenu;
+    const nextOverrides = { ...(composition.cellOverrides || {}) };
+    const nextRotations = { ...(composition.cellRotations || {}) };
+
+    for (let c = 0; c < composition.repeatX; c++) {
+      const key = `${row}-${c}`;
+      nextOverrides[key] = motifId === null ? false : (motifId || motif.id);
+      nextRotations[key] = rotation;
+    }
+
+    onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
+    setBackgroundNotice(`Fila ${row + 1} actualizada por completo`);
+  };
+
+  const handleApplyToCol = (motifId: string | null, rotation: number) => {
+    if (!activeCellMenu || !onUpdateComposition) return;
+    const { col } = activeCellMenu;
+    const nextOverrides = { ...(composition.cellOverrides || {}) };
+    const nextRotations = { ...(composition.cellRotations || {}) };
+
+    for (let r = 0; r < composition.repeatY; r++) {
+      const key = `${r}-${col}`;
+      nextOverrides[key] = motifId === null ? false : (motifId || motif.id);
+      nextRotations[key] = rotation;
+    }
+
+    onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
+    setBackgroundNotice(`Columna ${col + 1} actualizada por completo`);
+  };
+
+  const handleApplyCheckerboard = (motifId: string | null, rotation: number) => {
+    if (!activeCellMenu || !onUpdateComposition) return;
+    const nextOverrides = { ...(composition.cellOverrides || {}) };
+    const nextRotations = { ...(composition.cellRotations || {}) };
+
+    for (let r = 0; r < composition.repeatY; r++) {
+      for (let c = 0; c < composition.repeatX; c++) {
+        const isMatch = (r + c) % 2 === 0;
+        const key = `${r}-${c}`;
+        if (isMatch) {
+          nextOverrides[key] = motifId === null ? false : (motifId || motif.id);
+          nextRotations[key] = rotation;
+        } else {
+          nextOverrides[key] = false;
+        }
+      }
+    }
+
+    onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
+    setBackgroundNotice('Patrón damero aplicado');
+  };
+
+  const handleResetCell = () => {
+    if (!activeCellMenu || !onUpdateComposition) return;
+    const { row, col } = activeCellMenu;
+    const key = `${row}-${col}`;
+    const nextOverrides = { ...(composition.cellOverrides || {}) };
+    delete nextOverrides[key];
+    const nextRotations = { ...(composition.cellRotations || {}) };
+    delete nextRotations[key];
+    onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
+    setBackgroundNotice(`Celda (${row + 1}, ${col + 1}) restablecida`);
   };
 
   const selectedPieces = svgData?.motifPieces.filter(p => selectedPieceIds.includes(p.id)) || [];
@@ -553,18 +703,31 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                           (composition.staggered && rowIndex % 2 === 1 ? staggerShiftX : 0);
                         const offsetY = rowIndex * unitH;
 
-                        const hasMotif = isCellWithMotif(
+                        const cellKey = `${rowIndex}-${colIndex}`;
+                        const cellMotifId = getCellMotif(
                           rowIndex,
                           colIndex,
                           composition.plainTileCadence || 'none',
                           composition.repeatX,
-                          composition.cellOverrides
+                          composition.cellOverrides,
+                          motif.id
                         );
+                        const hasMotif = cellMotifId !== null;
+                        const cellRot = composition.cellRotations?.[cellKey] ?? customization.rotation ?? 0;
+                        const cellMotifDef = cellMotifId ? (getMotifById(cellMotifId) || motif) : motif;
+                        const cellSvgData = cellMotifDef.svgData[activeFormat] || svgData;
+                        const cellCust = cellMotifId
+                          ? getCustomizationForMotif(cellMotifId)
+                          : customization;
 
                         const isHovered =
                           hoveredGridCell?.row === rowIndex && hoveredGridCell?.col === colIndex;
 
-                        const cellKey = `${rowIndex}-${colIndex}`;
+                        const isSelected =
+                          activeCellMenu?.row === rowIndex && activeCellMenu?.col === colIndex;
+
+                        const isHighlighted = isHovered || isSelected;
+
                         const isOverridden =
                           composition.cellOverrides &&
                           composition.cellOverrides[cellKey] !== undefined;
@@ -579,11 +742,11 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                             className="cursor-pointer group"
                           >
                             <g
-                              transform={getTileRotationTransform(customization.rotation, svgData.width, svgData.height)}
+                              transform={getTileRotationTransform(cellRot, cellSvgData.width, cellSvgData.height)}
                             >
                               {/* Background shapes */}
                               <g>
-                                {svgData.backgroundShapes.map((shape, idx) =>
+                                {cellSvgData.backgroundShapes.map((shape, idx) =>
                                   shape.type === 'circle' ? (
                                     <circle
                                       key={`pat-bg-${idx}`}
@@ -604,9 +767,9 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
                               {/* Motif pieces - if cell is plain, they blend with background */}
                               <g>
-                                {svgData.motifPieces.map((piece) => {
+                                {cellSvgData.motifPieces.map((piece) => {
                                   const currentColor = hasMotif
-                                    ? (customization.pieceColors[piece.id] || piece.originalColor)
+                                    ? (cellCust.pieceColors[piece.id] || piece.originalColor)
                                     : (customization.backgroundColor || '#D9D9D9');
                                   return piece.type === 'circle' ? (
                                     <circle
@@ -637,28 +800,8 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                               className="cursor-pointer"
                             />
 
-                            {/* Subtle marker dot for manually customized cells when not hovered 
-                        {isOverridden && !isHovered && (
-                          <g transform={`translate(${tileW - 14}, 14)`}>
-                            <circle
-                              cx={0}
-                              cy={0}
-                              r={5}
-                              fill="#242424"
-                              stroke="#FFFFFF"
-                              strokeWidth={1.5}
-                            />
-                            <circle
-                              cx={0}
-                              cy={0}
-                              r={2}
-                              fill={hasMotif ? '#10B981' : '#DDA743'}
-                            />
-                          </g>
-                        )}
-                        */}
-                            {/* Interactive Hover Feedback Indicator */}
-                            {isHovered && (
+                            {/* Interactive Hover & Active Feedback Indicator */}
+                            {isHighlighted && (
                               <g className="pointer-events-none">
                                 {/* Distinct dashed perimeter border */}
                                 <rect
@@ -673,36 +816,24 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                                   strokeDasharray="6 4"
                                 />
 
-                                {/* Floating action pill indicating toggle state */}
-                                <g transform={`translate(${Math.max(10, tileW - 34)}, 10)`}>
+                                {/* Floating badge with active motif / action indicator */}
+                                <g transform={`translate(${Math.max(10, tileW - 36)}, 10)`}>
                                   <rect
                                     x={0}
                                     y={0}
-                                    width={24}
-                                    height={24}
-                                    rx={12}
+                                    width={26}
+                                    height={26}
+                                    rx={13}
                                     fill="#242424"
                                     stroke="#FFFFFF"
                                     strokeWidth={1.5}
                                   />
                                   <circle
-                                    cx={12}
-                                    cy={12}
+                                    cx={13}
+                                    cy={13}
                                     r={3.5}
-                                    fill={hasMotif ? '#EF4444' : '#10B981'}
+                                    fill={hasMotif ? '#10B981' : '#DDA743'}
                                   />
-                                  {/*
-                              <text
-                                x={22}
-                                y={15.5}
-                                fill="#FFFFFF"
-                                fontSize="10"
-                                fontFamily="system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
-                                fontWeight="600"
-                              >
-                               {hasMotif ? 'Clic: Apagar' : 'Clic: Encender'} 
-                              </text>
-                              */}
                                 </g>
                               </g>
                             )}
@@ -717,6 +848,40 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
           )}
         </div>
       </div>
+
+      {/* Contextual Cell Popover Menu */}
+      {activeCellMenu && viewMode === 'pattern' && (
+        <CellPopoverMenu
+          row={activeCellMenu.row}
+          col={activeCellMenu.col}
+          currentMotifId={getCellMotif(
+            activeCellMenu.row,
+            activeCellMenu.col,
+            composition.plainTileCadence || 'none',
+            composition.repeatX,
+            composition.cellOverrides,
+            motif.id
+          )}
+          currentRotation={
+            composition.cellRotations?.[`${activeCellMenu.row}-${activeCellMenu.col}`] ??
+            customization.rotation ??
+            0
+          }
+          activeFormat={activeFormat}
+          primaryMotif={motif}
+          clickPosition={{ x: activeCellMenu.x, y: activeCellMenu.y }}
+          initialPosition={savedCellMenuPosition}
+          boundaryRef={containerRef}
+          getCustomizationForMotif={getCustomizationForMotif}
+          onSelectMotif={handleSelectCellMotif}
+          onSelectRotation={handleSelectCellRotation}
+          onApplyToRow={handleApplyToRow}
+          onApplyToCol={handleApplyToCol}
+          onResetCell={handleResetCell}
+          onPositionChange={handleCellMenuPositionChange}
+          onClose={() => setActiveCellMenu(null)}
+        />
+      )}
 
       {/* Floating Onboarding / Instructions Helper (shown first time, dismissable, stored in localStorage) */}
       {showHelpBanner && (

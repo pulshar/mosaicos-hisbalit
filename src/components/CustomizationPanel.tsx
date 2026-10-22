@@ -8,6 +8,7 @@ import {
 } from '../types';
 import { HISBALIT_PALETTE, getStoredRecentColors, saveRecentColor } from '../data/palette';
 import { getCompositionPlatesCount } from '../utils/exportUtils';
+import { getMotifById } from '../data/motifs';
 import {
   Palette,
   Shapes,
@@ -106,7 +107,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
     composition.repeatX,
     composition.repeatY,
     composition.plainTileCadence || 'none',
-    composition.cellOverrides
+    composition.cellOverrides,
+    motif.id
   );
 
   // Active target for coloring: either the selected piece or the background
@@ -989,13 +991,34 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   )}
 
                   {/* Resumen de placas de producción */}
-                  <div className="p-2.5 bg-[#FAF9F5] rounded-lg border border-[#E7E4DE] flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-1.5 text-[#77736C]">
-                      <Layers className="w-3.5 h-3.5 text-[#242424]" />
-                      <span>Total de placas ({plates.totalCount}):</span>
+                  <div className="p-2.5 bg-[#FAF9F5] rounded-lg border border-[#E7E4DE] text-[11px] space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-[#77736C]">
+                        <Layers className="w-3.5 h-3.5 text-[#242424]" />
+                        <span>Total de placas ({plates.totalCount}):</span>
+                      </div>
+                      <div className="font-mono text-xs font-semibold text-[#242424]">
+                        {plates.totalCount} placas
+                      </div>
                     </div>
-                    <div className="font-mono text-xs font-semibold text-[#242424]">
-                      {plates.motifCount} motivo + {plates.plainCount} lisa{plates.plainCount !== 1 ? 's' : ''}
+                    {/* Breakdown by motif */}
+                    <div className="flex flex-wrap gap-1 pt-1 border-t border-[#E7E4DE]">
+                      {Object.entries(plates.motifCounts).map(([mId, count]) => {
+                        const mDef = getMotifById(mId);
+                        return (
+                          <span
+                            key={mId}
+                            className="px-1.5 py-0.5 rounded bg-white border border-[#E7E4DE] text-[10px] font-medium text-[#242424]"
+                          >
+                            {count}× {mDef?.name || mId}
+                          </span>
+                        );
+                      })}
+                      {plates.plainCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded bg-white border border-[#E7E4DE] text-[10px] font-medium text-[#77736C]">
+                          {plates.plainCount}× Lisa{plates.plainCount !== 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

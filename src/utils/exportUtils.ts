@@ -1,19 +1,67 @@
-import { MotifDefinition, MotifCustomization, CompositionSettings, SpacePreset, PlainTileCadence } from '../types';
+import { MotifDefinition, MotifCustomization, CompositionSettings, SpacePreset, PlainTileCadence, SpaceMaskCutout } from '../types';
+import { getMotifById } from '../data/motifs';
+import { resolveEffectiveMotifCustomization } from './motifColorUtils';
 
 /**
- * Evaluates whether a grid cell (rowIndex, colIndex) contains the active motif or is plain background
+ * Resolves the specific motif ID or null (plain tile) for a given cell (rowIndex, colIndex)
+ */
+export function getCellMotif(
+  rowIndex: number,
+  colIndex: number,
+  cadence: PlainTileCadence = 'none',
+  repeatX: number = 3,
+  cellOverrides?: Record<string, boolean | string>,
+  defaultMotifId: string = 'soleil'
+): string | null {
+  const key = `${rowIndex}-${colIndex}`;
+  if (cellOverrides && cellOverrides[key] !== undefined) {
+    const val = cellOverrides[key];
+    if (val === false || val === 'plain') return null;
+    if (val === true) return defaultMotifId;
+    return typeof val === 'string' ? val : defaultMotifId;
+  }
+
+  let hasMotif = true;
+  switch (cadence) {
+    case 'none':
+      hasMotif = true;
+      break;
+    case 'checkerboard':
+      hasMotif = (rowIndex + colIndex) % 2 === 0;
+      break;
+    case 'ratio1_2':
+      hasMotif = (colIndex + rowIndex * 2) % 3 === 0;
+      break;
+    case 'ratio1_3':
+      hasMotif = (colIndex + (rowIndex % 2) * 2) % 4 === 0;
+      break;
+    case 'rows':
+      hasMotif = rowIndex % 2 === 0;
+      break;
+    case 'cols':
+      hasMotif = colIndex % 2 === 0;
+      break;
+    default:
+      hasMotif = true;
+  }
+
+  return hasMotif ? defaultMotifId : null;
+}
+
+/**
+ * Evaluates whether a grid cell (rowIndex, colIndex) contains any motif or is plain background
  */
 export function isCellWithMotif(
   rowIndex: number,
   colIndex: number,
   cadence: PlainTileCadence = 'none',
   repeatX: number = 3,
-  cellOverrides?: Record<string, boolean>
+  cellOverrides?: Record<string, boolean | string>
 ): boolean {
-  // If user explicitly toggled this cell directly on the canvas, override takes precedence
   const key = `${rowIndex}-${colIndex}`;
   if (cellOverrides && cellOverrides[key] !== undefined) {
-    return cellOverrides[key];
+    const val = cellOverrides[key];
+    return val !== false && val !== 'plain';
   }
 
   switch (cadence) {
@@ -22,10 +70,8 @@ export function isCellWithMotif(
     case 'checkerboard':
       return (rowIndex + colIndex) % 2 === 0;
     case 'ratio1_2':
-      // 1 motivo cada 2 lisas con progresión diagonal armónica
       return (colIndex + rowIndex * 2) % 3 === 0;
     case 'ratio1_3':
-      // 1 motivo cada 3 lisas (paso de 4 con alternancia de fila a tresbolillo)
       return (colIndex + (rowIndex % 2) * 2) % 4 === 0;
     case 'rows':
       return rowIndex % 2 === 0;
@@ -37,27 +83,39 @@ export function isCellWithMotif(
 }
 
 /**
- * Calculates plate counts for motif vs plain tiles in repeated composition
+ * Calculates plate counts for motif vs plain tiles in repeated composition, including breakdown by motif
  */
 export function getCompositionPlatesCount(
   repeatX: number,
   repeatY: number,
   cadence: PlainTileCadence = 'none',
-  cellOverrides?: Record<string, boolean>
-): { motifCount: number; plainCount: number; totalCount: number } {
+  cellOverrides?: Record<string, boolean | string>,
+  defaultMotifId: string = 'soleil'
+): {
+  motifCount: number;
+  plainCount: number;
+  totalCount: number;
+  motifCounts: Record<string, number>;
+} {
   let motifCount = 0;
+  const motifCounts: Record<string, number> = {};
   const totalCount = repeatX * repeatY;
+
   for (let r = 0; r < repeatY; r++) {
     for (let c = 0; c < repeatX; c++) {
-      if (isCellWithMotif(r, c, cadence, repeatX, cellOverrides)) {
+      const mId = getCellMotif(r, c, cadence, repeatX, cellOverrides, defaultMotifId);
+      if (mId) {
         motifCount++;
+        motifCounts[mId] = (motifCounts[mId] || 0) + 1;
       }
     }
   }
+
   return {
     motifCount,
     plainCount: totalCount - motifCount,
-    totalCount
+    totalCount,
+    motifCounts
   };
 }
 
@@ -66,13 +124,14 @@ export function getCompositionPlatesCount(
  */
 export function generatePlainTileSvgInner(
   motif: MotifDefinition,
-  customization: MotifCustomization
+  customization: MotifCustomization,
+  rotationOverride?: number
 ): string {
   const format = customization.format;
   const svgData = motif.svgData[format];
   if (!svgData) return '';
   const bgColor = customization.backgroundColor || '#D9D9D9';
-  const rotation = customization.rotation || 0;
+  const rotation = rotationOverride !== undefined ? rotationOverride : (customization.rotation || 0);
   const rotTransform = getTileRotationTransform(rotation, svgData.width, svgData.height);
 
   const bgShapes = svgData.backgroundShapes.map(s =>
@@ -184,7 +243,9 @@ export function generateCompositionSvg(
   motif: MotifDefinition,
   customization: MotifCustomization,
   composition: CompositionSettings,
-  secondaryMotif?: MotifDefinition | null
+  secondaryMotif?: MotifDefinition | null,
+  customizationsMap: Record<string, MotifCustomization> = {},
+  editedMotifIds: Record<string, boolean> = {}
 ): string {
   const format = customization.format;
   const svgData = motif.svgData[format];
@@ -195,8 +256,8 @@ export function generateCompositionSvg(
 
   const cols = composition.repeatX;
   const rows = composition.repeatY;
-  const rotation = customization.rotation || 0;
-  const isRotated90or270 = rotation === 90 || rotation === 270;
+  const baseRotation = customization.rotation || 0;
+  const isRotated90or270 = baseRotation === 90 || baseRotation === 270;
 
   const tileW = isRotated90or270 ? svgData.height : svgData.width;
   const tileH = isRotated90or270 ? svgData.width : svgData.height;
@@ -225,43 +286,60 @@ export function generateCompositionSvg(
   const totalHeight = (rows - 1) * unitH + tileH;
 
   const instances: string[] = [];
-  const singleSvgInner = generateSingleMotifSvg(motif, customization, false)
-    .replace(/^<svg[^>]*>/, '')
-    .replace(/<\/svg>$/, '');
+  const motifSvgInnersCache: Record<string, string> = {};
 
-  const plainSvgInner = generatePlainTileSvgInner(motif, customization);
+  const getSvgInnerForMotif = (mId: string, rot: number): string => {
+    const cacheKey = `${mId}_${rot}`;
+    if (motifSvgInnersCache[cacheKey]) return motifSvgInnersCache[cacheKey];
 
-  let secondarySvgInner = '';
-  if (secondaryMotif && secondaryMotif.svgData[format]) {
-    const secCustom: MotifCustomization = {
-      ...customization,
-      motifId: secondaryMotif.id
+    const targetMotif = getMotifById(mId);
+    if (!targetMotif || !targetMotif.svgData[format]) {
+      return generatePlainTileSvgInner(motif, customization, rot);
+    }
+
+    const effCust = resolveEffectiveMotifCustomization(
+      mId,
+      format,
+      customization,
+      customizationsMap,
+      editedMotifIds
+    );
+
+    const custWithRot: MotifCustomization = {
+      ...effCust,
+      rotation: rot
     };
-    secondarySvgInner = generateSingleMotifSvg(secondaryMotif, secCustom, false)
+
+    const inner = generateSingleMotifSvg(targetMotif, custWithRot, false)
       .replace(/^<svg[^>]*>/, '')
       .replace(/<\/svg>$/, '');
-  }
+
+    motifSvgInnersCache[cacheKey] = inner;
+    return inner;
+  };
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const offsetX = c * unitW + (composition.staggered && r % 2 === 1 ? staggerShiftX : 0);
       const offsetY = r * unitH;
+      const cellKey = `${r}-${c}`;
 
-      const hasMotif = isCellWithMotif(
+      const cellMotifId = getCellMotif(
         r,
         c,
         composition.plainTileCadence || 'none',
         cols,
-        composition.cellOverrides
+        composition.cellOverrides,
+        motif.id
       );
 
+      const cellRot = composition.cellRotations?.[cellKey] ?? baseRotation;
+
       let content: string;
-      if (!hasMotif) {
-        content = plainSvgInner;
-      } else if (composition.secondaryMotifId && secondarySvgInner && ((r + c) % 2 === 1)) {
-        content = secondarySvgInner;
+      if (!cellMotifId) {
+        content = generatePlainTileSvgInner(motif, customization, cellRot);
       } else {
-        content = singleSvgInner;
+        content = getSvgInnerForMotif(cellMotifId, cellRot);
       }
 
       instances.push(`
@@ -361,6 +439,7 @@ export async function downloadSvgAsPng(
   });
 }
 
+
 /**
  * Render Room Simulation combined with the Mosaic Pattern and export in high-res / 4K
  */
@@ -371,7 +450,8 @@ export async function exportSimulationAsPng(
   scale = 1.0,
   blendMode: 'multiply' | 'normal' | 'overlay' | 'soft-light' = 'multiply',
   fileName = 'Mosaico-Studio_Simulacion_Espacio_4K.png',
-  resolution: '4k' | '2k' = '4k'
+  resolution: '4k' | '2k' = '4k',
+  cutouts?: SpaceMaskCutout[]
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const roomImg = new Image();
@@ -401,17 +481,45 @@ export async function exportSimulationAsPng(
         // 1. Draw original room photo in high resolution
         ctx.drawImage(roomImg, 0, 0, targetW, targetH);
 
-        // 2. Setup polygon clipping region
+        // Helper to construct outer surface + cutouts path
+        const buildSurfacePath = () => {
+          ctx.beginPath();
+          polygonPoints.forEach(([px, py], idx) => {
+            const x = (px / 100) * targetW;
+            const y = (py / 100) * targetH;
+            if (idx === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+          ctx.closePath();
+
+          if (cutouts && cutouts.length > 0) {
+            cutouts.forEach((cutout) => {
+              if (cutout.type === 'circle' && cutout.cx !== undefined && cutout.cy !== undefined && cutout.r !== undefined) {
+                const cx = (cutout.cx / 100) * targetW;
+                const cy = (cutout.cy / 100) * targetH;
+                const rx = (cutout.r / 100) * targetW;
+                const ry = (cutout.r / 100) * targetH;
+                ctx.moveTo(cx + rx, cy);
+                ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+              } else if (cutout.type === 'polygon' && cutout.points && cutout.points.length > 0) {
+                cutout.points.forEach(([px, py], pidx) => {
+                  const x = (px / 100) * targetW;
+                  const y = (py / 100) * targetH;
+                  if (pidx === 0) ctx.moveTo(x, y);
+                  else ctx.lineTo(x, y);
+                });
+                ctx.closePath();
+              }
+            });
+            ctx.clip('evenodd');
+          } else {
+            ctx.clip();
+          }
+        };
+
+        // 2. Setup polygon clipping region with foreground object holes
         ctx.save();
-        ctx.beginPath();
-        polygonPoints.forEach(([px, py], idx) => {
-          const x = (px / 100) * targetW;
-          const y = (py / 100) * targetH;
-          if (idx === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.closePath();
-        ctx.clip();
+        buildSurfacePath();
 
         // 3. Apply realistic blend mode
         ctx.globalCompositeOperation = blendMode === 'multiply' ? 'multiply' : 'source-over';
@@ -441,15 +549,7 @@ export async function exportSimulationAsPng(
         // Optional subtle lighting overlay if multiply
         if (blendMode === 'multiply') {
           ctx.save();
-          ctx.beginPath();
-          polygonPoints.forEach(([px, py], idx) => {
-            const x = (px / 100) * targetW;
-            const y = (py / 100) * targetH;
-            if (idx === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          });
-          ctx.closePath();
-          ctx.clip();
+          buildSurfacePath();
           ctx.globalCompositeOperation = 'soft-light';
           ctx.drawImage(roomImg, 0, 0, targetW, targetH);
           ctx.restore();

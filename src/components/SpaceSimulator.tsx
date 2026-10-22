@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { SPACE_PRESETS } from '../data/spaces';
 import { SpacePreset, MotifDefinition, MotifCustomization, CompositionSettings } from '../types';
 import { generateSingleMotifSvg, generateCompositionSvg, exportSimulationAsPng } from '../utils/exportUtils';
+import { generateEvenOddClipPath } from '../utils/spaceMaskUtils';
 import {
   Download,
   Upload,
@@ -12,13 +13,18 @@ import {
   Eye,
   Check,
   RefreshCw,
-  Maximize2
+  Maximize2,
+  ShieldCheck,
+  Shield,
+  Info
 } from 'lucide-react';
 
 interface SpaceSimulatorProps {
   motif: MotifDefinition;
   customization: MotifCustomization;
   composition: CompositionSettings;
+  customizationsMap?: Record<string, MotifCustomization>;
+  editedMotifIds?: Record<string, boolean>;
   onClose: () => void;
 }
 
@@ -26,18 +32,30 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   motif,
   customization,
   composition,
+  customizationsMap = {},
+  editedMotifIds = {},
   onClose
 }) => {
-  const [selectedSpaceId, setSelectedSpaceId] = useState<string>('bathroom_wall');
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>('kitchen_fleche');
   const [customPhotoUrl, setCustomPhotoUrl] = useState<string | null>(null);
-  const [scale, setScale] = useState<number>(1.0);
-  const [blendMode, setBlendMode] = useState<'multiply' | 'normal' | 'overlay' | 'soft-light'>('multiply');
-  const [opacity, setOpacity] = useState<number>(0.92);
+  const [scale, setScale] = useState<number>(0.7);
+  const [blendMode, setBlendMode] = useState<'multiply' | 'normal' | 'overlay' | 'soft-light'>('normal');
+  const [opacity, setOpacity] = useState<number>(0.95);
   const [isAdjustingSurface, setIsAdjustingSurface] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [enableSmartMask, setEnableSmartMask] = useState<boolean>(true);
+  const [showMaskOutlines, setShowMaskOutlines] = useState<boolean>(false);
 
   // Active space preset
   const activePreset = SPACE_PRESETS.find(s => s.id === selectedSpaceId) || SPACE_PRESETS[0];
+
+  const getPresetAspect = (p: SpacePreset) => {
+    if (p.aspectRatio === '4/3') return 4 / 3;
+    if (p.aspectRatio === '3/2') return 3 / 2;
+    return 16 / 9;
+  };
+
+  const [imageAspect, setImageAspect] = useState<number>(getPresetAspect(activePreset));
 
   // Polygon points in % coordinates [[x, y], ...]
   const [polygonPoints, setPolygonPoints] = useState<[number, number][]>(activePreset.polygonPoints);
@@ -48,6 +66,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
       setPolygonPoints(activePreset.polygonPoints);
       setScale(activePreset.defaultScale);
       setBlendMode(activePreset.blendMode);
+      setImageAspect(getPresetAspect(activePreset));
     }
   }, [selectedSpaceId, customPhotoUrl]);
 
@@ -57,7 +76,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const hasCustomOverrides = Boolean(composition.cellOverrides && Object.keys(composition.cellOverrides).length > 0);
   const isCadenceActive = (composition.plainTileCadence && composition.plainTileCadence !== 'none') || hasCustomOverrides;
   const simulationSvgStr = isCadenceActive
-    ? generateCompositionSvg(motif, customization, { ...composition, repeatX: Math.max(4, composition.repeatX), repeatY: Math.max(4, composition.repeatY) })
+    ? generateCompositionSvg(motif, customization, { ...composition, repeatX: Math.max(4, composition.repeatX), repeatY: Math.max(4, composition.repeatY) }, null, customizationsMap, editedMotifIds)
     : generateSingleMotifSvg(motif, customization, true);
   const svgDataUri = `data:image/svg+xml;utf8,${encodeURIComponent(simulationSvgStr)}`;
 
@@ -106,7 +125,15 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
     setDraggingPointIndex(null);
   };
 
-  // Convert polygon coordinates to CSS clip-path polygon(...)
+  const hasActiveCutouts = Boolean(enableSmartMask && !customPhotoUrl && activePreset.cutouts && activePreset.cutouts.length > 0);
+
+  // SVG normalized compound path string with evenodd holes
+  const evenOddClipPathD = generateEvenOddClipPath(
+    polygonPoints,
+    hasActiveCutouts ? activePreset.cutouts : undefined
+  );
+
+  // Fallback simple CSS polygon clip path
   const clipPathString = `polygon(${polygonPoints
     .map(([px, py]) => `${px}% ${py}%`)
     .join(', ')})`;
@@ -123,7 +150,8 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         scale,
         blendMode,
         fileName,
-        resolution
+        resolution,
+        hasActiveCutouts ? activePreset.cutouts : undefined
       );
     } catch (err) {
       console.error('Simulation export error:', err);
@@ -154,8 +182,8 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
             <button
               onClick={() => setIsAdjustingSurface(!isAdjustingSurface)}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${isAdjustingSurface
-                  ? 'bg-amber-400 text-black font-semibold'
-                  : 'bg-white/10 text-white hover:bg-white/20'
+                ? 'bg-amber-400 text-black font-semibold'
+                : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
             >
               <Move className="w-3.5 h-3.5" />
@@ -179,24 +207,40 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
             onPointerUp={handlePointerUpContainer}
             className="relative rounded-xl overflow-hidden shadow-2xl max-w-full max-h-full border border-white/10"
             style={{
-              aspectRatio: '16/9',
+              aspectRatio: `${imageAspect}`,
               width: '100%',
               maxWidth: '1200px'
             }}
           >
+            {/* SVG compound clipPath definition for 3-layer sandwich (evenodd) */}
+            <svg className="absolute w-0 h-0 overflow-hidden pointer-events-none" aria-hidden="true">
+              <defs>
+                <clipPath id="space-mosaic-clip" clipPathUnits="objectBoundingBox">
+                  <path d={evenOddClipPathD} clipRule="evenodd" />
+                </clipPath>
+              </defs>
+            </svg>
+
             {/* 1. Base Room Photography */}
             <img
               src={activeImageUrl}
               alt={activePreset.name}
               className="w-full h-full object-cover block select-none pointer-events-none"
               crossOrigin="anonymous"
+              onLoad={(e) => {
+                const w = e.currentTarget.naturalWidth;
+                const h = e.currentTarget.naturalHeight;
+                if (w && h) {
+                  setImageAspect(w / h);
+                }
+              }}
             />
 
-            {/* 2. Mosaic Tiled Surface Overlay (Clipped to Polygon) */}
+            {/* 2. Mosaic Tiled Surface Overlay (Clipped to Polygon with Cutouts) */}
             <div
               className="absolute inset-0 pointer-events-none transition-all duration-75"
               style={{
-                clipPath: clipPathString,
+                clipPath: hasActiveCutouts ? 'url(#space-mosaic-clip)' : clipPathString,
                 backgroundImage: `url("${svgDataUri}")`,
                 backgroundSize: `${Math.max(40, 160 * scale)}px auto`,
                 backgroundRepeat: 'repeat',
@@ -210,7 +254,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
               <div
                 className="absolute inset-0 pointer-events-none opacity-40 mix-blend-soft-light"
                 style={{
-                  clipPath: clipPathString,
+                  clipPath: hasActiveCutouts ? 'url(#space-mosaic-clip)' : clipPathString,
                   backgroundImage: `url(${activeImageUrl})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center'
@@ -218,7 +262,70 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
               />
             )}
 
-            {/* 4. Interactive Polygon Surface Boundary Points (When Adjusting) */}
+            {/* 4. Foreground Object Outlines Visualizer */}
+            {showMaskOutlines && !customPhotoUrl && activePreset.cutouts && (
+              <svg className="absolute inset-0 w-full h-full pointer-events-none z-20">
+                {activePreset.cutouts.map((cutout) => {
+                  if (cutout.type === 'circle' && cutout.cx !== undefined && cutout.cy !== undefined && cutout.r !== undefined) {
+                    return (
+                      <g key={cutout.id}>
+                        <circle
+                          cx={`${cutout.cx}%`}
+                          cy={`${cutout.cy}%`}
+                          r={`${cutout.r}%`}
+                          fill="rgba(56, 189, 248, 0.2)"
+                          stroke="#38BDF8"
+                          strokeWidth="2"
+                          strokeDasharray="4 3"
+                        />
+                        <text
+                          x={`${cutout.cx}%`}
+                          y={`${cutout.cy}%`}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fill="#FFFFFF"
+                          fontSize="10"
+                          fontWeight="bold"
+                          className="drop-shadow-md select-none pointer-events-none"
+                        >
+                          {cutout.label}
+                        </text>
+                      </g>
+                    );
+                  }
+                  if (cutout.type === 'polygon' && cutout.points && cutout.points.length > 0) {
+                    const cx = cutout.points.reduce((acc, p) => acc + p[0], 0) / cutout.points.length;
+                    const cy = cutout.points.reduce((acc, p) => acc + p[1], 0) / cutout.points.length;
+                    return (
+                      <g key={cutout.id}>
+                        <polygon
+                          points={cutout.points.map(([px, py]) => `${px}%,${py}%`).join(' ')}
+                          fill="rgba(56, 189, 248, 0.2)"
+                          stroke="#38BDF8"
+                          strokeWidth="2"
+                          strokeDasharray="4 3"
+                        />
+                        <text
+                          x={`${cx}%`}
+                          y={`${cy}%`}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fill="#FFFFFF"
+                          fontSize="10"
+                          fontWeight="bold"
+                          className="drop-shadow-md select-none pointer-events-none"
+                        >
+                          {cutout.label}
+                        </text>
+                      </g>
+                    );
+                  }
+                  return null;
+                })}
+              </svg>
+            )}
+
+            {/* 5. Interactive Polygon Surface Boundary Points (When Adjusting) */}
             {isAdjustingSurface && (
               <div className="absolute inset-0 z-30">
                 {/* SVG Outline connecting the 4 points */}
@@ -290,8 +397,8 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       setSelectedSpaceId(preset.id);
                     }}
                     className={`relative rounded-lg overflow-hidden border p-1 text-left transition-all ${isSelected
-                        ? 'border-amber-400 ring-2 ring-amber-400/20 bg-white/10'
-                        : 'border-white/10 bg-white/5 hover:border-white/30'
+                      ? 'border-amber-400 ring-2 ring-amber-400/20 bg-white/10'
+                      : 'border-white/10 bg-white/5 hover:border-white/30'
                       }`}
                   >
                     <div className="aspect-video w-full rounded overflow-hidden mb-1.5 bg-black/40">
@@ -330,6 +437,55 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
               />
             </div>
           </div>
+
+          {/* Section: 3-Layer Foreground Mask Control */}
+          {!customPhotoUrl && activePreset.cutouts && activePreset.cutouts.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-semibold text-white/90">
+                    Máscara 3 capas (Primer plano)
+                  </span>
+                </div>
+                {/* Toggle switch */}
+                <button
+                  type="button"
+                  onClick={() => setEnableSmartMask(prev => !prev)}
+                  className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${enableSmartMask ? 'bg-emerald-500' : 'bg-white/20'
+                    }`}
+                  title={enableSmartMask ? 'Desactivar máscara' : 'Activar máscara'}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-0.5 ${enableSmartMask ? 'left-4.5' : 'left-0.5'
+                      }`}
+                  />
+                </button>
+              </div>
+
+              <p className="text-[11px] text-white/60 leading-relaxed">
+                {enableSmartMask
+                  ? `Protege ${activePreset.cutouts.length} objetos en primer plano para que el mosaico quede por detrás sin tapar elementos.`
+                  : 'Máscara desactivada: el mosaico se aplica sobre toda la zona sin recortar objetos.'}
+              </p>
+
+              <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[10px]">
+                <span className="text-white/40">
+                  {activePreset.cutouts.length} elementos protegidos
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowMaskOutlines(prev => !prev)}
+                  className={`px-2 py-0.5 rounded transition-colors cursor-pointer ${showMaskOutlines
+                    ? 'bg-sky-500/20 text-sky-300 font-semibold border border-sky-500/40'
+                    : 'text-white/60 hover:text-white bg-white/5 hover:bg-white/10'
+                    }`}
+                >
+                  {showMaskOutlines ? 'Ocultar contornos' : 'Ver contornos'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Section: Surface Scale & Perspective */}
           <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-3.5">
@@ -389,8 +545,8 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                     key={mode.id}
                     onClick={() => setBlendMode(mode.id as any)}
                     className={`py-1.5 px-2 text-[11px] rounded-lg border text-left font-medium transition-all ${blendMode === mode.id
-                        ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold'
-                        : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
+                      ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-semibold'
+                      : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
                       }`}
                   >
                     {mode.label}

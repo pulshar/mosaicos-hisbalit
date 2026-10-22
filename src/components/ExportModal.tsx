@@ -20,6 +20,8 @@ interface ExportModalProps {
   motif: MotifDefinition;
   customization: MotifCustomization;
   composition: CompositionSettings;
+  customizationsMap?: Record<string, MotifCustomization>;
+  editedMotifIds?: Record<string, boolean>;
   onClose: () => void;
   onOpenSimulation: () => void;
 }
@@ -28,6 +30,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   motif,
   customization,
   composition,
+  customizationsMap = {},
+  editedMotifIds = {},
   onClose,
   onOpenSimulation
 }) => {
@@ -40,7 +44,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   const currentSvgString = exportScope === 'single'
     ? generateSingleMotifSvg(motif, customization, true)
-    : generateCompositionSvg(motif, customization, composition);
+    : generateCompositionSvg(motif, customization, composition, null, customizationsMap, editedMotifIds);
 
   const handleDownloadSvg = () => {
     const fileName = `Mosaico-Studio_${motif.name}_${activeFormat}_${exportScope}.svg`;
@@ -97,11 +101,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setExportScope('composition')}
-                className={`p-3 rounded-xl border text-left transition-all ${
-                  exportScope === 'composition'
+                className={`p-3 rounded-xl border text-left transition-all ${exportScope === 'composition'
                     ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
                     : 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA]'
-                }`}
+                  }`}
               >
                 <div className="text-xs font-bold text-[#242424]">
                   Composición completa ({composition.repeatX}×{composition.repeatY})
@@ -113,11 +116,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
               <button
                 onClick={() => setExportScope('single')}
-                className={`p-3 rounded-xl border text-left transition-all ${
-                  exportScope === 'single'
+                className={`p-3 rounded-xl border text-left transition-all ${exportScope === 'single'
                     ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
                     : 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA]'
-                }`}
+                  }`}
               >
                 <div className="text-xs font-bold text-[#242424]">
                   Motivo individual aislado
@@ -178,11 +180,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     <button
                       key={res}
                       onClick={() => setResolution(res)}
-                      className={`py-1 text-[11px] font-mono rounded border transition-all ${
-                        resolution === res
+                      className={`py-1 text-[11px] font-mono rounded border transition-all ${resolution === res
                           ? 'border-[#242424] bg-[#242424] text-white font-bold'
                           : 'border-[#E7E4DE] bg-white text-[#77736C]'
-                      }`}
+                        }`}
                     >
                       {res === '4k' ? '4K Ultra' : res === '2k' ? '1080p' : '720p'}
                     </button>

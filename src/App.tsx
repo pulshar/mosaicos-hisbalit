@@ -19,12 +19,15 @@ import {
   downloadFile,
   downloadSvgAsPng
 } from './utils/exportUtils';
+import { resolveEffectiveMotifCustomization } from './utils/motifColorUtils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const STORAGE_KEY_CUSTOMIZATION = 'mosaico_studio_customization';
 const STORAGE_KEY_COMPOSITION = 'mosaico_studio_composition';
 const STORAGE_KEY_LIBRARY_OPEN = 'mosaico_studio_library_open';
 const STORAGE_KEY_CUSTOMIZATION_PANEL_OPEN = 'mosaico_studio_customization_panel_open';
+const STORAGE_KEY_CUSTOMIZATIONS_MAP = 'mosaico_studio_customizations_map';
+const STORAGE_KEY_EDITED_MOTIFS = 'mosaico_studio_edited_motifs';
 
 export default function App() {
   // 1. Initial State from storage or defaults
@@ -135,7 +138,28 @@ export default function App() {
     }
   });
 
-  // 4. LocalStorage persistence
+  // 4. Multi-motif customizations map and edited memory
+  const [customizationsMap, setCustomizationsMap] = useState<Record<string, MotifCustomization>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_CUSTOMIZATIONS_MAP);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return {};
+  });
+
+  const [editedMotifIds, setEditedMotifIds] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_EDITED_MOTIFS);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return {};
+  });
+
+  // LocalStorage persistence
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_CUSTOMIZATION, JSON.stringify(customization));
@@ -167,6 +191,42 @@ export default function App() {
       // ignore
     }
   }, [isCustomizationPanelOpen]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_CUSTOMIZATIONS_MAP, JSON.stringify(customizationsMap));
+    } catch {
+      // ignore
+    }
+  }, [customizationsMap]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_EDITED_MOTIFS, JSON.stringify(editedMotifIds));
+    } catch {
+      // ignore
+    }
+  }, [editedMotifIds]);
+
+  // Synchronize active customization into map
+  useEffect(() => {
+    if (customization && customization.motifId) {
+      setCustomizationsMap(prev => ({
+        ...prev,
+        [customization.motifId]: customization
+      }));
+    }
+  }, [customization]);
+
+  const getCustomizationForMotif = useCallback((motifId: string): MotifCustomization => {
+    return resolveEffectiveMotifCustomization(
+      motifId,
+      customization.format,
+      customization,
+      customizationsMap,
+      editedMotifIds
+    );
+  }, [customization, customizationsMap, editedMotifIds]);
 
   // 5. Keyboard shortcuts for Undo/Redo, Deselect & Panels Toggle
   useEffect(() => {
@@ -206,15 +266,22 @@ export default function App() {
   }, [canUndo, canRedo, undo, redo, isMotifLibraryOpen, isCustomizationPanelOpen, activeMotif, customization.format]);
 
   // 6. Action Handlers
-  const handleSelectMotif = (motif: MotifDefinition) => {
+  const handleSelectMotif = useCallback((motif: MotifDefinition) => {
     if (!motif.available) return;
     setActiveMotif(motif);
     setSelectedPieceIds([]);
-    const newCust = getDefaultCustomization(motif.id, customization.format);
-    setCustomization(newCust);
-  };
+    const targetCust = getCustomizationForMotif(motif.id);
+    setCustomization(targetCust);
+  }, [getCustomizationForMotif, setCustomization]);
+
+  const handleGoToCustomizeMotif = useCallback((motifId: string) => {
+    const target = getMotifById(motifId);
+    if (!target) return;
+    handleSelectMotif(target);
+  }, [handleSelectMotif]);
 
   const handleUpdatePieceColor = useCallback((pieceId: string, color: string) => {
+    setEditedMotifIds(prev => ({ ...prev, [activeMotif.id]: true }));
     setCustomization(prev => {
       const targetIds = (selectedPieceIds.length > 1 && selectedPieceIds.includes(pieceId))
         ? selectedPieceIds
@@ -230,9 +297,10 @@ export default function App() {
         pieceColors: nextColors
       };
     });
-  }, [selectedPieceIds, setCustomization]);
+  }, [activeMotif.id, selectedPieceIds, setCustomization]);
 
   const handleUpdatePieceColors = useCallback((pieceIds: string[], color: string) => {
+    setEditedMotifIds(prev => ({ ...prev, [activeMotif.id]: true }));
     setCustomization(prev => {
       const nextColors = { ...prev.pieceColors };
       pieceIds.forEach(id => {
@@ -245,12 +313,13 @@ export default function App() {
         pieceColors: nextColors
       };
     });
-  }, [setCustomization]);
+  }, [activeMotif.id, setCustomization]);
 
   const handleApplyColorToAllMotifPieces = useCallback((color: string) => {
     const svgData = activeMotif.svgData[customization.format];
     if (!svgData) return;
 
+    setEditedMotifIds(prev => ({ ...prev, [activeMotif.id]: true }));
     setCustomization(prev => {
       const nextColors = { ...prev.pieceColors };
       svgData.motifPieces.forEach(p => {
@@ -329,6 +398,15 @@ export default function App() {
 
   const handleResetMotifOriginalColors = useCallback(() => {
     const def = getDefaultCustomization(activeMotif.id, customization.format);
+    setEditedMotifIds(prev => {
+      const next = { ...prev };
+      delete next[activeMotif.id];
+      return next;
+    });
+    setCustomizationsMap(prev => ({
+      ...prev,
+      [activeMotif.id]: def
+    }));
     setCustomization(def);
   }, [activeMotif.id, customization.format, setCustomization]);
 
@@ -345,6 +423,7 @@ export default function App() {
     setComposition(prev => ({
       ...prev,
       cellOverrides: {},
+      cellRotations: {},
       viewMode: 'single',
       repeatX: 3,
       repeatY: 2,
@@ -356,6 +435,16 @@ export default function App() {
       panY: 0,
       plainTileCadence: "none"
     }));
+    setCustomizationsMap({ [PETITE_MOTIFS[0].id]: def });
+    setEditedMotifIds({});
+    try {
+      localStorage.removeItem(STORAGE_KEY_CUSTOMIZATIONS_MAP);
+      localStorage.removeItem(STORAGE_KEY_EDITED_MOTIFS);
+      localStorage.removeItem(STORAGE_KEY_COMPOSITION);
+      localStorage.removeItem(STORAGE_KEY_CUSTOMIZATION);
+    } catch {
+      // ignore
+    }
     setSelectedPieceIds([]);
     setIsConfirmNewModalOpen(false);
   }, [reset]);
@@ -372,7 +461,7 @@ export default function App() {
   const handleDownloadSvgDirect = () => {
     const svgStr = composition.viewMode === 'single'
       ? generateSingleMotifSvg(activeMotif, customization, true)
-      : generateCompositionSvg(activeMotif, customization, composition);
+      : generateCompositionSvg(activeMotif, customization, composition, null, customizationsMap, editedMotifIds);
     const fileName = `Mosaico-Studio_${activeMotif.name}_${customization.format}.svg`;
     downloadFile(svgStr, fileName, 'image/svg+xml');
   };
@@ -380,7 +469,7 @@ export default function App() {
   const handleDownloadPngDirect = async () => {
     const svgStr = composition.viewMode === 'single'
       ? generateSingleMotifSvg(activeMotif, customization, true)
-      : generateCompositionSvg(activeMotif, customization, composition);
+      : generateCompositionSvg(activeMotif, customization, composition, null, customizationsMap, editedMotifIds);
     const fileName = `Mosaico-Studio_${activeMotif.name}_${customization.format}_4K.png`;
     await downloadSvgAsPng(svgStr, fileName, 3840);
   };
@@ -407,6 +496,8 @@ export default function App() {
             motif={activeMotif}
             customization={customization}
             composition={composition}
+            customizationsMap={customizationsMap}
+            editedMotifIds={editedMotifIds}
             onClose={() => setComposition(prev => ({ ...prev, viewMode: 'single' }))}
           />
         ) : (
@@ -448,6 +539,8 @@ export default function App() {
               composition={composition}
               selectedPieceId={selectedPieceId}
               selectedPieceIds={selectedPieceIds}
+              customizationsMap={customizationsMap}
+              editedMotifIds={editedMotifIds}
               onSelectPiece={handleSelectPiece}
               onSelectMultiplePieces={handleSelectMultiplePieces}
               onUpdatePieceColor={handleUpdatePieceColor}
@@ -458,6 +551,7 @@ export default function App() {
               viewMode={composition.viewMode}
               onChangeViewMode={(mode) => setComposition(prev => ({ ...prev, viewMode: mode }))}
               onUpdateComposition={handleUpdateComposition}
+              onGoToCustomizeMotif={handleGoToCustomizeMotif}
             />
 
             {/* Right Panel: Customization Controls (smooth collapsible animation) */}
@@ -513,6 +607,8 @@ export default function App() {
           motif={activeMotif}
           customization={customization}
           composition={composition}
+          customizationsMap={customizationsMap}
+          editedMotifIds={editedMotifIds}
           onClose={() => setIsExportModalOpen(false)}
           onOpenSimulation={() => setComposition(prev => ({ ...prev, viewMode: 'simulation' }))}
         />

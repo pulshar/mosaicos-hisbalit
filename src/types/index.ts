@@ -62,17 +62,30 @@ export interface CompositionSettings {
   viewMode: 'single' | 'pattern' | 'simulation';
   repeatX: number;
   repeatY: number;
+  patternUnitX?: number; // Base module width (columns) for periodic pattern repetition (default 3)
+  patternUnitY?: number; // Base module height (rows) for periodic pattern repetition (default 2)
   spacingX: number; // in pixels or unit delta
   spacingY: number;
   staggered: boolean;
   plainTileCadence?: PlainTileCadence;
-  cellOverrides?: Record<string, boolean>; // Overrides per cell "row-col": true (motif on) | false (plain)
+  cellOverrides?: Record<string, boolean | string>; // Overrides per cell "row-col": true (default motif) | false (plain) | string (specific motif id, e.g. 'diamant')
+  cellRotations?: Record<string, number>; // Optional rotation override per cell
   showPlainBackground: boolean;
   secondaryMotifId: string | null;
   combineRatio: 'alternate' | 'single';
   zoom: number;
   panX: number;
   panY: number;
+}
+
+export interface SpaceMaskCutout {
+  id: string;
+  label: string;
+  type: 'polygon' | 'circle';
+  points?: [number, number][]; // in percent 0..100
+  cx?: number; // in percent 0..100
+  cy?: number; // in percent 0..100
+  r?: number; // in percent 0..100
 }
 
 export interface SpacePreset {
@@ -82,8 +95,10 @@ export interface SpacePreset {
   image: string;
   description: string;
   surfaceLabel: string;
+  aspectRatio?: string;
   // Polygon coordinates [ [x1,y1], [x2,y2], [x3,y3], [x4,y4] ] in percent 0..100
   polygonPoints: [number, number][];
+  cutouts?: SpaceMaskCutout[];
   defaultScale: number;
   blendMode: 'multiply' | 'normal' | 'overlay' | 'soft-light';
   lightingGradient?: string;

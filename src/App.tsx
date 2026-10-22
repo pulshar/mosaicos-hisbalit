@@ -6,7 +6,7 @@ import {
   CompositionSettings,
   MotifFormat
 } from './types';
-import { useDesignHistory } from './hooks/useDesignHistory';
+import { useDesignHistory, DesignSnapshot, DesignCompositionState } from './hooks/useDesignHistory';
 import { Header } from './components/Header';
 import { MotifLibrary } from './components/MotifLibrary';
 import { DesignCanvas } from './components/DesignCanvas';
@@ -35,20 +35,7 @@ export default function App() {
     return PETITE_MOTIFS[0]; // Point
   });
 
-  const getInitialCustomization = (): MotifCustomization => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_CUSTOMIZATION);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.motifId && parsed.pieceColors) return parsed;
-      }
-    } catch {
-      // fallback
-    }
-    return getDefaultCustomization(activeMotif.id, 'round');
-  };
-
-  const [composition, setComposition] = useState<CompositionSettings>(() => {
+  const getInitialComposition = (): CompositionSettings => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_COMPOSITION);
       if (saved) {
@@ -73,18 +60,103 @@ export default function App() {
       panX: 0,
       panY: 0
     };
-  });
+  };
 
-  // 2. Undo / Redo history for customization
+  const initialCompositionState = getInitialComposition();
+  const [composition, setComposition] = useState<CompositionSettings>(initialCompositionState);
+
+  const getInitialSnapshot = (): DesignSnapshot => {
+    let initialCust = getDefaultCustomization(activeMotif.id, 'round');
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_CUSTOMIZATION);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.motifId && parsed.pieceColors) initialCust = parsed;
+      }
+    } catch {
+      // fallback
+    }
+
+    const initialCompDesign: DesignCompositionState = {
+      repeatX: initialCompositionState.repeatX ?? 3,
+      repeatY: initialCompositionState.repeatY ?? 2,
+      patternUnitX: initialCompositionState.patternUnitX,
+      patternUnitY: initialCompositionState.patternUnitY,
+      spacingX: initialCompositionState.spacingX ?? 0,
+      spacingY: initialCompositionState.spacingY ?? 0,
+      staggered: initialCompositionState.staggered ?? false,
+      plainTileCadence: initialCompositionState.plainTileCadence ?? 'none',
+      cellOverrides: initialCompositionState.cellOverrides ?? {},
+      cellRotations: initialCompositionState.cellRotations ?? {},
+      showPlainBackground: initialCompositionState.showPlainBackground ?? false,
+      secondaryMotifId: initialCompositionState.secondaryMotifId ?? null,
+      combineRatio: initialCompositionState.combineRatio ?? 'single'
+    };
+
+    return {
+      motifId: initialCust.motifId || activeMotif.id,
+      customization: initialCust,
+      composition: initialCompDesign
+    };
+  };
+
+  // 2. Unified Undo / Redo history for customization + composition (cadences, cell overrides, rotations)
   const {
+    snapshot,
     customization,
-    setCustomization,
+    compositionDesign,
+    pushSnapshot,
     undo,
     redo,
     canUndo,
     canRedo,
     reset
-  } = useDesignHistory(getInitialCustomization());
+  } = useDesignHistory(getInitialSnapshot());
+
+  // Helper to update customization while pushing to unified history
+  const setCustomization = useCallback((
+    newCustomization: MotifCustomization | ((prev: MotifCustomization) => MotifCustomization)
+  ) => {
+    pushSnapshot(current => {
+      const nextCust = typeof newCustomization === 'function'
+        ? newCustomization(current.customization)
+        : newCustomization;
+      return {
+        ...current,
+        customization: nextCust
+      };
+    });
+  }, [pushSnapshot]);
+
+  // Synchronize composition design when history navigates backward or forward
+  useEffect(() => {
+    setComposition(prev => ({
+      ...prev,
+      repeatX: compositionDesign.repeatX,
+      repeatY: compositionDesign.repeatY,
+      patternUnitX: compositionDesign.patternUnitX,
+      patternUnitY: compositionDesign.patternUnitY,
+      spacingX: compositionDesign.spacingX,
+      spacingY: compositionDesign.spacingY,
+      staggered: compositionDesign.staggered,
+      plainTileCadence: compositionDesign.plainTileCadence,
+      cellOverrides: compositionDesign.cellOverrides,
+      cellRotations: compositionDesign.cellRotations,
+      showPlainBackground: compositionDesign.showPlainBackground,
+      secondaryMotifId: compositionDesign.secondaryMotifId,
+      combineRatio: compositionDesign.combineRatio
+    }));
+  }, [compositionDesign]);
+
+  // Synchronize active motif if snapshot has a different motif
+  useEffect(() => {
+    if (snapshot.motifId && snapshot.motifId !== activeMotif.id) {
+      const target = getMotifById(snapshot.motifId);
+      if (target) {
+        setActiveMotif(target);
+      }
+    }
+  }, [snapshot.motifId, activeMotif.id]);
 
   // 3. Selection & Viewport States
   const [selectedPieceIds, setSelectedPieceIds] = useState<string[]>([]);
@@ -277,8 +349,12 @@ export default function App() {
     setActiveMotif(motif);
     setSelectedPieceIds([]);
     const targetCust = getCustomizationForMotif(motif.id);
-    setCustomization(targetCust);
-  }, [getCustomizationForMotif, setCustomization]);
+    pushSnapshot(current => ({
+      ...current,
+      motifId: motif.id,
+      customization: targetCust
+    }));
+  }, [getCustomizationForMotif, pushSnapshot]);
 
   const handleGoToCustomizeMotif = useCallback((motifId: string) => {
     const target = getMotifById(motifId);
@@ -424,23 +500,36 @@ export default function App() {
 
   const handleConfirmNewDesign = useCallback(() => {
     const def = getDefaultCustomization(PETITE_MOTIFS[0].id, 'round');
-    setActiveMotif(PETITE_MOTIFS[0]);
-    reset(def);
-    setComposition(prev => ({
-      ...prev,
-      cellOverrides: {},
-      cellRotations: {},
-      viewMode: 'single',
+    const defaultCompDesign: DesignCompositionState = {
       repeatX: 3,
       repeatY: 2,
       spacingX: 0,
       spacingY: 0,
       staggered: false,
+      plainTileCadence: 'none',
+      cellOverrides: {},
+      cellRotations: {},
+      showPlainBackground: false,
+      secondaryMotifId: null,
+      combineRatio: 'single'
+    };
+
+    setActiveMotif(PETITE_MOTIFS[0]);
+    reset({
+      motifId: PETITE_MOTIFS[0].id,
+      customization: def,
+      composition: defaultCompDesign
+    });
+
+    setComposition(prev => ({
+      ...prev,
+      ...defaultCompDesign,
+      viewMode: 'single',
       zoom: 1.0,
       panX: 0,
-      panY: 0,
-      plainTileCadence: "none"
+      panY: 0
     }));
+
     setCustomizationsMap({ [PETITE_MOTIFS[0].id]: def });
     setEditedMotifIds({});
     try {
@@ -460,8 +549,40 @@ export default function App() {
   }, []);
 
   const handleUpdateComposition = useCallback((settings: Partial<CompositionSettings>) => {
+    // If only viewport/viewMode properties changed, do not push undo history step
+    const isOnlyViewport = Object.keys(settings).every(k => ['viewMode', 'zoom', 'panX', 'panY'].includes(k));
+
+    if (isOnlyViewport) {
+      setComposition(prev => ({ ...prev, ...settings }));
+      return;
+    }
+
+    pushSnapshot(current => {
+      const updatedComposition: DesignCompositionState = {
+        ...current.composition,
+        ...(settings.repeatX !== undefined ? { repeatX: settings.repeatX } : {}),
+        ...(settings.repeatY !== undefined ? { repeatY: settings.repeatY } : {}),
+        ...(settings.patternUnitX !== undefined ? { patternUnitX: settings.patternUnitX } : {}),
+        ...(settings.patternUnitY !== undefined ? { patternUnitY: settings.patternUnitY } : {}),
+        ...(settings.spacingX !== undefined ? { spacingX: settings.spacingX } : {}),
+        ...(settings.spacingY !== undefined ? { spacingY: settings.spacingY } : {}),
+        ...(settings.staggered !== undefined ? { staggered: settings.staggered } : {}),
+        ...(settings.plainTileCadence !== undefined ? { plainTileCadence: settings.plainTileCadence } : {}),
+        ...(settings.cellOverrides !== undefined ? { cellOverrides: settings.cellOverrides } : {}),
+        ...(settings.cellRotations !== undefined ? { cellRotations: settings.cellRotations } : {}),
+        ...(settings.showPlainBackground !== undefined ? { showPlainBackground: settings.showPlainBackground } : {}),
+        ...(settings.secondaryMotifId !== undefined ? { secondaryMotifId: settings.secondaryMotifId } : {}),
+        ...(settings.combineRatio !== undefined ? { combineRatio: settings.combineRatio } : {})
+      };
+
+      return {
+        ...current,
+        composition: updatedComposition
+      };
+    });
+
     setComposition(prev => ({ ...prev, ...settings }));
-  }, []);
+  }, [pushSnapshot]);
 
   // Quick Direct Downloads from Panel
   const handleDownloadSvgDirect = () => {

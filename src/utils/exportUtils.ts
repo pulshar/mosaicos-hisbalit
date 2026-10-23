@@ -442,6 +442,151 @@ export async function downloadSvgAsPng(
 
 
 /**
+ * Generates a full continuous mosaic surface SVG specifically crafted for the room simulation.
+ * Blankets the entire viewport/wall area with seamless interlocking tesserae (no gaps, no repeating seams,
+ * exact tresbolillo staggering, custom colors preserved, individual tile rotations honored).
+ */
+export function generateSimulationWallSvg(
+  motif: MotifDefinition,
+  customization: MotifCustomization,
+  composition: CompositionSettings,
+  aspectRatio: number,
+  scale: number = 1.0,
+  customizationsMap: Record<string, MotifCustomization> = {},
+  editedMotifIds: Record<string, boolean> = {}
+): string {
+  const format = customization.format;
+  const svgData = motif.svgData[format];
+
+  if (!svgData) {
+    return generateSingleMotifSvg(motif, customization, true);
+  }
+
+  const baseRotation = customization.rotation || 0;
+  const isRotated90or270 = baseRotation === 90 || baseRotation === 270;
+
+  // Exact geometric step between tiles according to orientation
+  // In 0°/180°: X = 286 (13 columns), Y = 304 (16 rows)
+  // In 90°/270°: X = 304 (16 rows), Y = 286 (13 columns)
+  const rawBaseStepX = format === 'round' ? 286 : 286.19;
+  const rawBaseStepY = format === 'round' ? 304 : 299.40;
+  const baseStepX = isRotated90or270 ? rawBaseStepY : rawBaseStepX;
+  const baseStepY = isRotated90or270 ? rawBaseStepX : rawBaseStepY;
+
+  const unitW = baseStepX + composition.spacingX;
+  const unitH = baseStepY + composition.spacingY;
+
+  // Horizontal shift in tresbolillo (staggered)
+  const rawStaggerShiftX = isRotated90or270
+    ? (format === 'round' ? 152 : 149.70)
+    : (format === 'round' ? 132 : 132.09);
+
+  const staggerShiftX = composition.staggered
+    ? rawStaggerShiftX + (composition.spacingX * 0.5)
+    : 0;
+
+  // Simulation virtual coordinate space matching photo aspect ratio
+  const roomW = 1920;
+  const roomH = Math.round(1920 / Math.max(0.2, aspectRatio));
+
+  // Determine scaling so scale=1.0 represents realistic architectural proportion
+  // e.g. at scale 1.0, one tile is ~275px wide in the 1920 space
+  const effectiveScale = Math.max(0.25, Math.min(3.0, scale));
+  const tileDisplayW = 275 * effectiveScale;
+  const scaleFactor = tileDisplayW / unitW;
+
+  // Calculate needed columns and rows in unscaled tile coordinates to fully blanket [0, roomW] x [0, roomH]
+  const scaledUnitW = unitW * scaleFactor;
+  const scaledUnitH = unitH * scaleFactor;
+  const colsCount = Math.ceil(roomW / scaledUnitW) + 2;
+  const rowsCount = Math.ceil(roomH / scaledUnitH) + 2;
+
+  // Cache for SVG motif definitions
+  const motifSvgInnersCache: Record<string, string> = {};
+
+  const getSvgInnerForMotif = (mId: string, rot: number): string => {
+    const cacheKey = `${mId}_${rot}`;
+    if (motifSvgInnersCache[cacheKey]) return motifSvgInnersCache[cacheKey];
+
+    const targetMotif = getMotifById(mId);
+    if (!targetMotif || !targetMotif.svgData[format]) {
+      return generatePlainTileSvgInner(motif, customization, rot);
+    }
+
+    const effCust = resolveEffectiveMotifCustomization(
+      mId,
+      format,
+      customization,
+      customizationsMap,
+      editedMotifIds
+    );
+
+    const custWithRot: MotifCustomization = {
+      ...effCust,
+      rotation: rot
+    };
+
+    const inner = generateSingleMotifSvg(targetMotif, custWithRot, false)
+      .replace(/^<svg[^>]*>/, '')
+      .replace(/<\/svg>$/, '');
+
+    motifSvgInnersCache[cacheKey] = inner;
+    return inner;
+  };
+
+  const compCols = Math.max(1, composition.repeatX);
+  const compRows = Math.max(1, composition.repeatY);
+
+  const instances: string[] = [];
+
+  // Loop with safety buffer tiles on all borders to prevent edge clipping under any stagger or scale
+  for (let r = -1; r <= rowsCount + 1; r++) {
+    for (let c = -1; c <= colsCount + 1; c++) {
+      // Calculate stagger row parity (handles negative r correctly)
+      const isOddRow = Math.abs(r) % 2 === 1;
+      const offsetX = c * unitW + (composition.staggered && isOddRow ? staggerShiftX : 0);
+      const offsetY = r * unitH;
+
+      // Map to composition grid with positive modulo
+      const compR = ((r % compRows) + compRows) % compRows;
+      const compC = ((c % compCols) + compCols) % compCols;
+      const cellKey = `${compR}-${compC}`;
+
+      const cellMotifId = getCellMotif(
+        compR,
+        compC,
+        composition.plainTileCadence || 'none',
+        compCols,
+        composition.cellOverrides,
+        motif.id
+      );
+
+      const cellOffset = composition.cellRotations?.[cellKey] ?? 0;
+      const cellRot = ((baseRotation ?? 0) + cellOffset) % 360;
+
+      let content: string;
+      if (!cellMotifId) {
+        content = generatePlainTileSvgInner(motif, customization, cellRot);
+      } else {
+        content = getSvgInnerForMotif(cellMotifId, cellRot);
+      }
+
+      instances.push(`
+    <g transform="translate(${offsetX.toFixed(1)}, ${offsetY.toFixed(1)})">
+      ${content}
+    </g>`);
+    }
+  }
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${roomW}" height="${roomH}" viewBox="0 0 ${roomW} ${roomH}">
+  <g transform="scale(${scaleFactor.toFixed(5)})">
+    ${instances.join('\n')}
+  </g>
+</svg>`.trim();
+}
+
+/**
  * Render Room Simulation combined with the Mosaic Pattern and export in high-res / 4K
  */
 export async function exportSimulationAsPng(
@@ -449,9 +594,11 @@ export async function exportSimulationAsPng(
   svgPatternString: string,
   polygonPoints: [number, number][],
   scale = 1.0,
-  blendMode: 'multiply' | 'normal' | 'overlay' | 'soft-light' = 'multiply',
+  blendMode: 'multiply' | 'normal' = 'multiply',
   fileName = 'Mosaico-Studio_Simulacion_Espacio_4K.png',
-  resolution: '4k' | '2k' = '4k'
+  resolution: '4k' | '2k' = '4k',
+  isForegroundOverlay = false,
+  opacity = 1
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const roomImg = new Image();
@@ -478,10 +625,7 @@ export async function exportSimulationAsPng(
           return;
         }
 
-        // 1. Draw original room photo in high resolution
-        ctx.drawImage(roomImg, 0, 0, targetW, targetH);
-
-        // Helper to construct outer surface + cutouts path
+        // Helper to construct outer surface
         const buildSurfacePath = () => {
           ctx.beginPath();
           polygonPoints.forEach(([px, py], idx) => {
@@ -494,42 +638,42 @@ export async function exportSimulationAsPng(
           ctx.clip();
         };
 
-        // 2. Setup polygon clipping region with foreground object holes
-        ctx.save();
-        buildSurfacePath();
+        if (isForegroundOverlay) {
+          // 1. Draw warm base wall background
+          ctx.fillStyle = '#FAF8F5';
+          ctx.fillRect(0, 0, targetW, targetH);
 
-        // 3. Apply realistic blend mode
-        ctx.globalCompositeOperation = blendMode === 'multiply' ? 'multiply' : 'source-over';
-        ctx.globalAlpha = 0.95;
-
-        // 4. Create pattern repeating fill
-        // Create an offscreen pattern canvas scaled according to user preference
-        const tileW = Math.max(80, (targetW * 0.15) * scale);
-        const tileAspect = patternImg.width / patternImg.height;
-        const tileH = tileW / tileAspect;
-
-        const tileCanvas = document.createElement('canvas');
-        tileCanvas.width = tileW;
-        tileCanvas.height = tileH;
-        const tileCtx = tileCanvas.getContext('2d');
-        if (tileCtx) {
-          tileCtx.drawImage(patternImg, 0, 0, tileW, tileH);
-          const pattern = ctx.createPattern(tileCanvas, 'repeat');
-          if (pattern) {
-            ctx.fillStyle = pattern;
-            ctx.fillRect(0, 0, targetW, targetH);
-          }
-        }
-
-        ctx.restore();
-
-        // Optional subtle lighting overlay if multiply
-        if (blendMode === 'multiply') {
+          // 2. Render continuous mosaic surface in the wall polygon area
           ctx.save();
           buildSurfacePath();
-          ctx.globalCompositeOperation = 'soft-light';
-          ctx.drawImage(roomImg, 0, 0, targetW, targetH);
+          ctx.globalAlpha = opacity;
+          ctx.drawImage(patternImg, 0, 0, targetW, targetH);
           ctx.restore();
+
+          // 3. Draw foreground room image with transparent wall cutout and realistic shadows on top!
+          ctx.drawImage(roomImg, 0, 0, targetW, targetH);
+        } else {
+          // 1. Draw original room photo in high resolution
+          ctx.drawImage(roomImg, 0, 0, targetW, targetH);
+
+          // 2. Setup polygon clipping region with foreground object holes
+          ctx.save();
+          buildSurfacePath();
+
+          // 3. Apply realistic blend mode
+          ctx.globalCompositeOperation = blendMode === 'multiply' ? 'multiply' : 'source-over';
+          ctx.globalAlpha = opacity;
+          ctx.drawImage(patternImg, 0, 0, targetW, targetH);
+          ctx.restore();
+
+          // Optional subtle lighting overlay if multiply
+          if (blendMode === 'multiply') {
+            ctx.save();
+            buildSurfacePath();
+            ctx.globalCompositeOperation = 'soft-light';
+            ctx.drawImage(roomImg, 0, 0, targetW, targetH);
+            ctx.restore();
+          }
         }
 
         // Export result

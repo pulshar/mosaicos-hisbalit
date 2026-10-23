@@ -2,6 +2,26 @@ import { SpacePreset } from '../types';
 
 export const SPACE_PRESETS: SpacePreset[] = [
   {
+    id: 'comedor-nordico',
+    name: 'Comedor Nórdico',
+    category: 'living',
+    image: '/assets/images/comedor-nordico.webp',
+    description: 'Pared frontal de comedor de diseño con mesa, sillas nórdicas, aparador de roble y sombras realistas integradas en recorte alfa.',
+    surfaceLabel: 'Pared Frontal Comedor',
+    aspectRatio: '3/2',
+    isForegroundOverlay: true,
+    polygonPoints: [
+      [3.3, 2.4],
+      [100, 2.4],
+      [100, 100],
+      [3.3, 100]
+    ],
+    defaultScale: 0.475,
+    offsetX: 36,
+    offsetY: 18,
+    blendMode: 'normal'
+  },
+  {
     id: 'bathroom_wall',
     name: 'Baño Principal — Frontal Lavabo',
     category: 'bath',
@@ -15,7 +35,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [84, 92],
       [37, 92]
     ],
-    defaultScale: 1.0,
+    defaultScale: 0.45,
     blendMode: 'multiply'
   },
   {
@@ -31,7 +51,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [100, 100],
       [0, 100]
     ],
-    defaultScale: 1.2,
+    defaultScale: 0.45,
     blendMode: 'multiply'
   },
   {
@@ -47,7 +67,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [72, 98],
       [28, 98]
     ],
-    defaultScale: 0.9,
+    defaultScale: 0.45,
     blendMode: 'multiply'
   },
   {
@@ -63,7 +83,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [99, 60],
       [42, 60]
     ],
-    defaultScale: 0.85,
+    defaultScale: 0.45,
     blendMode: 'multiply'
   }
 ];

@@ -82,7 +82,7 @@ export interface CompositionSettings {
 export interface SpacePreset {
   id: string;
   name: string;
-  category: 'bath' | 'floor' | 'kitchen';
+  category: 'bath' | 'floor' | 'kitchen' | 'living' | 'dining';
   image: string;
   description: string;
   surfaceLabel: string;
@@ -90,8 +90,10 @@ export interface SpacePreset {
   // Polygon coordinates [ [x1,y1], [x2,y2], [x3,y3], [x4,y4] ] in percent 0..100
   polygonPoints: [number, number][];
   defaultScale: number;
-  blendMode: 'multiply' | 'normal' | 'overlay' | 'soft-light';
-  lightingGradient?: string;
+  offsetX?: number;
+  offsetY?: number;
+  blendMode: 'multiply' | 'normal';
+  isForegroundOverlay?: boolean;
 }
 
 export interface SimulationSettings {
@@ -100,7 +102,7 @@ export interface SimulationSettings {
   customPolygonPoints: [number, number][];
   scale: number;
   opacity: number;
-  blendMode: 'multiply' | 'normal' | 'overlay' | 'soft-light';
+  blendMode: 'multiply' | 'normal';
   brightness: number;
   perspectiveAngle: number;
 }

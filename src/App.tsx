@@ -623,6 +623,8 @@ export default function App() {
             motif={activeMotif}
             customization={customization}
             composition={composition}
+            customizationsMap={customizationsMap}
+            editedMotifIds={editedMotifIds}
             onClose={() => setComposition(prev => ({ ...prev, viewMode: 'single' }))}
           />
         ) : (

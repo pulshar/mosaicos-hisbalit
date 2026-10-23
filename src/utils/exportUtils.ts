@@ -1,4 +1,4 @@
-import { MotifDefinition, MotifCustomization, CompositionSettings, SpacePreset, PlainTileCadence } from '../types';
+import { MotifDefinition, MotifCustomization, CompositionSettings, SpacePreset, PerspectiveTransformConfig, PlainTileCadence } from '../types';
 import { getMotifById } from '../data/motifs';
 import { resolveEffectiveMotifCustomization } from './motifColorUtils';
 
@@ -587,6 +587,125 @@ export function generateSimulationWallSvg(
 </svg>`.trim();
 }
 
+
+
+/**
+ * Renders pattern onto canvas with perspective/3D slice projection
+ */
+function drawPatternWithPerspective(
+  ctx: CanvasRenderingContext2D,
+  patternImg: HTMLImageElement,
+  targetW: number,
+  targetH: number,
+  config?: PerspectiveTransformConfig
+) {
+  if (!config) {
+    ctx.drawImage(patternImg, 0, 0, targetW, targetH);
+    return;
+  }
+
+  const originXPercent = parseFloat(config.originX ?? '50') / 100;
+  const originYPercent = parseFloat(config.originY ?? '50') / 100;
+  const x0 = targetW * originXPercent;
+  const y0 = targetH * originYPercent;
+
+  const d = config.perspective ?? 1500;
+  const rotX = (config.rotateX ?? 0) * (Math.PI / 180);
+  const rotY = (config.rotateY ?? 0) * (Math.PI / 180);
+  const skewY = (config.skewY ?? 0) * (Math.PI / 180);
+  const overallScale = config.scale ?? 1.0;
+  const sxComp = (config.scaleX ?? 1.0) * overallScale;
+  const syComp = (config.scaleY ?? 1.0) * overallScale;
+  const offX = ((config.offsetX ?? 0) / 100) * targetW;
+  const offY = ((config.offsetY ?? 0) / 100) * targetH;
+
+  // If no 3D rotation, just affine transform
+  if (!config.rotateY && !config.rotateX && !config.perspective) {
+    ctx.save();
+    ctx.translate(x0 + offX, y0 + offY);
+    if (config.skewY) ctx.transform(1, Math.tan(skewY), 0, 1, 0, 0);
+    ctx.scale(sxComp, syComp);
+    ctx.drawImage(patternImg, -x0, -y0, targetW, targetH);
+    ctx.restore();
+    return;
+  }
+
+
+  // 3D horizontal strip projection for floor / pitch (rotateX)
+  if (Math.abs(config.rotateX ?? 0) > 0.05) {
+    const sliceH = 2;
+    const numSlices = Math.ceil(targetH / sliceH);
+
+    ctx.save();
+    for (let i = 0; i < numSlices; i++) {
+      const ySrc = i * sliceH;
+      const currentSliceH = Math.min(sliceH, targetH - ySrc);
+
+      // Y coordinate relative to origin
+      const ry = (ySrc + currentSliceH / 2) - y0;
+
+      // 3D Rotation around X axis
+      const yRot = ry * Math.cos(rotX) * syComp;
+      const zRot = ry * Math.sin(rotX);
+
+      // Perspective projection factor
+      const s = d / (d - zRot);
+      if (s <= 0 || s > 20) continue;
+
+      // Projected position on canvas
+      const yDst = y0 + yRot * s + offY - (currentSliceH * s) / 2;
+      const sliceDstH = currentSliceH * s * 1.05; // slight overlap to prevent rounding gaps
+
+      const sliceDstW = targetW * s * sxComp;
+      const xDst = x0 - (x0 * s * sxComp) + offX;
+
+      ctx.drawImage(
+        patternImg,
+        0, ySrc, targetW, currentSliceH,
+        xDst, yDst, sliceDstW, sliceDstH
+      );
+    }
+    ctx.restore();
+    return;
+  }
+
+  // 3D vertical strip projection (2px strips for subpixel smoothness)
+  const sliceW = 2;
+  const numSlices = Math.ceil(targetW / sliceW);
+
+  ctx.save();
+  for (let i = 0; i < numSlices; i++) {
+    const xSrc = i * sliceW;
+    const currentSliceW = Math.min(sliceW, targetW - xSrc);
+
+    // X coordinate relative to origin
+    const rx = (xSrc + currentSliceW / 2) - x0;
+
+    // 3D Rotation around Y axis
+    const xRot = rx * Math.cos(rotY) * sxComp;
+    const zRot = -rx * Math.sin(rotY);
+
+    // Perspective projection factor
+    const s = d / (d - zRot);
+    if (s <= 0) continue;
+
+    // Projected position on canvas
+    const xDst = x0 + xRot * s + offX - (currentSliceW * s) / 2;
+    const sliceDstW = currentSliceW * s * 1.02; // slight overlap to prevent rounding gaps
+
+    // Vertical shear and scale
+    const yShift = rx * Math.tan(skewY);
+    const yTopDst = y0 + (-y0 + yShift) * s * syComp + offY;
+    const sliceDstH = targetH * s * syComp;
+
+    ctx.drawImage(
+      patternImg,
+      xSrc, 0, currentSliceW, targetH,
+      xDst, yTopDst, sliceDstW, sliceDstH
+    );
+  }
+  ctx.restore();
+}
 /**
  * Render Room Simulation combined with the Mosaic Pattern and export in high-res / 4K
  */
@@ -599,7 +718,8 @@ export async function exportSimulationAsPng(
   fileName = 'Mosaico-Studio_Simulacion_Espacio_4K.png',
   resolution: '4k' | '2k' = '4k',
   isForegroundOverlay = false,
-  opacity = 1
+  opacity = 1,
+  perspectiveTransform?: PerspectiveTransformConfig
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const roomImg = new Image();

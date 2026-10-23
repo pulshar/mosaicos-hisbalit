@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SPACE_PRESETS } from '../data/spaces';
-import { SpacePreset, MotifDefinition, MotifCustomization, CompositionSettings } from '../types';
+import { SpacePreset, PerspectiveTransformConfig, MotifDefinition, MotifCustomization, CompositionSettings } from '../types';
 import { generateSimulationWallSvg, exportSimulationAsPng } from '../utils/exportUtils';
 import {
   Download,
@@ -15,6 +15,32 @@ import {
   Maximize2
 } from 'lucide-react';
 
+const getPerspectiveTransformStyle = (config?: PerspectiveTransformConfig): React.CSSProperties => {
+  if (!config) return {};
+
+  const transforms: string[] = [];
+  if (config.perspective) transforms.push(`perspective(${config.perspective}px)`);
+  if (config.rotateX) transforms.push(`rotateX(${config.rotateX}deg)`);
+  if (config.rotateY) transforms.push(`rotateY(${config.rotateY}deg)`);
+  if (config.rotateZ) transforms.push(`rotateZ(${config.rotateZ}deg)`);
+  if (config.skewY) transforms.push(`skewY(${config.skewY}deg)`);
+  if (config.scaleX || config.scaleY || config.scale) {
+    const sx = (config.scaleX ?? 1) * (config.scale ?? 1);
+    const sy = (config.scaleY ?? 1) * (config.scale ?? 1);
+    transforms.push(`scale(${sx}, ${sy})`);
+  }
+  if (config.offsetX || config.offsetY) {
+    transforms.push(`translate(${config.offsetX ?? 0}%, ${config.offsetY ?? 0}%)`);
+  }
+
+  return {
+    transform: transforms.join(' '),
+    transformOrigin: `${config.originX ?? '50%'} ${config.originY ?? '50%'}`,
+    transformStyle: 'preserve-3d',
+    willChange: 'transform'
+  };
+};
+
 interface SpaceSimulatorProps {
   motif: MotifDefinition;
   customization: MotifCustomization;
@@ -24,6 +50,8 @@ interface SpaceSimulatorProps {
   onClose: () => void;
 }
 
+const STORAGE_KEY_SELECTED_SPACE = 'mosaico_studio_selected_space_id';
+
 export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   motif,
   customization,
@@ -32,22 +60,44 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   editedMotifIds = {},
   onClose
 }) => {
-  const [selectedSpaceId, setSelectedSpaceId] = useState<string>(SPACE_PRESETS[0].id);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SELECTED_SPACE);
+      if (saved && SPACE_PRESETS.some(s => s.id === saved)) {
+        return saved;
+      }
+    } catch {
+      // fallback
+    }
+    return SPACE_PRESETS[0].id;
+  });
   const [customPhotoUrl, setCustomPhotoUrl] = useState<string | null>(null);
   const [customAspectRatio, setCustomAspectRatio] = useState<number | null>(null);
   const [customIsOverlay, setCustomIsOverlay] = useState<boolean>(false);
-  const [scale, setScale] = useState<number>(SPACE_PRESETS[0].defaultScale ?? 1.0);
-  const [blendMode, setBlendMode] = useState<'multiply' | 'normal'>('multiply');
-  const [opacity, setOpacity] = useState<number>(1);
-  const [isAdjustingSurface, setIsAdjustingSurface] = useState<boolean>(false);
-  const [isExporting, setIsExporting] = useState<boolean>(false);
 
   // Active space preset
   const activePreset = SPACE_PRESETS.find(s => s.id === selectedSpaceId) || SPACE_PRESETS[0];
   const isForegroundOverlay = customPhotoUrl ? customIsOverlay : Boolean(activePreset.isForegroundOverlay);
 
+  const [scale, setScale] = useState<number>(() => activePreset.defaultScale ?? 1.0);
+  const [blendMode, setBlendMode] = useState<'multiply' | 'normal'>(() => activePreset.blendMode ?? 'normal');
+  const [opacity, setOpacity] = useState<number>(1);
+  const [isAdjustingSurface, setIsAdjustingSurface] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+
   // Polygon points in % coordinates [[x, y], ...]
-  const [polygonPoints, setPolygonPoints] = useState<[number, number][]>(activePreset.polygonPoints);
+  const [polygonPoints, setPolygonPoints] = useState<[number, number][]>(() => activePreset.polygonPoints);
+
+  // Persist the selected space to localStorage whenever it changes
+  useEffect(() => {
+    if (selectedSpaceId && !customPhotoUrl) {
+      try {
+        localStorage.setItem(STORAGE_KEY_SELECTED_SPACE, selectedSpaceId);
+      } catch {
+        // ignore
+      }
+    }
+  }, [selectedSpaceId, customPhotoUrl]);
 
   // When changing space preset, update polygon points
   useEffect(() => {
@@ -149,7 +199,8 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         fileName,
         resolution,
         isForegroundOverlay,
-        opacity
+        opacity,
+        activePreset.perspectiveTransform
       );
     } catch (err) {
       console.error('Simulation export error:', err);
@@ -225,10 +276,11 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                     src={svgDataUri}
                     alt="Mosaico simulación"
                     className="w-full h-full object-cover block select-none pointer-events-none"
-                    style={{
-                      transform: `translate(${activePreset.offsetX ?? 0}px, ${activePreset.offsetY ?? 0}px)`
-                    }}
+                    style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
                   />
+                  <div
+                    className="absolute inset-0 bg-black/3"
+                  ></div>
                 </div>
 
                 {/* 2. Foreground Photorealistic Room with Cutout & Realistic Shadows */}
@@ -262,7 +314,11 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                     src={svgDataUri}
                     alt="Mosaico simulación"
                     className="w-full h-full object-cover block select-none pointer-events-none"
+                    style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
                   />
+                  <div
+                    className="absolute inset-0 bg-black/3"
+                  ></div>
                 </div>
 
                 {/* 3. Subtle Lighting & Shadow Softening Overlay */}

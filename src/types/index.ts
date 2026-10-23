@@ -78,6 +78,20 @@ export interface CompositionSettings {
   panY: number;
 }
 
+export interface PerspectiveTransformConfig {
+  perspective?: number;     // Virtual camera distance in px (e.g. 1500)
+  rotateY?: number;         // Rotation around Y axis in degrees (e.g. -10)
+  rotateX?: number;         // Rotation around X axis in degrees (e.g. 0)
+  rotateZ?: number;         // Rotation around Z axis in degrees (e.g. 0)
+  skewY?: number;           // Vertical shear in degrees (e.g. -2.4)
+  scale?: number;           // Uniform scale compensation (e.g. 1.05)
+  scaleX?: number;          // X-axis scale compensation
+  scaleY?: number;          // Y-axis scale compensation
+  originX?: string;         // Transform origin X (e.g. '39.7%' or '40%')
+  originY?: string;         // Transform origin Y (e.g. '50%')
+  offsetX?: number;         // Translation X in percentage
+  offsetY?: number;         // Translation Y in percentage
+}
 
 export interface SpacePreset {
   id: string;
@@ -90,10 +104,9 @@ export interface SpacePreset {
   // Polygon coordinates [ [x1,y1], [x2,y2], [x3,y3], [x4,y4] ] in percent 0..100
   polygonPoints: [number, number][];
   defaultScale: number;
-  offsetX?: number;
-  offsetY?: number;
   blendMode: 'multiply' | 'normal';
   isForegroundOverlay?: boolean;
+  perspectiveTransform?: PerspectiveTransformConfig;
 }
 
 export interface SimulationSettings {

@@ -225,9 +225,9 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                     src={svgDataUri}
                     alt="Mosaico simulación"
                     className="w-full h-full object-cover block select-none pointer-events-none"
-                  // style={{
-                  //   transform: `translate(${activePreset.offsetX ?? 0}px, ${activePreset.offsetY ?? 0}px)`
-                  // }}
+                    style={{
+                      transform: `translate(${activePreset.offsetX ?? 0}px, ${activePreset.offsetY ?? 0}px)`
+                    }}
                   />
                 </div>
 
@@ -356,7 +356,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       : 'border-white/10 bg-white/5 hover:border-white/30'
                       }`}
                   >
-                    <div className="aspect-video w-full rounded overflow-hidden mb-1.5 bg-white/40">
+                    <div className="aspect-video w-full rounded overflow-hidden mb-1.5 bg-white/70">
                       <img
                         src={preset.image}
                         alt={preset.name}
@@ -371,9 +371,11 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                         ? 'Baño'
                         : preset.category === 'kitchen'
                           ? 'Cocina'
-                          : preset.category === 'living'
-                            ? 'Comedor / Salón'
-                            : 'Suelo'}
+                          : preset.category === 'office'
+                            ? 'Despacho / Estudio'
+                            : preset.category === 'living'
+                              ? 'Comedor / Salón'
+                              : 'Suelo'}
                     </div>
                   </button>
                 );

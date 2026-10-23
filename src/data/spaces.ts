@@ -2,6 +2,24 @@ import { SpacePreset } from '../types';
 
 export const SPACE_PRESETS: SpacePreset[] = [
   {
+    id: 'comedor-hornacina',
+    name: 'Comedor con hornacina',
+    category: 'living',
+    image: '/assets/images/comedor-hornacina.webp',
+    description: 'Pared de comedor con hornacina en arco, baldas de madera rústica, mesa y sillas con sombras reales integradas en recorte alfa.',
+    surfaceLabel: 'Pared con Hornacina',
+    aspectRatio: '3/2',
+    isForegroundOverlay: true,
+    polygonPoints: [
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100]
+    ],
+    defaultScale: 0.94,
+    blendMode: 'normal'
+  },
+  {
     id: 'comedor-nordico',
     name: 'Comedor Nórdico',
     category: 'living',
@@ -17,8 +35,48 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [3.3, 100]
     ],
     defaultScale: 1,
-    offsetX: 34,
-    offsetY: 18,
+    // offsetX: 34,
+    // offsetY: 18,
+    offsetX: 0,
+    offsetY: 0,
+    blendMode: 'normal'
+  },
+  {
+    id: 'despacho-nordico',
+    name: 'Despacho Nórdico',
+    category: 'office',
+    image: '/assets/images/despacho-nordico.webp',
+    description: 'Zona de trabajo con escritorio de madera negra, silla de rejilla, portátil, cuadro minimalista, planta y sombras reales integradas en recorte alfa.',
+    surfaceLabel: 'Pared Despacho',
+    aspectRatio: '3/2',
+    isForegroundOverlay: true,
+    polygonPoints: [
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100]
+    ],
+    defaultScale: 1.6,
+    offsetX: 0,
+    offsetY: 0,
+    blendMode: 'normal'
+  },
+  {
+    id: 'kitchen_fleche',
+    name: 'Cocina Nórdica',
+    category: 'kitchen',
+    image: '/assets/images/cocina-nordica.webp',
+    description: 'Frontal completo de cocina nórdica con encimera negra, cafetera espresso, tostador, estantes flotantes, menaje y sombras realistas integradas en recorte alfa.',
+    surfaceLabel: 'Frontal Cocina',
+    aspectRatio: '3/2',
+    isForegroundOverlay: true,
+    polygonPoints: [
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100]
+    ],
+    defaultScale: 1.475,
     blendMode: 'normal'
   },
   {

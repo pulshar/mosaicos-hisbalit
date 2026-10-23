@@ -82,7 +82,7 @@ export interface CompositionSettings {
 export interface SpacePreset {
   id: string;
   name: string;
-  category: 'bath' | 'floor' | 'kitchen' | 'living' | 'dining';
+  category: 'bath' | 'floor' | 'kitchen' | 'living' | 'dining' | 'office';
   image: string;
   description: string;
   surfaceLabel: string;

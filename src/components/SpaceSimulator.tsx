@@ -84,6 +84,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const [opacity, setOpacity] = useState<number>(1);
   const [isAdjustingSurface, setIsAdjustingSurface] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
 
   // Polygon points in % coordinates [[x, y], ...]
   const [polygonPoints, setPolygonPoints] = useState<[number, number][]>(() => activePreset.polygonPoints);
@@ -110,6 +111,43 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
 
   const activeImageUrl = customPhotoUrl || activePreset.image;
 
+  // Smooth preloading and transition when switching spaces (guaranteed min 1 second for a calm, polished transition)
+  useEffect(() => {
+    let isMounted = true;
+    setIsImageLoading(true);
+
+    const startTime = Date.now();
+    const MIN_LOADING_MS = 1000; // Always guarantee at least 1 second
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = activeImageUrl;
+
+    const finishLoading = () => {
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_LOADING_MS - elapsed);
+
+      setTimeout(() => {
+        if (isMounted) {
+          setIsImageLoading(false);
+        }
+      }, remainingTime);
+    };
+
+    if (img.complete && img.naturalWidth > 0) {
+      finishLoading();
+    } else {
+      img.onload = finishLoading;
+      img.onerror = () => {
+        if (isMounted) finishLoading();
+      };
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedSpaceId, customPhotoUrl, activeImageUrl]);
+
   // Aspect ratio calculation
   const presetAspectParts = (activePreset.aspectRatio || '16/9').split('/').map(Number);
   const presetAspect = (presetAspectParts[0] && presetAspectParts[1]) ? presetAspectParts[0] / presetAspectParts[1] : 16 / 9;
@@ -132,24 +170,26 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const handleCustomPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setIsImageLoading(true);
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
         if (img.naturalWidth && img.naturalHeight) {
           setCustomAspectRatio(img.naturalWidth / img.naturalHeight);
         }
+        setCustomPhotoUrl(url);
+        // Set reasonable default polygon covering center wall/floor
+        setPolygonPoints([
+          [20, 20],
+          [80, 20],
+          [80, 80],
+          [20, 80]
+        ]);
+        setScale(1.0);
+        setIsAdjustingSurface(true);
+        setTimeout(() => setIsImageLoading(false), 1000);
       };
       img.src = url;
-      setCustomPhotoUrl(url);
-      // Set reasonable default polygon covering center wall/floor
-      setPolygonPoints([
-        [20, 20],
-        [80, 20],
-        [80, 80],
-        [20, 80]
-      ]);
-      setScale(1.0);
-      setIsAdjustingSurface(true);
     }
   };
 
@@ -250,91 +290,112 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         </div>
 
         {/* The Viewport Container */}
-        <div className="flex-1 w-full h-full flex items-center justify-center p-6 relative overflow-auto bg-[#141414]">
+        <div className="flex-1 w-full h-full flex items-center justify-center p-6 relative overflow-auto">
           <div
             ref={imageContainerRef}
             onPointerMove={handlePointerMoveContainer}
             onPointerUp={handlePointerUpContainer}
-            className="relative rounded-lg overflow-hidden shadow-2xl max-w-full max-h-full border border-white/10 bg-[#FAF8F5]"
+            className={`relative rounded-lg overflow-hidden border border-white/10 shadow-2xl max-w-full max-h-full ${isImageLoading ? 'bg-[#141414]' : 'bg-[#FAF8F5]'}`}
             style={{
               aspectRatio: activePreset.aspectRatio || '16/9',
               width: '100%',
               maxWidth: '1200px'
             }}
           >
-            {isForegroundOverlay ? (
-              <>
-                {/* 1. Seamless Mosaic Surface Behind (Clipped to Polygon) */}
-                <div
-                  className="absolute inset-0 pointer-events-none transition-all duration-75 overflow-hidden"
-                  style={{
-                    clipPath: clipPathString,
-                    opacity: opacity
-                  }}
-                >
-                  <img
-                    src={svgDataUri}
-                    alt="Mosaico simulación"
-                    className="w-full h-full object-cover block select-none pointer-events-none"
-                    style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
-                  />
+            {/* Visual Layers with Soft Dimming & Blur during Room Transition */}
+            <div
+              className={`w-full h-full relative transition-all duration-300 ease-out ${isImageLoading ? 'opacity-0 scale-[0.96]' : 'opacity-100 scale-100'
+                }`}
+            >
+              {isForegroundOverlay ? (
+                <>
+                  {/* 1. Seamless Mosaic Surface Behind (Clipped to Polygon) */}
                   <div
-                    className="absolute inset-0 bg-black/3"
-                  ></div>
-                </div>
-
-                {/* 2. Foreground Photorealistic Room with Cutout & Realistic Shadows */}
-                <img
-                  src={activeImageUrl}
-                  alt={activePreset.name}
-                  className="w-full h-full object-cover block select-none pointer-events-none absolute inset-0 z-10"
-                  crossOrigin="anonymous"
-                />
-              </>
-            ) : (
-              <>
-                {/* 1. Base Room Photography */}
-                <img
-                  src={activeImageUrl}
-                  alt={activePreset.name}
-                  className="w-full h-full object-cover block select-none pointer-events-none"
-                  crossOrigin="anonymous"
-                />
-
-                {/* 2. Seamless Mosaic Surface Overlay (Clipped to Polygon) */}
-                <div
-                  className="absolute inset-0 pointer-events-none transition-all duration-75 overflow-hidden"
-                  style={{
-                    clipPath: clipPathString,
-                    mixBlendMode: blendMode,
-                    opacity: opacity
-                  }}
-                >
-                  <img
-                    src={svgDataUri}
-                    alt="Mosaico simulación"
-                    className="w-full h-full object-cover block select-none pointer-events-none"
-                    style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
-                  />
-                  <div
-                    className="absolute inset-0 bg-black/3"
-                  ></div>
-                </div>
-
-                {/* 3. Subtle Lighting & Shadow Softening Overlay */}
-                {blendMode === 'multiply' && (
-                  <div
-                    className="absolute inset-0 pointer-events-none opacity-40 mix-blend-soft-light"
+                    className="absolute inset-0 pointer-events-none transition-all duration-75 overflow-hidden"
                     style={{
                       clipPath: clipPathString,
-                      backgroundImage: `url(${activeImageUrl})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center'
+                      opacity: opacity
                     }}
+                  >
+                    <img
+                      src={svgDataUri}
+                      alt="Mosaico simulación"
+                      className="w-full h-full object-cover block select-none pointer-events-none"
+                      style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
+                    />
+                    <div
+                      className="absolute inset-0 bg-black/3"
+                    ></div>
+                  </div>
+
+                  {/* 2. Foreground Photorealistic Room with Cutout & Realistic Shadows */}
+                  <img
+                    src={activeImageUrl}
+                    alt={activePreset.name}
+                    className="w-full h-full object-cover block select-none pointer-events-none absolute inset-0 z-10"
+                    crossOrigin="anonymous"
                   />
-                )}
-              </>
-            )}
+                </>
+              ) : (
+                <>
+                  {/* 1. Base Room Photography */}
+                  <img
+                    src={activeImageUrl}
+                    alt={activePreset.name}
+                    className="w-full h-full object-cover block select-none pointer-events-none"
+                    crossOrigin="anonymous"
+                  />
+
+                  {/* 2. Seamless Mosaic Surface Overlay (Clipped to Polygon) */}
+                  <div
+                    className="absolute inset-0 pointer-events-none transition-all duration-75 overflow-hidden"
+                    style={{
+                      clipPath: clipPathString,
+                      mixBlendMode: blendMode,
+                      opacity: opacity
+                    }}
+                  >
+                    <img
+                      src={svgDataUri}
+                      alt="Mosaico simulación"
+                      className="w-full h-full object-cover block select-none pointer-events-none"
+                      style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
+                    />
+                    <div
+                      className="absolute inset-0 bg-black/3"
+                    ></div>
+                  </div>
+
+                  {/* 3. Subtle Lighting & Shadow Softening Overlay */}
+                  {blendMode === 'multiply' && (
+                    <div
+                      className="absolute inset-0 pointer-events-none opacity-40 mix-blend-soft-light"
+                      style={{
+                        clipPath: clipPathString,
+                        backgroundImage: `url(${activeImageUrl})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                      }}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Elegant Architectural Loading Overlay */}
+            {/* Lightweight Minimal Loading Badge (No full-screen black overlay interfering with SVG) */}
+            <div
+              className={`absolute inset-0 z-30 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${isImageLoading ? 'opacity-100' : 'opacity-0'
+                }`}
+            >
+              <div className="bg-[#1C1C1C]/90 border border-white/15 px-4 py-2 rounded-full shadow-xl flex items-center gap-2.5 backdrop-blur-xs">
+                <div className="w-3.5 h-3.5 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin shrink-0" />
+                <span className="text-xs font-medium text-white/95 tracking-wide">
+                  Cargando {activePreset.surfaceLabel || 'espacio'}
+                </span>
+              </div>
+            </div>
+
 
             {/* 4. Interactive Polygon Surface Boundary Points (When Adjusting) */}
             {isAdjustingSurface && customPhotoUrl && (
@@ -404,8 +465,11 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                   <button
                     key={preset.id}
                     onClick={() => {
-                      setCustomPhotoUrl(null);
-                      setSelectedSpaceId(preset.id);
+                      if (preset.id !== selectedSpaceId || customPhotoUrl) {
+                        setIsImageLoading(true);
+                        setCustomPhotoUrl(null);
+                        setSelectedSpaceId(preset.id);
+                      }
                     }}
                     className={`relative rounded-lg overflow-hidden border p-1 text-left transition-all ${isSelected
                       ? 'border-amber-400 ring-2 ring-amber-400/20 bg-white/10'

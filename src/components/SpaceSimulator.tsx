@@ -36,7 +36,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const [customPhotoUrl, setCustomPhotoUrl] = useState<string | null>(null);
   const [customAspectRatio, setCustomAspectRatio] = useState<number | null>(null);
   const [customIsOverlay, setCustomIsOverlay] = useState<boolean>(false);
-  const [scale, setScale] = useState<number>(0.45);
+  const [scale, setScale] = useState<number>(SPACE_PRESETS[0].defaultScale ?? 1.0);
   const [blendMode, setBlendMode] = useState<'multiply' | 'normal'>('multiply');
   const [opacity, setOpacity] = useState<number>(1);
   const [isAdjustingSurface, setIsAdjustingSurface] = useState<boolean>(false);
@@ -98,6 +98,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         [80, 80],
         [20, 80]
       ]);
+      setScale(1.0);
       setIsAdjustingSurface(true);
     }
   };
@@ -413,9 +414,9 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                 </div>
                 <input
                   type="range"
-                  min={0.35}
-                  max={2.2}
-                  step={0.05}
+                  min={0.5}
+                  max={2}
+                  step={0.1}
                   value={scale}
                   onChange={(e) => setScale(parseFloat(e.target.value))}
                   className="w-full accent-amber-400 cursor-pointer"

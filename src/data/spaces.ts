@@ -16,8 +16,8 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [100, 100],
       [3.3, 100]
     ],
-    defaultScale: 0.475,
-    offsetX: 36,
+    defaultScale: 1,
+    offsetX: 34,
     offsetY: 18,
     blendMode: 'normal'
   },
@@ -35,7 +35,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [84, 92],
       [37, 92]
     ],
-    defaultScale: 0.45,
+    defaultScale: 1,
     blendMode: 'multiply'
   },
   {
@@ -51,7 +51,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [100, 100],
       [0, 100]
     ],
-    defaultScale: 0.45,
+    defaultScale: 1,
     blendMode: 'multiply'
   },
   {
@@ -67,7 +67,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [72, 98],
       [28, 98]
     ],
-    defaultScale: 0.45,
+    defaultScale: 1,
     blendMode: 'multiply'
   },
   {
@@ -83,7 +83,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [99, 60],
       [42, 60]
     ],
-    defaultScale: 0.45,
+    defaultScale: 1,
     blendMode: 'multiply'
   }
 ];

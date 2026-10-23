@@ -490,9 +490,10 @@ export function generateSimulationWallSvg(
   const roomH = Math.round(1920 / Math.max(0.2, aspectRatio));
 
   // Determine scaling so scale=1.0 represents realistic architectural proportion
-  // e.g. at scale 1.0, one tile is ~275px wide in the 1920 space
-  const effectiveScale = Math.max(0.25, Math.min(3.0, scale));
-  const tileDisplayW = 275 * effectiveScale;
+  // e.g. at scale 1.0, one tile is ~130,625px wide in the 1920 space
+  const effectiveScale = Math.max(0.2, Math.min(4.0, scale));
+  const BASE_TILE_WIDTH = 130.625;
+  const tileDisplayW = BASE_TILE_WIDTH * effectiveScale;
   const scaleFactor = tileDisplayW / unitW;
 
   // Calculate needed columns and rows in unscaled tile coordinates to fully blanket [0, roomW] x [0, roomH]

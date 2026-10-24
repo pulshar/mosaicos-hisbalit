@@ -664,20 +664,11 @@ export default function App() {
               motif={activeMotif}
               customization={customization}
               composition={composition}
-              selectedPieceId={selectedPieceId}
               selectedPieceIds={selectedPieceIds}
               customizationsMap={customizationsMap}
               editedMotifIds={editedMotifIds}
               onSelectPiece={handleSelectPiece}
-              onSelectMultiplePieces={handleSelectMultiplePieces}
-              onUpdatePieceColor={handleUpdatePieceColor}
-              onUpdatePieceColors={handleUpdatePieceColors}
-              onUpdateBackgroundColor={handleUpdateBackgroundColor}
-              onResetView={() => setComposition(prev => ({ ...prev, zoom: 1.0, panX: 0, panY: 0 }))}
-              viewMode={composition.viewMode}
-              onChangeViewMode={(mode) => setComposition(prev => ({ ...prev, viewMode: mode }))}
               onUpdateComposition={handleUpdateComposition}
-              onGoToCustomizeMotif={handleGoToCustomizeMotif}
             />
 
             {/* Right Panel: Customization Controls (smooth collapsible animation) */}

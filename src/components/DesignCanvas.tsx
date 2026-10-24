@@ -23,40 +23,25 @@ interface DesignCanvasProps {
   motif: MotifDefinition;
   customization: MotifCustomization;
   composition: CompositionSettings;
-  selectedPieceId?: string | null;
   selectedPieceIds?: string[];
   customizationsMap?: Record<string, MotifCustomization>;
   editedMotifIds?: Record<string, boolean>;
   onSelectPiece: (pieceId: string | string[] | null, isMulti?: boolean) => void;
-  onSelectMultiplePieces?: (pieceIds: string[]) => void;
-  onUpdatePieceColor: (pieceId: string, color: string) => void;
-  onUpdatePieceColors?: (pieceIds: string[], color: string) => void;
-  onUpdateBackgroundColor: (color: string) => void;
-  onResetView: () => void;
-  viewMode: 'single' | 'pattern' | 'simulation';
-  onChangeViewMode: (mode: 'single' | 'pattern' | 'simulation') => void;
   onUpdateComposition?: (settings: Partial<CompositionSettings>) => void;
-  onGoToCustomizeMotif?: (motifId: string) => void;
 }
 
 export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   motif,
   customization,
   composition,
-  selectedPieceId,
   selectedPieceIds = [],
   customizationsMap = {},
   editedMotifIds = {},
   onSelectPiece,
-  onUpdatePieceColor,
-  onUpdatePieceColors,
-  onUpdateBackgroundColor,
-  onResetView,
-  viewMode,
-  onChangeViewMode,
   onUpdateComposition,
-  onGoToCustomizeMotif
 }) => {
+  const viewMode = composition.viewMode;
+  const selectedPieceId = selectedPieceIds[0] || null;
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredPieceId, setHoveredPieceId] = useState<string | null>(null);
   const [hoveredGridCell, setHoveredGridCell] = useState<{ row: number; col: number } | null>(null);
@@ -583,7 +568,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             <p className="text-[11px] text-[#77736C]">
               {viewMode === 'single'
                 ? 'Vista detallada'
-                : `Composición ${composition.repeatX}×${composition.repeatY} repeticiones`}
+                : `Composición ${composition.repeatX}×${composition.repeatY}`}
             </p>
           </div>
         </div>
@@ -617,7 +602,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
           <div className="w-[1px] h-4 bg-[#E7E4DE] mx-1" />
 
           <button
-            onClick={onResetView}
+            onClick={() => onUpdateComposition?.({ zoom: 1.0, panX: 0, panY: 0 })}
             className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
             title="Centrar y restablecer vista (Zoom 100% y posición original)"
             aria-label="Centrar y restablecer vista"

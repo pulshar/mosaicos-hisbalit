@@ -673,7 +673,6 @@ export default function App() {
               onUpdatePieceColor={handleUpdatePieceColor}
               onUpdatePieceColors={handleUpdatePieceColors}
               onUpdateBackgroundColor={handleUpdateBackgroundColor}
-              onChangeZoom={(zoom) => setComposition(prev => ({ ...prev, zoom }))}
               onResetView={() => setComposition(prev => ({ ...prev, zoom: 1.0, panX: 0, panY: 0 }))}
               viewMode={composition.viewMode}
               onChangeViewMode={(mode) => setComposition(prev => ({ ...prev, viewMode: mode }))}

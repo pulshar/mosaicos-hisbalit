@@ -32,7 +32,6 @@ interface DesignCanvasProps {
   onUpdatePieceColor: (pieceId: string, color: string) => void;
   onUpdatePieceColors?: (pieceIds: string[], color: string) => void;
   onUpdateBackgroundColor: (color: string) => void;
-  onChangeZoom: (zoom: number) => void;
   onResetView: () => void;
   viewMode: 'single' | 'pattern' | 'simulation';
   onChangeViewMode: (mode: 'single' | 'pattern' | 'simulation') => void;
@@ -52,7 +51,6 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   onUpdatePieceColor,
   onUpdatePieceColors,
   onUpdateBackgroundColor,
-  onChangeZoom,
   onResetView,
   viewMode,
   onChangeViewMode,
@@ -73,6 +71,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   } | null>(null);
 
   const HELP_STORAGE_KEY = 'mosaico_canvas_help_dismissed';
+  const PAN_HINT_STORAGE_KEY = 'mosaico_canvas_pan_hint_seen';
 
   const [showHelpBanner, setShowHelpBanner] = useState<boolean>(() => {
     try {
@@ -81,6 +80,23 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       return true;
     }
   });
+
+  const [hasSeenPanHint, setHasSeenPanHint] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(PAN_HINT_STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const markPanHintSeen = () => {
+    setHasSeenPanHint(true);
+    try {
+      localStorage.setItem(PAN_HINT_STORAGE_KEY, 'true');
+    } catch (e) {
+      console.error('Failed to save pan hint preference to localStorage:', e);
+    }
+  };
 
   const handleDismissHelp = () => {
     setShowHelpBanner(false);
@@ -121,11 +137,13 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     );
   }, [composition.repeatX, composition.repeatY]);
 
+  // Dynamic reference for composition updates (zoom, pan, etc.)
+  const onUpdateCompositionRef = useRef(onUpdateComposition);
+  onUpdateCompositionRef.current = onUpdateComposition;
+
   // Zoom with Ctrl + Mouse Wheel (and Cmd + Mouse Wheel / Trackpad pinch)
   const zoomRef = useRef(composition.zoom);
   zoomRef.current = composition.zoom;
-  const onChangeZoomRef = useRef(onChangeZoom);
-  onChangeZoomRef.current = onChangeZoom;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -139,7 +157,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         const currentZoom = zoomRef.current;
         const nextZoom = Math.min(2.5, Math.max(0.4, Math.round(currentZoom * zoomFactor * 100) / 100));
         if (nextZoom !== currentZoom) {
-          onChangeZoomRef.current(nextZoom);
+          onUpdateCompositionRef.current?.({ zoom: nextZoom });
         }
       }
     };
@@ -150,14 +168,145 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     };
   }, []);
 
+  // Spacebar pan (hand tool) support
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
+  const isSpacePressedRef = useRef(false);
+  const isPanningRef = useRef(false);
+  const didDragRef = useRef(false);
+  const dragStartRef = useRef<{ x: number; y: number; panX: number; panY: number }>({
+    x: 0,
+    y: 0,
+    panX: 0,
+    panY: 0
+  });
+
+  const panRef = useRef<{ x: number; y: number }>({
+    x: composition.panX || 0,
+    y: composition.panY || 0
+  });
+  panRef.current = { x: composition.panX || 0, y: composition.panY || 0 };
+
+  // Listen for Spacebar keydown / keyup
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !e.repeat) {
+        const target = e.target as HTMLElement | null;
+        const isInput = target && (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable
+        );
+        if (!isInput) {
+          e.preventDefault();
+          isSpacePressedRef.current = true;
+          setIsSpacePressed(true);
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        isSpacePressedRef.current = false;
+        setIsSpacePressed(false);
+        markPanHintSeen();
+        if (isPanningRef.current) {
+          isPanningRef.current = false;
+          setIsPanning(false);
+        }
+      }
+    };
+
+    const handleBlur = () => {
+      isSpacePressedRef.current = false;
+      setIsSpacePressed(false);
+      markPanHintSeen();
+      if (isPanningRef.current) {
+        isPanningRef.current = false;
+        setIsPanning(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
+
+  // Auto-dismiss the pan hint after 3 seconds of showing it
+  useEffect(() => {
+    if (isSpacePressed && !hasSeenPanHint) {
+      const timer = setTimeout(() => {
+        markPanHintSeen();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSpacePressed, hasSeenPanHint]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Left-click with spacebar, or middle mouse button (button 1)
+    const isMiddleClick = e.button === 1;
+    const isSpaceClick = isSpacePressedRef.current && e.button === 0;
+
+    if (isSpaceClick || isMiddleClick) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      markPanHintSeen();
+      isPanningRef.current = true;
+      setIsPanning(true);
+      didDragRef.current = false;
+      dragStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        panX: panRef.current.x,
+        panY: panRef.current.y
+      };
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        if (!isPanningRef.current) return;
+        const dx = moveEvent.clientX - dragStartRef.current.x;
+        const dy = moveEvent.clientY - dragStartRef.current.y;
+
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+          didDragRef.current = true;
+        }
+
+        const newPanX = Math.round(dragStartRef.current.panX + dx);
+        const newPanY = Math.round(dragStartRef.current.panY + dy);
+
+        if (onUpdateCompositionRef.current) {
+          onUpdateCompositionRef.current({ panX: newPanX, panY: newPanY });
+        }
+      };
+
+      const handleMouseUp = () => {
+        isPanningRef.current = false;
+        setIsPanning(false);
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+  };
+
   const handlePieceClick = (e: React.MouseEvent, pieceId: string) => {
     e.stopPropagation();
+    if (didDragRef.current || isSpacePressedRef.current || isPanningRef.current) return;
     const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
     onSelectPiece(pieceId, isMulti);
   };
 
   const handleBackgroundClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (didDragRef.current || isSpacePressedRef.current || isPanningRef.current) return;
     onSelectPiece('background', false);
   };
 
@@ -177,6 +326,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
   const handleGridCellClick = (rowIndex: number, colIndex: number, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (didDragRef.current || isSpacePressedRef.current || isPanningRef.current) return;
     if (!onUpdateComposition) return;
 
     const isMultiKey = e.shiftKey || e.ctrlKey || e.metaKey;
@@ -390,6 +540,10 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   const selectedPiece = selectedPieces[0] || svgData?.motifPieces.find(p => p.id === selectedPieceId);
 
   const handleMainCanvasClick = (e: React.MouseEvent) => {
+    if (didDragRef.current || isSpacePressedRef.current || isPanningRef.current) {
+      didDragRef.current = false;
+      return;
+    }
     if (viewMode === 'pattern') {
       // If clicking outside any tile without Shift/Ctrl/Cmd modifiers, clear selection
       if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
@@ -407,8 +561,10 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   return (
     <main
       ref={containerRef}
+      onMouseDown={handleMouseDown}
       onClick={handleMainCanvasClick}
-      className="flex-1 h-full bg-[#F7F6F2] relative overflow-hidden flex flex-col select-none"
+      className={`flex-1 h-full bg-[#F7F6F2] relative overflow-hidden flex flex-col select-none ${isPanning ? 'cursor-grabbing' : isSpacePressed ? 'cursor-grab' : ''
+        }`}
     >
       {/* Top Floating Controls Bar */}
       <div className="absolute top-4 left-6 right-6 flex items-center justify-between z-20 pointer-events-none">
@@ -436,7 +592,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         {/* View & Canvas Tools */}
         <div className="pointer-events-auto flex items-center gap-2 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-[#E7E4DE] shadow-xs">
           <button
-            onClick={() => onChangeZoom(Math.max(0.4, composition.zoom - 0.15))}
+            onClick={() => onUpdateComposition?.({ zoom: Math.max(0.4, Math.round((composition.zoom - 0.15) * 100) / 100) })}
             className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
             title="Reducir zoom (Ctrl + rueda hacia abajo)"
             aria-label="Reducir zoom"
@@ -450,7 +606,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             {Math.round(composition.zoom * 100)}%
           </span>
           <button
-            onClick={() => onChangeZoom(Math.min(2.5, composition.zoom + 0.15))}
+            onClick={() => onUpdateComposition?.({ zoom: Math.min(2.5, Math.round((composition.zoom + 0.15) * 100) / 100) })}
             className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
             title="Aumentar zoom (Ctrl + rueda hacia arriba)"
             aria-label="Aumentar zoom"
@@ -462,8 +618,8 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
           <button
             onClick={onResetView}
-            className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors"
-            title="Centrar y restablecer vista"
+            className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
+            title="Centrar y restablecer vista (Zoom 100% y posición original)"
             aria-label="Centrar y restablecer vista"
           >
             <Maximize2 className="w-4 h-4" />
@@ -484,6 +640,14 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Floating Spacebar Pan Cue (only shown the very first time the user triggers the gesture) */}
+      {isSpacePressed && !hasSeenPanHint && (
+        <div className="absolute top-18 left-1/2 -translate-x-1/2 bg-[#242424]/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-medium shadow-md z-30 flex items-center gap-2 animate-fade-in pointer-events-none">
+          <span className="w-2 h-2 rounded-full bg-[#DDA743] animate-pulse" />
+          <span>Arrastra con el ratón para mover el lienzo</span>
+        </div>
+      )}
 
       {/* Background feedback notice toast */}
       {backgroundNotice && (
@@ -579,11 +743,15 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       )}
 
       {/* Main Vector Rendering Canvas Area */}
-      <div className="flex-1 w-full h-full flex items-center justify-center p-8 overflow-auto">
+      <div
+        className={`flex-1 w-full h-full flex items-center justify-center p-8 overflow-hidden ${isPanning ? 'cursor-grabbing' : isSpacePressed ? 'cursor-grab' : ''
+          }`}
+      >
         <div
-          className="relative transition-transform duration-150 ease-out"
+          className={`relative ${isPanning ? 'transition-none' : 'transition-transform duration-150 ease-out'} ${isSpacePressed ? 'pointer-events-none' : ''
+            }`}
           style={{
-            transform: `scale(${composition.zoom})`,
+            transform: `translate(${composition.panX || 0}px, ${composition.panY || 0}px) scale(${composition.zoom})`,
             transformOrigin: 'center center'
           }}
         >

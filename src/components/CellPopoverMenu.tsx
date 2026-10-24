@@ -10,6 +10,7 @@ import {
     ArrowRight,
     GripVertical
 } from 'lucide-react';
+import IconLetterA from './icons/IconLetterA';
 
 interface CellPopoverMenuProps {
     row: number;
@@ -368,7 +369,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                     <label className="text-[11px] font-medium text-[#77736C] block">
                         {isBatch ? 'Estado de las placas' : 'Estado de la placa'}
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-1.5">
                         <button
                             onClick={() => onSelectMotif(null)}
                             className={`p-2 rounded-lg border flex items-center gap-2.5 transition-all text-left cursor-pointer ${isPlain
@@ -390,7 +391,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                                 : 'border-[#E7E4DE] bg-white hover:bg-[#FAF9F5] text-[#242424]'
                                 }`}
                         >
-                            <Sparkles className={`w-4 h-4 shrink-0 ${currentMotifId === primaryMotif.id ? 'text-[#DDA743]' : 'text-[#77736C]'}`} />
+                            <IconLetterA className={`w-4 h-4 shrink-0 ${currentMotifId === primaryMotif.id ? 'text-[#DDA743]' : 'text-[#77736C]'}`} />
                             <div className="truncate">
                                 <div className="text-xs font-semibold truncate">{primaryMotif.name}</div>
                             </div>
@@ -417,7 +418,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                                 <button
                                     key={m.id}
                                     onClick={() => onSelectMotif(m.id)}
-                                    className={`p-2 rounded-lg border flex items-center gap-2.5 transition-all text-left cursor-pointer group ${isSelected
+                                    className={`p-1 rounded-lg border flex items-center gap-2.5 transition-all text-left cursor-pointer group ${isSelected
                                         ? 'border-[#242424] bg-[#F7F6F2] ring-1 ring-[#242424]'
                                         : 'border-[#E7E4DE] bg-white hover:bg-[#FAF9F5] hover:border-[#8C8880]'
                                         }`}
@@ -429,13 +430,6 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                                                 viewBox={`0 0 ${svg.width} ${svg.height}`}
                                                 className="w-full h-full"
                                             >
-                                                {svg.backgroundShapes.slice(0, 30).map((b, i) =>
-                                                    b.type === 'circle' ? (
-                                                        <circle key={i} cx={b.cx} cy={b.cy} r={b.r} fill="#E7E4DE" />
-                                                    ) : (
-                                                        <path key={i} d={b.d} fill="#E7E4DE" />
-                                                    )
-                                                )}
                                                 {svg.motifPieces.map(p => {
                                                     const col = cust.pieceColors[p.id] || p.originalColor;
                                                     return p.type === 'circle' ? (
@@ -475,14 +469,11 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                                 <RotateCw className="w-3 h-3 text-[#242424]" />
                                 <span>{isBatch ? 'Orientación de la selección' : 'Orientación de esta placa'}</span>
                             </label>
-                            <span className="text-[10px] font-mono text-[#77736C] font-medium">
-                                {currentRotation === 0 ? 'Normal (0°)' : (currentRotation === 180 ? 'Invertido (+180°)' : (currentRotation >= 0 ? `+${currentRotation}°` : 'Varios'))}
-                            </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-1.5">
                             {[
-                                { angle: 0, label: '0° · Normal', sublabel: 'Sigue el motivo' },
-                                { angle: 180, label: '180° · Invertido', sublabel: 'Dirección opuesta' }
+                                { angle: 0, label: '0°', sublabel: 'Sigue el motivo' },
+                                { angle: 180, label: '180°', sublabel: 'Dirección opuesta' }
                             ].map(({ angle, label, sublabel }) => (
                                 <button
                                     key={angle}
@@ -515,7 +506,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                             {onSelectAll && (
                                 <button
                                     onClick={onSelectAll}
-                                    className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-lg text-[11px] font-medium text-[#242424] transition-colors text-center cursor-pointer"
+                                    className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-md text-[11px] font-medium text-[#242424] transition-colors text-center cursor-pointer"
                                 >
                                     Seleccionar todas
                                 </button>
@@ -523,7 +514,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                             {onClearSelection && (
                                 <button
                                     onClick={onClearSelection}
-                                    className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-lg text-[11px] font-medium text-[#242424] transition-colors text-center cursor-pointer"
+                                    className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-md text-[11px] font-medium text-[#242424] transition-colors text-center cursor-pointer"
                                 >
                                     Deseleccionar
                                 </button>
@@ -533,7 +524,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                         <div className="grid grid-cols-2 gap-1.5">
                             <button
                                 onClick={() => onApplyToRow(currentMotifId, currentRotation)}
-                                className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-lg text-[11px] font-medium text-[#242424] transition-colors text-left flex items-center justify-between cursor-pointer"
+                                className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-md text-[11px] font-medium text-[#242424] transition-colors text-left flex items-center justify-between cursor-pointer"
                                 title={`Aplicar este motivo y giro a toda la fila ${row + 1}`}
                             >
                                 <span>Fila {row + 1} completa</span>
@@ -541,7 +532,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                             </button>
                             <button
                                 onClick={() => onApplyToCol(currentMotifId, currentRotation)}
-                                className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-lg text-[11px] font-medium text-[#242424] transition-colors text-left flex items-center justify-between cursor-pointer"
+                                className="px-2.5 py-1.5 bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] rounded-md text-[11px] font-medium text-[#242424] transition-colors text-left flex items-center justify-between cursor-pointer"
                                 title={`Aplicar este motivo y giro a toda la columna ${col + 1}`}
                             >
                                 <span>Columna {col + 1} completa</span>

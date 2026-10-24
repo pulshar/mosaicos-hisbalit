@@ -8,7 +8,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     image: '/assets/images/comedor-hornacina.webp',
     description: 'Pared de comedor con hornacina en arco, baldas de madera rústica, mesa y sillas con sombras reales integradas en recorte alfa.',
     surfaceLabel: 'Pared con Hornacina',
-    aspectRatio: '3/2',
+    aspectRatio: '2000/1333',
     isForegroundOverlay: true,
     polygonPoints: [
       [0, 0],
@@ -26,7 +26,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     image: '/assets/images/despacho-nordico.webp',
     description: 'Zona de trabajo con escritorio de madera negra, silla de rejilla, portátil, cuadro minimalista, planta y sombras reales integradas en recorte alfa.',
     surfaceLabel: 'Pared Despacho',
-    aspectRatio: '3/2',
+    aspectRatio: '2000/1333',
     isForegroundOverlay: true,
     polygonPoints: [
       [0, 0],
@@ -44,7 +44,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     image: '/assets/images/comedor-nordico.webp',
     description: 'Pared frontal de comedor de diseño con mesa, sillas nórdicas, aparador de roble y sombras realistas integradas en recorte alfa.',
     surfaceLabel: 'Pared Frontal Comedor',
-    aspectRatio: '3/2',
+    aspectRatio: '2000/1333',
     isForegroundOverlay: true,
     polygonPoints: [
       [0, 0],
@@ -66,7 +66,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     image: '/assets/images/cocina-nordica.webp',
     description: 'Frontal completo de cocina nórdica con encimera negra, cafetera espresso, tostador, estantes flotantes, menaje y sombras realistas integradas en recorte alfa.',
     surfaceLabel: 'Frontal Cocina',
-    aspectRatio: '3/2',
+    aspectRatio: '2000/1333',
     isForegroundOverlay: true,
     polygonPoints: [
       [0, 0],
@@ -84,7 +84,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     image: '/assets/images/cocina-arco.webp',
     description: 'Frontal de cocina con balda flotante, isla con fregadero, libros, arco exterior y fuga en perspectiva real calibrada.',
     surfaceLabel: 'Pared Cocina',
-    aspectRatio: '3/2',
+    aspectRatio: '2000/1333',
     isForegroundOverlay: true,
     polygonPoints: [
       [0, 0],
@@ -113,7 +113,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     image: '/assets/images/cocina-rustica.webp',
     description: 'Cocina de ambiente cálido con encimera de madera maciza, fregadero blanco, grifo vintage de latón, menaje y frontal alicatado con sombras de contacto reales.',
     surfaceLabel: 'Frontal Fregadero Rústico',
-    aspectRatio: '1/1',
+    aspectRatio: '2000/1972',
     isForegroundOverlay: true,
     polygonPoints: [
       [0, 0],
@@ -135,7 +135,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
     image: '/assets/images/recibidor-hall.webp',
     description: 'Recibidor luminoso con puertas dobles acristaladas, espejo, perchero, plantas, banqueta de madera rústica y pavimento en perspectiva real con sombras de contacto integradas.',
     surfaceLabel: 'Suelo Recibidor',
-    aspectRatio: '3/2',
+    aspectRatio: '2000/1333',
     isForegroundOverlay: true,
     polygonPoints: [
       [0, 0],

@@ -512,6 +512,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                   <button
                     key={preset.id}
                     onClick={() => handleSelectSpace(preset)}
+                    disabled={isImageLoading}
                     className={`relative rounded-lg overflow-hidden border p-1 text-left transition-all ${isSelected
                       ? 'border-amber-400 ring-2 ring-amber-400/20 bg-white/10'
                       : 'border-white/10 bg-white/5 hover:border-white/30'

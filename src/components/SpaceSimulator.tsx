@@ -234,7 +234,38 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
 
   // Dragging polygon control points
   const [draggingPointIndex, setDraggingPointIndex] = useState<number | null>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+  const [containerDimensions, setContainerDimensions] = useState<{ width: number; height: number } | null>(null);
+
+  // Dynamically compute exact container dimensions so the photo's aspect ratio is always strictly respected without distortion
+  useEffect(() => {
+    if (!viewportRef.current) return;
+    const updateSize = () => {
+      if (!viewportRef.current) return;
+      const { clientWidth, clientHeight } = viewportRef.current;
+      // Subtract padding (p-6 = 24px each side)
+      const availW = Math.max(0, clientWidth - 48);
+      const availH = Math.max(0, clientHeight - 48);
+      const maxW = Math.min(availW, 1200);
+      const maxH = availH;
+
+      if (maxW <= 0 || maxH <= 0 || !currentAspectRatio) return;
+
+      let w = maxW;
+      let h = w / currentAspectRatio;
+      if (h > maxH) {
+        h = maxH;
+        w = h * currentAspectRatio;
+      }
+      setContainerDimensions({ width: Math.round(w), height: Math.round(h) });
+    };
+
+    updateSize();
+    const ro = new ResizeObserver(updateSize);
+    ro.observe(viewportRef.current);
+    return () => ro.disconnect();
+  }, [currentAspectRatio]);
 
   const handlePointerDownPoint = (index: number, e: React.PointerEvent) => {
     e.stopPropagation();
@@ -329,15 +360,19 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         </div>
 
         {/* The Viewport Container */}
-        <div className="flex-1 w-full h-full flex items-center justify-center p-6 relative overflow-auto">
+        <div
+          ref={viewportRef}
+          className="flex-1 w-full h-full flex items-center justify-center p-6 relative overflow-hidden"
+        >
           <div
             ref={imageContainerRef}
             onPointerMove={handlePointerMoveContainer}
             onPointerUp={handlePointerUpContainer}
-            className={`relative rounded-lg overflow-hidden border border-white/10 shadow-2xl max-w-full max-h-full ${isImageLoading ? 'bg-[#141414]' : 'bg-[#FAF8F5]'}`}
+            className={`relative rounded-lg overflow-hidden border border-white/10 shadow-2xl max-w-full max-h-full transition-[width,height] duration-200 ease-out ${isImageLoading ? 'bg-[#141414]' : 'bg-[#FAF8F5]'}`}
             style={{
-              aspectRatio: activePreset.aspectRatio || '16/9',
-              width: '100%',
+              aspectRatio: `${currentAspectRatio}`,
+              width: containerDimensions ? `${containerDimensions.width}px` : '100%',
+              height: containerDimensions ? `${containerDimensions.height}px` : 'auto',
               maxWidth: '1200px'
             }}
           >

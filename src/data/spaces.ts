@@ -171,7 +171,7 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [100, 100],
       [0, 100]
     ],
-    defaultScale: 1.0,
+    defaultScale: 1.02,
     blendMode: 'normal',
     perspectiveTransform: {
       perspective: 1300,
@@ -180,8 +180,8 @@ export const SPACE_PRESETS: SpacePreset[] = [
       originY: '100%',
       scale: 1.8,
       scaleY: 1.55,
-      offsetX: -1,
-      offsetY: 2
+      offsetX: -2,
+      offsetY: 1.5
     }
   }
 ];

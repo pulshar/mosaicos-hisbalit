@@ -589,7 +589,7 @@ export default function App() {
     const svgStr = composition.viewMode === 'single'
       ? generateSingleMotifSvg(activeMotif, customization, true)
       : generateCompositionSvg(activeMotif, customization, composition, null, customizationsMap, editedMotifIds);
-    const fileName = `Mosaico-Studio_${activeMotif.name}_${customization.format}.svg`;
+    const fileName = `Hisbalit_Coleccion_${activeMotif.name}_${customization.format}.svg`;
     downloadFile(svgStr, fileName, 'image/svg+xml');
   };
 
@@ -597,7 +597,7 @@ export default function App() {
     const svgStr = composition.viewMode === 'single'
       ? generateSingleMotifSvg(activeMotif, customization, true)
       : generateCompositionSvg(activeMotif, customization, composition, null, customizationsMap, editedMotifIds);
-    const fileName = `Mosaico-Studio_${activeMotif.name}_${customization.format}_4K.png`;
+    const fileName = `Hisbalit_Coleccion_${activeMotif.name}_${customization.format}_4K.png`;
     await downloadSvgAsPng(svgStr, fileName, 3840);
   };
 

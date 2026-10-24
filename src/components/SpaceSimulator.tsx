@@ -85,6 +85,38 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const [isAdjustingSurface, setIsAdjustingSurface] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
+  const [pendingSpaceId, setPendingSpaceId] = useState<string | null>(null);
+  const [loadingPresetTitle, setLoadingPresetTitle] = useState<string | null>(null);
+  const switchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialMountRef = useRef<boolean>(true);
+
+  // Clean up any pending switch timer on unmount
+  useEffect(() => {
+    return () => {
+      if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
+    };
+  }, []);
+
+  // Dedicated switch handler: loader appears FIRST and old space fades out, then 200ms later the new space loads
+  const handleSelectSpace = (preset: SpacePreset) => {
+    if (preset.id === selectedSpaceId && !customPhotoUrl) return;
+
+    if (switchTimerRef.current) {
+      clearTimeout(switchTimerRef.current);
+    }
+
+    // 1. Immediately activate loader with target title and begin fading out current space
+    setPendingSpaceId(preset.id);
+    setLoadingPresetTitle(preset.surfaceLabel || preset.name);
+    setIsImageLoading(true);
+
+    // 2. Wait 200ms so the loader and fade-out happen FIRST before swapping the image and geometry
+    switchTimerRef.current = setTimeout(() => {
+      setCustomPhotoUrl(null);
+      setSelectedSpaceId(preset.id);
+      setPendingSpaceId(null);
+    }, 200);
+  };
 
   // Polygon points in % coordinates [[x, y], ...]
   const [polygonPoints, setPolygonPoints] = useState<[number, number][]>(() => activePreset.polygonPoints);
@@ -113,6 +145,12 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
 
   // Smooth preloading and transition when switching spaces (guaranteed min 1 second for a calm, polished transition)
   useEffect(() => {
+    // Avoid triggering loading animation on initial mount (e.g. toggling from composition tab)
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+
     let isMounted = true;
     setIsImageLoading(true);
 
@@ -130,6 +168,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
       setTimeout(() => {
         if (isMounted) {
           setIsImageLoading(false);
+          setLoadingPresetTitle(null);
         }
       }, remainingTime);
     };
@@ -229,7 +268,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const handleDownloadSimulation = async (resolution: '4k' | '2k' = '4k') => {
     try {
       setIsExporting(true);
-      const fileName = `Mosaico-Studio_${motif.name}_Simulacion_${resolution.toUpperCase()}.png`;
+      const fileName = `Hisbalit_Coleccion_${motif.name}_Simulacion_${resolution.toUpperCase()}.png`;
       await exportSimulationAsPng(
         activeImageUrl,
         simulationSvgStr,
@@ -391,7 +430,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
               <div className="bg-[#1C1C1C]/90 border border-white/15 px-4 py-2 rounded-full shadow-xl flex items-center gap-2.5 backdrop-blur-xs">
                 <div className="w-3.5 h-3.5 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin shrink-0" />
                 <span className="text-xs font-medium text-white/95 tracking-wide">
-                  Cargando {activePreset.surfaceLabel || 'espacio'}
+                  Cargando {loadingPresetTitle || activePreset.surfaceLabel || 'espacio'}
                 </span>
               </div>
             </div>
@@ -430,9 +469,11 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
 
         {/* Bottom Helper Bar */}
         <div className="h-10 bg-[#242424] px-6 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
-          <div className="flex items-center gap-3">
-            <span>Arrastra los 4 puntos para adaptar el mosaico a cualquier superficie</span>
-          </div>
+          {customPhotoUrl && (
+            <div className="flex items-center gap-3">
+              <span>Arrastra los 4 puntos para adaptar el mosaico a cualquier superficie</span>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <span>Resolución de render: 4K Ultra HD</span>
           </div>
@@ -450,7 +491,13 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
               </label>
               {customPhotoUrl && (
                 <button
-                  onClick={() => setCustomPhotoUrl(null)}
+                  onClick={() => {
+                    setLoadingPresetTitle(activePreset.surfaceLabel || activePreset.name);
+                    setIsImageLoading(true);
+                    setTimeout(() => {
+                      setCustomPhotoUrl(null);
+                    }, 200);
+                  }}
                   className="text-[10px] text-amber-400 hover:underline"
                 >
                   Restaurar predefinidos
@@ -460,17 +507,11 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
 
             <div className="grid grid-cols-2 gap-2">
               {SPACE_PRESETS.map((preset) => {
-                const isSelected = selectedSpaceId === preset.id && !customPhotoUrl;
+                const isSelected = (pendingSpaceId ? pendingSpaceId === preset.id : selectedSpaceId === preset.id) && !customPhotoUrl;
                 return (
                   <button
                     key={preset.id}
-                    onClick={() => {
-                      if (preset.id !== selectedSpaceId || customPhotoUrl) {
-                        setIsImageLoading(true);
-                        setCustomPhotoUrl(null);
-                        setSelectedSpaceId(preset.id);
-                      }
-                    }}
+                    onClick={() => handleSelectSpace(preset)}
                     className={`relative rounded-lg overflow-hidden border p-1 text-left transition-all ${isSelected
                       ? 'border-amber-400 ring-2 ring-amber-400/20 bg-white/10'
                       : 'border-white/10 bg-white/5 hover:border-white/30'
@@ -626,16 +667,16 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
             className="w-full py-3 px-4 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-md text-xs transition-colors flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
           >
             <Download className="w-4 h-4" />
-            <span>{isExporting ? 'Generando imagen...' : 'Descargar simulación en 4K (3840×2160)'}</span>
+            <span>{isExporting ? 'Generando imagen...' : 'Descargar simulación en 4K'}</span>
           </button>
 
-          <button
+          {/* <button
             onClick={() => handleDownloadSimulation('2k')}
             disabled={isExporting}
-            className="w-full py-2 px-3 bg-white/10 hover:bg-white/15 text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-white/10 hover:bg-white/15 text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
           >
-            <span>Descargar PNG estándar (1080p)</span>
-          </button>
+            <span>Descargar PNG estándar</span>
+          </button> */}
         </div>
       </aside>
     </div>

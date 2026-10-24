@@ -134,4 +134,26 @@ export const SPACE_PRESETS: SpacePreset[] = [
       offsetY: 2
     }
   },
+  {
+    id: 'cocina-rustica',
+    name: 'Cocina Rústica',
+    category: 'kitchen',
+    image: '/assets/images/cocina-rustica.webp',
+    description: 'Cocina de ambiente cálido con encimera de madera maciza, fregadero blanco, grifo vintage de latón, menaje y frontal alicatado con sombras de contacto reales.',
+    surfaceLabel: 'Frontal Fregadero Rústico',
+    aspectRatio: '1/1',
+    isForegroundOverlay: true,
+    polygonPoints: [
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100]
+    ],
+    defaultScale: 2.125,
+    blendMode: 'normal',
+    perspectiveTransform: {
+      offsetX: -4,
+      offsetY: 0
+    }
+  },
 ];

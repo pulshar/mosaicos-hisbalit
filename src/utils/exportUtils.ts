@@ -715,7 +715,7 @@ export async function exportSimulationAsPng(
   polygonPoints: [number, number][],
   scale = 1.0,
   blendMode: 'multiply' | 'normal' = 'multiply',
-  fileName = 'Mosaico-Studio_Simulacion_Espacio_4K.png',
+  fileName = 'Hisbalit_Simulacion_Espacio_4K.png',
   resolution: '4k' | '2k' = '4k',
   isForegroundOverlay = false,
   opacity = 1,

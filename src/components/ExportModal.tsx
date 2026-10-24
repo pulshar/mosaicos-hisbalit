@@ -1,19 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { MotifDefinition, MotifCustomization, CompositionSettings } from '../types';
 import {
   generateSingleMotifSvg,
   generateCompositionSvg,
   downloadFile,
-  downloadSvgAsPng
+  downloadSvgAsPng,
+  getCellMotif
 } from '../utils/exportUtils';
+import { getMotifById } from '../data/motifs';
+import { resolveEffectiveMotifCustomization } from '../utils/motifColorUtils';
 import {
   X,
   Download,
   FileCode,
   Image as ImageIcon,
-  Sparkles,
   Check,
-  Copy
+  Copy,
+  LayoutGrid,
+  Square
 } from 'lucide-react';
 
 interface ExportModalProps {
@@ -36,18 +40,174 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onOpenSimulation
 }) => {
   const [exportScope, setExportScope] = useState<'single' | 'composition'>('composition');
+  const [exportFormat, setExportFormat] = useState<'png' | 'svg'>('png');
   const [resolution, setResolution] = useState<'4k' | '2k' | '1k'>('4k');
   const [isDownloading, setIsDownloading] = useState(false);
   const [copiedSvg, setCopiedSvg] = useState(false);
 
   const activeFormat = customization.format;
 
-  const currentSvgString = exportScope === 'single'
-    ? generateSingleMotifSvg(motif, customization, true)
-    : generateCompositionSvg(motif, customization, composition, null, customizationsMap, editedMotifIds);
+  // Generate current SVG according to scope
+  const currentSvgString = useMemo(() => {
+    return exportScope === 'single'
+      ? generateSingleMotifSvg(motif, customization, true)
+      : generateCompositionSvg(motif, customization, composition, null, customizationsMap, editedMotifIds);
+  }, [exportScope, motif, customization, composition, customizationsMap, editedMotifIds]);
+
+  // Data URI for live preview
+  const svgDataUri = useMemo(() => {
+    try {
+      return `data:image/svg+xml;utf8,${encodeURIComponent(currentSvgString)}`;
+    } catch {
+      return '';
+    }
+  }, [currentSvgString]);
+
+  // Analyze motifs and colors across the composition (including combined motifs and plain tiles)
+  const compositionAnalysis = useMemo(() => {
+    if (exportScope === 'single') {
+      const colorsSet = new Set<string>();
+      if (customization.backgroundColor) colorsSet.add(customization.backgroundColor);
+      Object.values(customization.pieceColors || {}).forEach(c => {
+        if (c) colorsSet.add(c);
+      });
+      return {
+        motifsList: [{ id: motif.id, name: motif.name, count: 1 }],
+        motifsTitle: motif.name,
+        plainCount: 0,
+        palette: Array.from(colorsSet),
+        isCombined: false
+      };
+    }
+
+    const cols = composition.repeatX;
+    const rows = composition.repeatY;
+    const cadence = composition.plainTileCadence || 'none';
+    const cellOverrides = composition.cellOverrides;
+    const format = customization.format;
+
+    const motifCounts: Record<string, number> = {};
+    let plainCount = 0;
+    const colorsSet = new Set<string>();
+    if (customization.backgroundColor) colorsSet.add(customization.backgroundColor);
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cellMotifId = getCellMotif(r, c, cadence, cols, cellOverrides, motif.id);
+        if (!cellMotifId) {
+          plainCount++;
+        } else {
+          motifCounts[cellMotifId] = (motifCounts[cellMotifId] || 0) + 1;
+        }
+      }
+    }
+
+    const motifsList: Array<{ id: string; name: string; count: number; colors: string[] }> = [];
+
+    Object.entries(motifCounts).forEach(([mId, count]) => {
+      const targetDef = getMotifById(mId) || (mId === motif.id ? motif : null);
+      const mName = targetDef?.name || mId;
+
+      const effCust = resolveEffectiveMotifCustomization(
+        mId,
+        format,
+        customization,
+        customizationsMap,
+        editedMotifIds
+      );
+
+      const mColors: string[] = [];
+      if (effCust.backgroundColor) colorsSet.add(effCust.backgroundColor);
+      Object.values(effCust.pieceColors || {}).forEach(c => {
+        if (c) {
+          colorsSet.add(c);
+          if (!mColors.includes(c)) mColors.push(c);
+        }
+      });
+
+      motifsList.push({
+        id: mId,
+        name: mName,
+        count,
+        colors: mColors
+      });
+    });
+
+    if (plainCount > 0 && customization.backgroundColor) {
+      colorsSet.add(customization.backgroundColor);
+    }
+
+    // Sort: primary active motif first, then by count descending
+    motifsList.sort((a, b) => {
+      if (a.id === motif.id) return -1;
+      if (b.id === motif.id) return 1;
+      return b.count - a.count;
+    });
+
+    const isCombined = motifsList.length > 1 || plainCount > 0;
+
+    let motifsTitle: string;
+    if (motifsList.length === 0) {
+      motifsTitle = plainCount > 0 ? 'Placa lisa' : motif.name;
+    } else if (motifsList.length === 1) {
+      motifsTitle = plainCount > 0
+        ? `${motifsList[0].name} + Placa lisa`
+        : motifsList[0].name;
+    } else {
+      const names = motifsList.map(m => m.name).join(' + ');
+      motifsTitle = plainCount > 0 ? `${names} + Placa lisa` : names;
+    }
+
+    return {
+      motifsList,
+      motifsTitle,
+      plainCount,
+      palette: Array.from(colorsSet),
+      isCombined
+    };
+  }, [exportScope, motif, customization, composition, customizationsMap, editedMotifIds]);
+
+  // Exact plate dimensions requested by user:
+  // Redondo: 31,00 x 33,33 cm | Hexagonal: 31,2 x 33,2 cm
+  const plateSpecs = useMemo(() => {
+    const isRound = customization.format === 'round';
+    const widthCm = isRound ? 31.00 : 31.2;
+    const heightCm = isRound ? 33.33 : 33.2;
+    const widthFormatted = isRound ? '31,00' : '31,2';
+    const heightFormatted = isRound ? '33,33' : '33,2';
+    const singlePlateDimensions = `${widthFormatted} × ${heightFormatted} cm`;
+
+    if (exportScope === 'single') {
+      const areaM2 = ((widthCm * heightCm) / 10000).toFixed(2).replace('.', ',');
+      return {
+        formatName: isRound ? 'Redondo' : 'Hexagonal',
+        plateDimensions: singlePlateDimensions,
+        totalDimensions: singlePlateDimensions,
+        areaM2: `${areaM2} m²`,
+        summaryText: `${singlePlateDimensions} (${areaM2} m²)`
+      };
+    } else {
+      const totalWidthVal = composition.repeatX * widthCm;
+      const totalHeightVal = composition.repeatY * heightCm;
+      const totalWidthCm = (totalWidthVal % 1 === 0 ? totalWidthVal.toFixed(1) : totalWidthVal.toFixed(2))
+        .replace(/\.?0+$/, '')
+        .replace('.', ',');
+      const totalHeightCm = (totalHeightVal % 1 === 0 ? totalHeightVal.toFixed(1) : totalHeightVal.toFixed(2))
+        .replace(/\.?0+$/, '')
+        .replace('.', ',');
+      const totalAreaM2 = ((totalWidthVal * totalHeightVal) / 10000).toFixed(2).replace('.', ',');
+      return {
+        formatName: isRound ? 'Redondo' : 'Hexagonal',
+        plateDimensions: singlePlateDimensions,
+        totalDimensions: `${totalWidthCm} × ${totalHeightCm} cm`,
+        areaM2: `${totalAreaM2} m²`,
+        summaryText: `${totalWidthCm} × ${totalHeightCm} cm (${totalAreaM2} m²)`
+      };
+    }
+  }, [customization.format, exportScope, composition.repeatX, composition.repeatY]);
 
   const handleDownloadSvg = () => {
-    const fileName = `Mosaico-Studio_${motif.name}_${activeFormat}_${exportScope}.svg`;
+    const fileName = `Hisbalit_Coleccion_${motif.name}_${activeFormat}_${exportScope}.svg`;
     downloadFile(currentSvgString, fileName, 'image/svg+xml');
   };
 
@@ -55,7 +215,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     try {
       setIsDownloading(true);
       const width = resolution === '4k' ? 3840 : resolution === '2k' ? 1920 : 1080;
-      const fileName = `Mosaico-Studio_${motif.name}_${activeFormat}_${width}p.png`;
+      const fileName = `Hisbalit_Coleccion_${motif.name}_${activeFormat}_${width}p.png`;
       await downloadSvgAsPng(currentSvgString, fileName, width);
     } catch (err) {
       console.error('Export error:', err);
@@ -71,157 +231,300 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in select-none">
-      <div className="bg-white rounded-2xl border border-[#E7E4DE] shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 z-50 animate-fade-in select-none">
+      <div className="bg-white rounded-2xl border border-[#E7E4DE] shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="p-5 border-b border-[#E7E4DE] flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[#E7E4DE] flex items-center justify-between bg-white shrink-0">
           <div>
             <h3 className="text-base font-bold text-[#242424]">
               Exportar proyecto de mosaico
             </h3>
             <p className="text-xs text-[#77736C] mt-0.5">
-              Descarga vectores limpios o imágenes en alta fidelidad listas para presentación
+              Descarga vectores limpios o imágenes en alta fidelidad listas para presentación y planos
             </p>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] transition-colors"
+            title="Cerrar ventana"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-          {/* Scope Selector */}
-          <div>
-            <label className="text-xs font-semibold text-[#242424] block mb-2">
-              Contenido a exportar:
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setExportScope('composition')}
-                className={`p-3 rounded-xl border text-left transition-all ${exportScope === 'composition'
-                    ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
-                    : 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA]'
-                  }`}
-              >
-                <div className="text-xs font-bold text-[#242424]">
-                  Composición completa ({composition.repeatX}×{composition.repeatY})
-                </div>
-                <p className="text-[11px] text-[#77736C] mt-0.5">
-                  Superficie repetida continua con la separación y alineación elegidas.
-                </p>
-              </button>
+        {/* Modal Body: 2-Column Responsive Studio Layout */}
+        <div className="flex-1 overflow-y-auto flex flex-col md:flex-row min-h-0">
+          {/* Left Column: Live Visual Preview & Specs */}
+          <div className="md:w-[40%] bg-[#FAF9F5] p-4 border-b md:border-b-0 md:border-r border-[#E7E4DE] flex flex-col justify-between shrink-0">
+            <div className="space-y-3.5">
 
-              <button
-                onClick={() => setExportScope('single')}
-                className={`p-3 rounded-xl border text-left transition-all ${exportScope === 'single'
-                    ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
-                    : 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA]'
-                  }`}
-              >
-                <div className="text-xs font-bold text-[#242424]">
-                  Motivo individual aislado
+              {/* Preview Canvas Box */}
+              <div className="relative w-full aspect-square rounded-xl bg-white border border-[#E7E4DE] shadow-xs overflow-hidden flex items-center justify-center p-3.5">
+                {svgDataUri ? (
+                  <img
+                    src={svgDataUri}
+                    alt="Vista previa del mosaico"
+                    className="w-full h-full object-contain select-none pointer-events-none drop-shadow-xs transition-opacity duration-200"
+                  />
+                ) : (
+                  <div className="text-xs text-[#77736C]">Cargando vista previa...</div>
+                )}
+
+                {/* Subtle Format Pill on Preview */}
+                <div className="absolute bottom-2.5 right-2.5 bg-white/90 backdrop-blur-xs border border-[#E7E4DE] text-[10px] font-semibold text-[#242424] px-2 py-0.5 rounded-md shadow-xs pointer-events-none">
+                  {customization.format === 'round' ? 'Tesela redonda' : 'Tesela hexagonal'}
                 </div>
-                <p className="text-[11px] text-[#77736C] mt-0.5">
-                  El módulo original de {motif.name} con las 7 teselas personalizadas.
-                </p>
-              </button>
+              </div>
+
+              {/* Technical Specifications Card */}
+              <div className="bg-white rounded-xl border border-[#E7E4DE] p-3.5 space-y-2.5 shadow-xs text-xs">
+                <div className="flex items-start justify-between pb-2 border-b border-[#F0EFEB]">
+                  <span className="text-[#77736C] shrink-0 pt-0.5">
+                    {compositionAnalysis.motifsList.length > 1 ? 'Motivos:' : 'Motivo:'}
+                  </span>
+                  <div className="text-right pl-2">
+                    {exportScope !== 'composition' && (
+                      <span className="font-bold text-[#242424] block">
+                        {compositionAnalysis.motifsTitle}
+                      </span>
+                    )}
+                    {exportScope === 'composition' && compositionAnalysis.isCombined && (
+                      <div className="flex items-center gap-1 justify-end flex-wrap">
+                        {compositionAnalysis.motifsList.map((m, index) => (
+                          <span
+                            key={m.id}
+                          >
+                            <span className="font-bold text-[#242424] block">
+                              {m.count} {m.name}{index < compositionAnalysis.motifsList.length - 1 ? "," : ""}
+                            </span>
+                          </span>
+                        ))}
+                        {compositionAnalysis.plainCount > 0 && (
+                          <span className="font-bold text-[#242424] block">, {compositionAnalysis.plainCount} Lisa</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pb-2 border-b border-[#F0EFEB]">
+                  <div className="shrink-0 pt-0.5">
+                    <span className="text-[#8C8880]">
+                      {compositionAnalysis.palette.length} color{compositionAnalysis.palette.length !== 1 ? 'es' : ''} usados
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                    {compositionAnalysis.palette.map((col, idx) => (
+                      <span
+                        key={idx}
+                        className="w-4 h-4 rounded-full border border-black/15 shadow-2xs inline-block transition-transform hover:scale-110"
+                        style={{ backgroundColor: col }}
+                        title={col}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-[#77736C]">Superficie total:</span>
+                  <span className="font-semibold text-[#242424]">
+                    {plateSpecs.summaryText}
+                  </span>
+
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Export Options Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* 1. Vector SVG */}
-            <div className="p-4 rounded-xl border border-[#E7E4DE] bg-[#FAF9F5] flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <FileCode className="w-4 h-4 text-[#242424]" />
-                  <span className="text-xs font-bold text-[#242424]">Vectorial SVG puro</span>
-                </div>
-                <p className="text-[11px] text-[#77736C] leading-relaxed mb-4">
-                  Archivo SVG nativo apto para AutoCAD, Revit, Adobe Illustrator o máquinas de corte de malla de mosaico.
-                </p>
-              </div>
-
-              <div className="space-y-2">
+          {/* Right Column: Guided Step-by-Step Export Options */}
+          <div className="md:w-[60%] p-5 sm:p-6 flex flex-col space-y-8 overflow-y-auto">
+            {/* STEP 1: What to Export */}
+            <div>
+              <label className="text-xs font-bold text-[#242424] flex items-center gap-1.5 mb-2.5">
+                <span className="w-4 h-4 rounded-full bg-[#242424] text-white text-[10px] font-bold flex items-center justify-center">1</span>
+                <span>Selecciona el contenido a exportar</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
-                  onClick={handleDownloadSvg}
-                  className="w-full py-2 px-3 bg-white hover:bg-[#F7F6F2] border border-[#242424] text-[#242424] font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-xs"
+                  type="button"
+                  onClick={() => setExportScope('composition')}
+                  className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${exportScope === 'composition'
+                    ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
+                    : 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA]'
+                    }`}
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Descargar archivo .svg</span>
+                  <div className="flex gap-2 mb-1">
+                    <LayoutGrid className={`w-4 h-4 ${exportScope === 'composition' ? 'text-[#242424]' : 'text-[#77736C]'}`} />
+                    <span className="text-xs font-bold text-[#242424]">
+                      Composición completa
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#77736C] leading-snug">
+                    Cuadrícula {composition.repeatX}×{composition.repeatY} placas.
+                  </p>
                 </button>
+
                 <button
-                  onClick={handleCopySvgCode}
-                  className="w-full py-1.5 px-3 bg-transparent hover:bg-white/50 text-[#77736C] hover:text-[#242424] text-[11px] rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                  type="button"
+                  onClick={() => setExportScope('single')}
+                  className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${exportScope === 'single'
+                    ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
+                    : 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA]'
+                    }`}
                 >
-                  {copiedSvg ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedSvg ? '¡Código copiado al portapapeles!' : 'Copiar código SVG'}</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Square className={`w-4 h-4 ${exportScope === 'single' ? 'text-[#242424]' : 'text-[#77736C]'}`} />
+                    <span className="text-xs font-bold text-[#242424]">
+                      Motivo individual
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#77736C] leading-snug">
+                    1 placa aislada de {motif.name}.
+                  </p>
                 </button>
               </div>
             </div>
 
-            {/* 2. High-Res PNG */}
-            <div className="p-4 rounded-xl border border-[#E7E4DE] bg-[#FAF9F5] flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <ImageIcon className="w-4 h-4 text-[#242424]" />
-                  <span className="text-xs font-bold text-[#242424]">Imagen de alta definición</span>
-                </div>
-                <p className="text-[11px] text-[#77736C] leading-relaxed mb-3">
-                  Renderizado de píxeles nítido para dossieres de arquitectura e interiorismo.
-                </p>
+            {/* STEP 2: Format Selection */}
+            <div>
+              <label className="text-xs font-bold text-[#242424] flex items-center gap-1.5 mb-2.5">
+                <span className="w-4 h-4 rounded-full bg-[#242424] text-white text-[10px] font-bold flex items-center justify-center">2</span>
+                <span>Elige el formato de archivo</span>
+              </label>
 
-                {/* Resolution buttons */}
-                <div className="grid grid-cols-3 gap-1 mb-4">
-                  {(['4k', '2k', '1k'] as const).map((res) => (
-                    <button
-                      key={res}
-                      onClick={() => setResolution(res)}
-                      className={`py-1 text-[11px] font-mono rounded border transition-all ${resolution === res
-                          ? 'border-[#242424] bg-[#242424] text-white font-bold'
-                          : 'border-[#E7E4DE] bg-white text-[#77736C]'
-                        }`}
-                    >
-                      {res === '4k' ? '4K Ultra' : res === '2k' ? '1080p' : '720p'}
-                    </button>
-                  ))}
-                </div>
+              {/* Format Tabs Switcher */}
+              <div className="p-1 bg-[#F0EFEB] rounded-xl flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => setExportFormat('png')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${exportFormat === 'png'
+                    ? 'bg-white text-[#242424] shadow-xs'
+                    : 'text-[#77736C] hover:text-[#242424]'
+                    }`}
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  <span>Imagen PNG</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExportFormat('svg')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${exportFormat === 'svg'
+                    ? 'bg-white text-[#242424] shadow-xs'
+                    : 'text-[#77736C] hover:text-[#242424]'
+                    }`}
+                >
+                  <FileCode className="w-4 h-4" />
+                  <span>Vectorial SVG</span>
+                </button>
               </div>
+            </div>
 
+            {/* STEP 3: Resolution / Output Settings */}
+            <div>
+              <label className="text-xs font-bold text-[#242424] flex items-center gap-1.5 mb-2.5">
+                <span className="w-4 h-4 rounded-full bg-[#242424] text-white text-[10px] font-bold flex items-center justify-center">3</span>
+                <span>Resolución de salida</span>
+              </label>
+
+              {exportFormat === 'png' ? (
+                <div className="p-1 bg-[#F0EFEB] rounded-xl flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setResolution('4k')}
+                    className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '4k'
+                      ? 'bg-white text-[#242424] shadow-xs'
+                      : 'text-[#77736C] hover:text-[#242424]'
+                      }`}
+                  >
+                    <span>4K Ultra</span>
+                    <span className={`text-[10px] font-mono ${resolution === '4k' ? 'text-[#77736C]' : 'opacity-70'}`}>
+                      (3840px)
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResolution('2k')}
+                    className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '2k'
+                      ? 'bg-white text-[#242424] shadow-xs'
+                      : 'text-[#77736C] hover:text-[#242424]'
+                      }`}
+                  >
+                    <span>2K Full HD</span>
+                    <span className={`text-[10px] font-mono ${resolution === '2k' ? 'text-[#77736C]' : 'opacity-70'}`}>
+                      (1920px)
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResolution('1k')}
+                    className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '1k'
+                      ? 'bg-white text-[#242424] shadow-xs'
+                      : 'text-[#77736C] hover:text-[#242424]'
+                      }`}
+                  >
+                    <span>1080p</span>
+                    <span className={`text-[10px] font-mono ${resolution === '1k' ? 'text-[#77736C]' : 'opacity-70'}`}>
+                      (1080px)
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-1 bg-[#F0EFEB] rounded-xl flex gap-1">
+                  <div className="flex-1 py-2 px-3 rounded-lg text-xs font-bold bg-white text-[#242424] shadow-xs flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <FileCode className="w-4 h-4 text-[#77736C]" />
+                      <span>Vectorial SVG</span>
+                    </span>
+                    <span className="text-[11px] text-[#77736C] font-normal">Escalable a cualquier tamaño sin pixelar</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer: Isolated Download Action */}
+        <div className="px-6 py-3.5 border-t border-[#E7E4DE] bg-white flex items-center justify-end gap-3 shrink-0">
+
+          <div className="flex items-center gap-2.5">
+            {exportFormat === 'svg' && (
               <button
+                type="button"
+                onClick={handleCopySvgCode}
+                className="py-2.5 px-4 bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] text-[#242424] font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
+              >
+                {copiedSvg ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span className="text-emerald-700 font-bold">¡Código copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>Copiar código SVG</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {exportFormat === 'png' ? (
+              <button
+                type="button"
                 onClick={handleDownloadPng}
                 disabled={isDownloading}
-                className="w-full py-2 px-3 bg-[#242424] hover:bg-black text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
+                className="py-2.5 px-6 bg-[#242424] hover:bg-black text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>{isDownloading ? 'Generando imagen...' : 'Descargar imagen PNG'}</span>
+                <Download className="w-4 h-4" />
+                <span>{isDownloading ? 'Generando imagen PNG...' : `Descargar imagen PNG (${resolution.toUpperCase()})`}</span>
               </button>
-            </div>
-          </div>
-
-          {/* Banner to Space Simulator */}
-          <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/60 flex items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
-                <Sparkles className="w-4 h-4 text-amber-600" />
-                <span>¿Deseas la simulación en un baño o suelo real?</span>
-              </div>
-              <p className="text-[11px] text-amber-800/90 mt-0.5">
-                Aplica este mosaico sobre un paramento fotorrealista y descárgalo con perspectiva y luz natural.
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                onClose();
-                onOpenSimulation();
-              }}
-              className="px-3.5 py-2 bg-amber-900 text-white hover:bg-amber-950 rounded-lg text-xs font-semibold shrink-0 transition-colors"
-            >
-              Ir a simulación
-            </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleDownloadSvg}
+                className="py-2.5 px-6 bg-[#242424] hover:bg-black text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>Descargar archivo .SVG</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

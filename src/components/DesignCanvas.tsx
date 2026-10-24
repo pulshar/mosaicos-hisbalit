@@ -121,6 +121,35 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     );
   }, [composition.repeatX, composition.repeatY]);
 
+  // Zoom with Ctrl + Mouse Wheel (and Cmd + Mouse Wheel / Trackpad pinch)
+  const zoomRef = useRef(composition.zoom);
+  zoomRef.current = composition.zoom;
+  const onChangeZoomRef = useRef(onChangeZoom);
+  onChangeZoomRef.current = onChangeZoom;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = -e.deltaY;
+        const zoomFactor = 1 + Math.max(-0.25, Math.min(0.25, delta * 0.0015));
+        const currentZoom = zoomRef.current;
+        const nextZoom = Math.min(2.5, Math.max(0.4, Math.round(currentZoom * zoomFactor * 100) / 100));
+        if (nextZoom !== currentZoom) {
+          onChangeZoomRef.current(nextZoom);
+        }
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   const handlePieceClick = (e: React.MouseEvent, pieceId: string) => {
     e.stopPropagation();
     const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
@@ -408,19 +437,22 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         <div className="pointer-events-auto flex items-center gap-2 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-[#E7E4DE] shadow-xs">
           <button
             onClick={() => onChangeZoom(Math.max(0.4, composition.zoom - 0.15))}
-            className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors"
-            title="Reducir zoom"
+            className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
+            title="Reducir zoom (Ctrl + rueda hacia abajo)"
             aria-label="Reducir zoom"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
-          <span className="text-xs font-mono text-[#242424] px-1 w-12 text-center tabular-nums">
+          <span
+            className="text-xs font-mono text-[#242424] px-1 w-12 text-center tabular-nums cursor-default"
+            title="Zoom actual (Ctrl + rueda del ratón)"
+          >
             {Math.round(composition.zoom * 100)}%
           </span>
           <button
             onClick={() => onChangeZoom(Math.min(2.5, composition.zoom + 0.15))}
-            className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors"
-            title="Aumentar zoom"
+            className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
+            title="Aumentar zoom (Ctrl + rueda hacia arriba)"
             aria-label="Aumentar zoom"
           >
             <ZoomIn className="w-4 h-4" />

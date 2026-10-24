@@ -8,15 +8,13 @@ interface MotifLibraryProps {
   onSelectMotif: (motif: MotifDefinition) => void;
   activeFormat: MotifFormat;
   getCustomizationForMotif?: (motifId: string) => MotifCustomization;
-  editedMotifIds?: Record<string, boolean>;
 }
 
 export const MotifLibrary: React.FC<MotifLibraryProps> = ({
   activeMotifId,
   onSelectMotif,
   activeFormat,
-  getCustomizationForMotif,
-  editedMotifIds = {}
+  getCustomizationForMotif
 }) => {
 
   return (
@@ -73,8 +71,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                 >
                   {isAvailable && (motif.svgData[activeFormat] || motif.svgData.round) ? (() => {
                     const thumbSvg = motif.svgData[activeFormat] || motif.svgData.round!;
-                    const isEdited = Boolean(editedMotifIds?.[motif.id]);
-                    const motifCust = isEdited && getCustomizationForMotif ? getCustomizationForMotif(motif.id) : null;
+                    const motifCust = getCustomizationForMotif ? getCustomizationForMotif(motif.id) : null;
 
                     return (
                       <svg viewBox={thumbSvg.viewBox} className="w-12 h-12">
@@ -92,11 +89,9 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                             <path key={idx} d={s.d} fill="#E5E2DB" />
                           )
                         )}
-                        {/* Motif tesserae (customized piece colors if edited, otherwise default) */}
+                        {/* Motif tesserae with current piece colors */}
                         {thumbSvg.motifPieces.map((p) => {
-                          const pieceFill = isEdited && motifCust
-                            ? (motifCust.pieceColors[p.id] || p.originalColor || (isActive ? '#242424' : '#555555'))
-                            : (isActive ? '#242424' : '#555555');
+                          const pieceFill = motifCust?.pieceColors?.[p.id] || p.originalColor || (isActive ? '#242424' : '#555555');
 
                           return p.type === 'circle' ? (
                             <circle
@@ -137,15 +132,6 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                     <span className="text-xs font-semibold text-[#242424] truncate">
                       {motif.catalogueNumber}. {motif.name}
                     </span>
-                    {Boolean(editedMotifIds?.[motif.id]) && (
-                      <span
-                        className="text-[9px] font-medium text-[#77736C] bg-[#F2EFE9] px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 border border-[#E0DCD3]"
-                        title="Motivo con colores personalizados"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#DDA743]" />
-                        Editado
-                      </span>
-                    )}
                   </div>
 
                   <p className="text-[11px] text-[#77736C] line-clamp-1 mt-0.5">

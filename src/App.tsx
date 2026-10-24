@@ -640,6 +640,7 @@ export default function App() {
                   activeMotifId={activeMotif.id}
                   onSelectMotif={handleSelectMotif}
                   activeFormat={customization.format}
+                  getCustomizationForMotif={getCustomizationForMotif}
                 />
               </div>
             </div>

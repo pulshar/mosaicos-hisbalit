@@ -20,6 +20,24 @@ export const SPACE_PRESETS: SpacePreset[] = [
     blendMode: 'normal'
   },
   {
+    id: 'despacho-nordico',
+    name: 'Despacho Nórdico',
+    category: 'office',
+    image: '/assets/images/despacho-nordico.webp',
+    description: 'Zona de trabajo con escritorio de madera negra, silla de rejilla, portátil, cuadro minimalista, planta y sombras reales integradas en recorte alfa.',
+    surfaceLabel: 'Pared Despacho',
+    aspectRatio: '3/2',
+    isForegroundOverlay: true,
+    polygonPoints: [
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100]
+    ],
+    defaultScale: 1.6,
+    blendMode: 'normal'
+  },
+  {
     id: 'comedor-nordico',
     name: 'Comedor Nórdico',
     category: 'living',
@@ -40,24 +58,6 @@ export const SPACE_PRESETS: SpacePreset[] = [
       offsetX: 3,
       offsetY: 2
     }
-  },
-  {
-    id: 'despacho-nordico',
-    name: 'Despacho Nórdico',
-    category: 'office',
-    image: '/assets/images/despacho-nordico.webp',
-    description: 'Zona de trabajo con escritorio de madera negra, silla de rejilla, portátil, cuadro minimalista, planta y sombras reales integradas en recorte alfa.',
-    surfaceLabel: 'Pared Despacho',
-    aspectRatio: '3/2',
-    isForegroundOverlay: true,
-    polygonPoints: [
-      [0, 0],
-      [100, 0],
-      [100, 100],
-      [0, 100]
-    ],
-    defaultScale: 1.6,
-    blendMode: 'normal'
   },
   {
     id: 'kitchen_fleche',
@@ -107,12 +107,34 @@ export const SPACE_PRESETS: SpacePreset[] = [
     }
   },
   {
+    id: 'cocina-rustica',
+    name: 'Cocina Rústica',
+    category: 'kitchen',
+    image: '/assets/images/cocina-rustica.webp',
+    description: 'Cocina de ambiente cálido con encimera de madera maciza, fregadero blanco, grifo vintage de latón, menaje y frontal alicatado con sombras de contacto reales.',
+    surfaceLabel: 'Frontal Fregadero Rústico',
+    aspectRatio: '1/1',
+    isForegroundOverlay: true,
+    polygonPoints: [
+      [0, 0],
+      [100, 0],
+      [100, 100],
+      [0, 100]
+    ],
+    defaultScale: 2.125,
+    blendMode: 'normal',
+    perspectiveTransform: {
+      offsetX: -4,
+      offsetY: 0
+    }
+  },
+  {
     id: 'hall_floor_perspective',
     name: 'Recibidor / Hall',
     category: 'floor',
     image: '/assets/images/recibidor-hall.webp',
     description: 'Recibidor luminoso con puertas dobles acristaladas, espejo, perchero, plantas, banqueta de madera rústica y pavimento en perspectiva real con sombras de contacto integradas.',
-    surfaceLabel: 'Pavimento Recibidor',
+    surfaceLabel: 'Suelo Recibidor',
     aspectRatio: '3/2',
     isForegroundOverlay: true,
     polygonPoints: [
@@ -135,13 +157,13 @@ export const SPACE_PRESETS: SpacePreset[] = [
     }
   },
   {
-    id: 'cocina-rustica',
-    name: 'Cocina Rústica',
-    category: 'kitchen',
-    image: '/assets/images/cocina-rustica.webp',
-    description: 'Cocina de ambiente cálido con encimera de madera maciza, fregadero blanco, grifo vintage de latón, menaje y frontal alicatado con sombras de contacto reales.',
-    surfaceLabel: 'Frontal Fregadero Rústico',
-    aspectRatio: '1/1',
+    id: 'suelo-comedor',
+    name: 'Suelo Salón-Comedor',
+    category: 'floor',
+    image: '/assets/images/suelo-comedor.webp',
+    description: 'Salón comedor contemporáneo con aparador de nogal, mesa de centro, sillones de madera y rejilla, cuadro botánico y pavimento en perspectiva real con sombras de contacto integradas.',
+    surfaceLabel: 'Suelo Salón-Comedor',
+    aspectRatio: '2000/2069',
     isForegroundOverlay: true,
     polygonPoints: [
       [0, 0],
@@ -149,11 +171,17 @@ export const SPACE_PRESETS: SpacePreset[] = [
       [100, 100],
       [0, 100]
     ],
-    defaultScale: 2.125,
+    defaultScale: 1.0,
     blendMode: 'normal',
     perspectiveTransform: {
-      offsetX: -4,
-      offsetY: 0
+      perspective: 1100,
+      rotateX: 68,
+      originX: '50%',
+      originY: '100%',
+      scale: 1.8,
+      scaleY: 1.55,
+      offsetX: -1,
+      offsetY: 2
     }
-  },
+  }
 ];

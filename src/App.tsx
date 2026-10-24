@@ -20,7 +20,7 @@ import {
   downloadSvgAsPng
 } from './utils/exportUtils';
 import { resolveEffectiveMotifCustomization } from './utils/motifColorUtils';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PaletteIcon } from 'lucide-react';
 
 const STORAGE_KEY_CUSTOMIZATION = 'mosaico_studio_customization';
 const STORAGE_KEY_COMPOSITION = 'mosaico_studio_composition';
@@ -737,7 +737,7 @@ export default function App() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in select-none">
           <div className="bg-white rounded-2xl border border-[#E7E4DE] shadow-2xl max-w-sm w-full p-6 text-center space-y-4">
             <div className="w-12 h-12 rounded-full bg-[#F7F6F2] border border-[#E7E4DE] mx-auto flex items-center justify-center text-[#242424] font-bold text-lg">
-              ✨
+              <PaletteIcon className="w-6 h-6 text-[#DDA743]" />
             </div>
             <div>
               <h3 className="text-base font-bold text-[#242424]">

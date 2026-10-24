@@ -283,7 +283,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     {compositionAnalysis.motifsList.length > 1 ? 'Motivos:' : 'Motivo:'}
                   </span>
                   <div className="text-right pl-2">
-                    {exportScope !== 'composition' && (
+                    {compositionAnalysis.motifsList.length === 1 && (
                       <span className="font-bold text-[#242424] block">
                         {compositionAnalysis.motifsTitle}
                       </span>

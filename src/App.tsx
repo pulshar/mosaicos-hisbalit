@@ -47,8 +47,8 @@ export default function App() {
     }
     return {
       viewMode: 'single',
-      repeatX: 3,
-      repeatY: 2,
+      repeatX: 4,
+      repeatY: 4,
       spacingX: 0,
       spacingY: 0,
       staggered: false,
@@ -78,8 +78,8 @@ export default function App() {
     }
 
     const initialCompDesign: DesignCompositionState = {
-      repeatX: initialCompositionState.repeatX ?? 3,
-      repeatY: initialCompositionState.repeatY ?? 2,
+      repeatX: initialCompositionState.repeatX ?? 4,
+      repeatY: initialCompositionState.repeatY ?? 4,
       patternUnitX: initialCompositionState.patternUnitX,
       patternUnitY: initialCompositionState.patternUnitY,
       spacingX: initialCompositionState.spacingX ?? 0,
@@ -501,8 +501,8 @@ export default function App() {
   const handleConfirmNewDesign = useCallback(() => {
     const def = getDefaultCustomization(PETITE_MOTIFS[0].id, 'round');
     const defaultCompDesign: DesignCompositionState = {
-      repeatX: 3,
-      repeatY: 2,
+      repeatX: 4,
+      repeatY: 4,
       spacingX: 0,
       spacingY: 0,
       staggered: false,
@@ -744,19 +744,19 @@ export default function App() {
                 ¿Iniciar un nuevo diseño?
               </h3>
               <p className="text-xs text-[#77736C] mt-1.5 leading-relaxed">
-                Esto reiniciará el proyecto desde cero: los colores volverán a los tonos originales, la rotación a 0°, y la cuadrícula a la vista individual por defecto.
+                Esto reiniciará el proyecto desde cero. Los colores volverán a los tonos originales, la rotación a 0°, y la cuadrícula a la vista individual por defecto.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-2">
               <button
                 onClick={() => setIsConfirmNewModalOpen(false)}
-                className="py-2.5 px-3 rounded-xl border border-[#E7E4DE] bg-white hover:bg-[#F7F6F2] text-xs font-semibold text-[#77736C] hover:text-[#242424] transition-colors"
+                className="py-2.5 px-3 rounded-lg border border-[#E7E4DE] bg-white hover:bg-[#F7F6F2] text-xs font-semibold text-[#77736C] hover:text-[#242424] transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirmNewDesign}
-                className="py-2.5 px-3 rounded-xl bg-[#242424] hover:bg-black text-white text-xs font-semibold transition-colors shadow-xs"
+                className="py-2.5 px-3 rounded-lg bg-[#242424] hover:bg-black text-white text-xs font-semibold transition-colors shadow-xs"
               >
                 Sí, nuevo diseño
               </button>

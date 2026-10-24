@@ -9,7 +9,7 @@ export function getCellMotif(
   rowIndex: number,
   colIndex: number,
   cadence: PlainTileCadence = 'none',
-  repeatX: number = 3,
+  repeatX: number = 4,
   cellOverrides?: Record<string, boolean | string>,
   defaultMotifId: string = 'soleil'
 ): string | null {
@@ -55,7 +55,7 @@ export function isCellWithMotif(
   rowIndex: number,
   colIndex: number,
   cadence: PlainTileCadence = 'none',
-  repeatX: number = 3,
+  repeatX: number = 4,
   cellOverrides?: Record<string, boolean | string>
 ): boolean {
   const key = `${rowIndex}-${colIndex}`;

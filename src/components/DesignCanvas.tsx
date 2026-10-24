@@ -7,6 +7,7 @@ import {
 } from '../types';
 import { getTileRotationTransform, isCellWithMotif, getCellMotif } from '../utils/exportUtils';
 import { getMotifById } from '../data/motifs';
+import { findMaterialByHex } from '../data/palette';
 import { resolveEffectiveMotifCustomization } from '../utils/motifColorUtils';
 import { CellPopoverMenu } from './CellPopoverMenu';
 import {
@@ -679,53 +680,61 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         </div>
       )}
 
-      {selectedPieceIds.length === 1 && selectedPiece && !selectedPieceIds.includes('background') && viewMode !== 'simulation' && (
-        <div className="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-[#242424] shadow-md flex items-center gap-3 animate-fade-in">
-          <div
-            className="w-7 h-7 rounded-full border border-black/10 shadow-xs shrink-0"
-            style={{ backgroundColor: customization.pieceColors[selectedPiece.id] || selectedPiece.originalColor }}
-          />
-          <div>
-            <div className="text-xs font-bold text-[#242424]">{selectedPiece.name}</div>
-            <div className="text-[11px] text-[#77736C]">
-              Ctrl + clic para añadir más
+      {selectedPieceIds.length === 1 && selectedPiece && !selectedPieceIds.includes('background') && viewMode !== 'simulation' && (() => {
+        const pieceColor = customization.pieceColors[selectedPiece.id] || selectedPiece.originalColor || '#000000';
+        const pieceMat = findMaterialByHex(pieceColor);
+        return (
+          <div className="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-[#242424] shadow-md flex items-center gap-3 animate-fade-in">
+            <div
+              className="w-7 h-7 rounded-full border border-black/10 shadow-xs shrink-0"
+              style={{ backgroundColor: pieceColor }}
+            />
+            <div>
+              <div className="text-xs font-bold text-[#242424]">{selectedPiece.name}</div>
+              <div className="text-[11px] text-[#77736C]">
+                {pieceMat ? `Ref. ${pieceMat.code} · ${pieceMat.name}` : pieceColor}
+              </div>
             </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectPiece(null);
+              }}
+              className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
+            >
+              Deseleccionar
+            </button>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectPiece(null);
-            }}
-            className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
-          >
-            Deseleccionar
-          </button>
-        </div>
-      )}
+        );
+      })()}
 
-      {(selectedPieceIds.includes('background') || selectedPieceId === 'background') && viewMode !== 'simulation' && (
-        <div className="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-[#242424] shadow-md flex items-center gap-3 animate-fade-in">
-          <div
-            className="w-7 h-7 rounded-full border border-black/10 shadow-xs shrink-0"
-            style={{ backgroundColor: customization.backgroundColor || '#D9D9D9' }}
-          />
-          <div>
-            <div className="text-xs font-bold text-[#242424]">Fondo del mosaico</div>
-            <div className="text-[11px] font-mono text-[#77736C]">
-              {customization.backgroundColor || '#D9D9D9'}
+      {(selectedPieceIds.includes('background') || selectedPieceId === 'background') && viewMode !== 'simulation' && (() => {
+        const bgHex = customization.backgroundColor || '#D9D9D9';
+        const bgMat = findMaterialByHex(bgHex);
+        return (
+          <div className="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-[#242424] shadow-md flex items-center gap-3 animate-fade-in">
+            <div
+              className="w-7 h-7 rounded-full border border-black/10 shadow-xs shrink-0"
+              style={{ backgroundColor: bgHex }}
+            />
+            <div>
+              <div className="text-xs font-bold text-[#242424]">Fondo del mosaico</div>
+              <div className="text-[11px] text-[#77736C]">
+                {bgMat ? `Ref. ${bgMat.code} · ${bgMat.name}` : bgHex}
+              </div>
             </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectPiece(null);
+              }}
+              className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
+            >
+              Deseleccionar
+            </button>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectPiece(null);
-            }}
-            className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
-          >
-            Deseleccionar
-          </button>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Main Vector Rendering Canvas Area */}
       <div

@@ -1,18 +1,22 @@
 import React from 'react';
 import { PETITE_MOTIFS } from '../data/motifs';
-import { MotifDefinition, MotifFormat } from '../types';
+import { MotifDefinition, MotifFormat, MotifCustomization } from '../types';
 import { Check, Info } from 'lucide-react';
 
 interface MotifLibraryProps {
   activeMotifId: string;
   onSelectMotif: (motif: MotifDefinition) => void;
   activeFormat: MotifFormat;
+  getCustomizationForMotif?: (motifId: string) => MotifCustomization;
+  editedMotifIds?: Record<string, boolean>;
 }
 
 export const MotifLibrary: React.FC<MotifLibraryProps> = ({
   activeMotifId,
   onSelectMotif,
-  activeFormat
+  activeFormat,
+  getCustomizationForMotif,
+  editedMotifIds = {}
 }) => {
 
   return (
@@ -69,9 +73,12 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                 >
                   {isAvailable && (motif.svgData[activeFormat] || motif.svgData.round) ? (() => {
                     const thumbSvg = motif.svgData[activeFormat] || motif.svgData.round!;
+                    const isEdited = Boolean(editedMotifIds?.[motif.id]);
+                    const motifCust = isEdited && getCustomizationForMotif ? getCustomizationForMotif(motif.id) : null;
+
                     return (
                       <svg viewBox={thumbSvg.viewBox} className="w-12 h-12">
-                        {/* Subdued background tesserae */}
+                        {/* Subdued neutral background tesserae */}
                         {thumbSvg.backgroundShapes.map((s, idx) =>
                           s.type === 'circle' ? (
                             <circle
@@ -85,20 +92,24 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                             <path key={idx} d={s.d} fill="#E5E2DB" />
                           )
                         )}
-                        {/* Active motif tesserae */}
-                        {thumbSvg.motifPieces.map((p) =>
-                          p.type === 'circle' ? (
+                        {/* Motif tesserae (customized piece colors if edited, otherwise default) */}
+                        {thumbSvg.motifPieces.map((p) => {
+                          const pieceFill = isEdited && motifCust
+                            ? (motifCust.pieceColors[p.id] || p.originalColor || (isActive ? '#242424' : '#555555'))
+                            : (isActive ? '#242424' : '#555555');
+
+                          return p.type === 'circle' ? (
                             <circle
                               key={p.id}
                               cx={p.cx}
                               cy={p.cy}
                               r={p.r}
-                              fill={isActive ? '#242424' : '#555555'}
+                              fill={pieceFill}
                             />
                           ) : (
-                            <path key={p.id} d={p.d} fill={isActive ? '#242424' : '#555555'} />
-                          )
-                        )}
+                            <path key={p.id} d={p.d} fill={pieceFill} />
+                          );
+                        })}
                       </svg>
                     );
                   })() : (
@@ -114,7 +125,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                   )}
 
                   {isActive && (
-                    <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#242424] text-white flex items-center justify-center">
+                    <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#242424] text-white flex items-center justify-center shadow-xs">
                       <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </div>
                   )}
@@ -126,15 +137,15 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                     <span className="text-xs font-semibold text-[#242424] truncate">
                       {motif.catalogueNumber}. {motif.name}
                     </span>
-                    {/* {isAvailable ? (
-                      <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-medium shrink-0">
-                        Disponible
+                    {Boolean(editedMotifIds?.[motif.id]) && (
+                      <span
+                        className="text-[9px] font-medium text-[#77736C] bg-[#F2EFE9] px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1 border border-[#E0DCD3]"
+                        title="Motivo con colores personalizados"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#DDA743]" />
+                        Editado
                       </span>
-                    ) : (
-                      <span className="text-[10px] text-[#8C8880] bg-[#EFECE6] px-1.5 py-0.2 rounded font-medium shrink-0">
-                        Pendiente
-                      </span>
-                    )} */}
+                    )}
                   </div>
 
                   <p className="text-[11px] text-[#77736C] line-clamp-1 mt-0.5">

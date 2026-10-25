@@ -398,7 +398,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
                     />
                     <div
-                      className="absolute inset-0 bg-black/8"
+                      className="absolute inset-0 bg-black/6"
                     ></div>
                   </div>
 
@@ -436,7 +436,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
                     />
                     <div
-                      className="absolute inset-0 bg-black/8"
+                      className="absolute inset-0 bg-black/6"
                     ></div>
                   </div>
 

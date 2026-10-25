@@ -453,7 +453,8 @@ export function generateSimulationWallSvg(
   aspectRatio: number,
   scale: number = 1.0,
   customizationsMap: Record<string, MotifCustomization> = {},
-  editedMotifIds: Record<string, boolean> = {}
+  editedMotifIds: Record<string, boolean> = {},
+  baseResolution: number = 1920
 ): string {
   const format = customization.format;
   const svgData = motif.svgData[format];
@@ -485,14 +486,15 @@ export function generateSimulationWallSvg(
     ? rawStaggerShiftX + (composition.spacingX * 0.5)
     : 0;
 
-  // Simulation virtual coordinate space matching photo aspect ratio
-  const roomW = 1920;
-  const roomH = Math.round(1920 / Math.max(0.2, aspectRatio));
+  // Simulation virtual coordinate space matching photo aspect ratio and export resolution
+  const roomW = baseResolution;
+  const roomH = Math.round(baseResolution / Math.max(0.2, aspectRatio));
 
   // Determine scaling so scale=1.0 represents realistic architectural proportion
-  // e.g. at scale 1.0, one tile is ~130,625px wide in the 1920 space
+  // e.g. at scale 1.0, one tile is ~130.625px wide in the 1920 space, scaled proportionally for higher resolutions
+  const resFactor = baseResolution / 1920;
   const effectiveScale = Math.max(0.2, Math.min(4.0, scale));
-  const BASE_TILE_WIDTH = 130.625;
+  const BASE_TILE_WIDTH = 130.625 * resFactor;
   const tileDisplayW = BASE_TILE_WIDTH * effectiveScale;
   const scaleFactor = tileDisplayW / unitW;
 
@@ -590,28 +592,37 @@ export function generateSimulationWallSvg(
 
 
 /**
- * Renders pattern onto canvas with perspective/3D slice projection
+ * Renders pattern onto canvas with perspective/3D slice projection matching the CSS viewer 1:1
  */
 function drawPatternWithPerspective(
   ctx: CanvasRenderingContext2D,
   patternImg: HTMLImageElement,
   targetW: number,
   targetH: number,
-  config?: PerspectiveTransformConfig
+  config?: PerspectiveTransformConfig,
+  viewerW?: number
 ) {
   if (!config) {
     ctx.drawImage(patternImg, 0, 0, targetW, targetH);
     return;
   }
 
+  const imgW = patternImg.naturalWidth || patternImg.width || targetW;
+  const imgH = patternImg.naturalHeight || patternImg.height || targetH;
+
+  // Scale camera perspective distance proportionally to match the interactive viewer's camera distance ratio (d / width)
+  const refW = viewerW && viewerW > 100 ? viewerW : 1080;
+  const viewScale = targetW / refW;
+  const d = (config.perspective ?? 1500) * viewScale;
+
   const originXPercent = parseFloat(config.originX ?? '50') / 100;
   const originYPercent = parseFloat(config.originY ?? '50') / 100;
   const x0 = targetW * originXPercent;
   const y0 = targetH * originYPercent;
 
-  const d = config.perspective ?? 1500;
   const rotX = (config.rotateX ?? 0) * (Math.PI / 180);
   const rotY = (config.rotateY ?? 0) * (Math.PI / 180);
+  const rotZ = (config.rotateZ ?? 0) * (Math.PI / 180);
   const skewY = (config.skewY ?? 0) * (Math.PI / 180);
   const overallScale = config.scale ?? 1.0;
   const sxComp = (config.scaleX ?? 1.0) * overallScale;
@@ -619,51 +630,68 @@ function drawPatternWithPerspective(
   const offX = ((config.offsetX ?? 0) / 100) * targetW;
   const offY = ((config.offsetY ?? 0) / 100) * targetH;
 
-  // If no 3D rotation, just affine transform
+  // 1. Pure affine 2D transform (no 3D rotation)
   if (!config.rotateY && !config.rotateX && !config.perspective) {
     ctx.save();
     ctx.translate(x0, y0);
-    if (config.rotateZ) ctx.rotate((config.rotateZ * Math.PI) / 180);
+    if (config.rotateZ) ctx.rotate(rotZ);
     if (config.skewY) ctx.transform(1, Math.tan(skewY), 0, 1, 0, 0);
     ctx.scale(sxComp, syComp);
     ctx.translate(offX, offY);
-    ctx.drawImage(patternImg, -x0, -y0, targetW, targetH);
+    ctx.drawImage(patternImg, 0, 0, imgW, imgH, -x0, -y0, targetW, targetH);
     ctx.restore();
     return;
   }
 
-
-  // 3D horizontal strip projection for floor / pitch (rotateX)
+  // 2. 3D horizontal strip projection for floor / pitch (rotateX)
   if (Math.abs(config.rotateX ?? 0) > 0.05) {
-    const sliceH = 2;
-    const numSlices = Math.ceil(targetH / sliceH);
+    // Number of horizontal slices: adaptive for smooth continuity in 2K and 4K without performance bottlenecks
+    const numSlices = Math.min(1800, Math.max(900, Math.round(targetH * 0.5)));
+    const deltaY = targetH / numSlices;
+
+    // Helper functions matching CSS 3D transform pipeline exactly
+    const getProjY = (y: number): number => {
+      const ry = y - y0 + offY;
+      const yLocal = ry * syComp;
+      const z = yLocal * Math.sin(rotX);
+      const s = d / Math.max(0.1, d - z);
+      return y0 + (yLocal * Math.cos(rotX)) * s;
+    };
+
+    const getScale = (y: number): number => {
+      const ry = y - y0 + offY;
+      const yLocal = ry * syComp;
+      const z = yLocal * Math.sin(rotX);
+      return d / Math.max(0.1, d - z);
+    };
 
     ctx.save();
     for (let i = 0; i < numSlices; i++) {
-      const ySrc = i * sliceH;
-      const currentSliceH = Math.min(sliceH, targetH - ySrc);
+      const yA = i * deltaY;
+      const yB = Math.min(targetH, (i + 1) * deltaY);
+      const yMid = (yA + yB) / 2;
 
-      // Y coordinate relative to origin
-      const ry = (ySrc + currentSliceH / 2) - y0;
+      const yProjA = getProjY(yA);
+      const yProjB = getProjY(yB);
 
-      // 3D Rotation around X axis
-      const yRot = ry * Math.cos(rotX) * syComp;
-      const zRot = ry * Math.sin(rotX);
+      const sMid = getScale(yMid);
+      if (sMid <= 0 || sMid > 30) continue;
 
-      // Perspective projection factor
-      const s = d / (d - zRot);
-      if (s <= 0 || s > 20) continue;
+      // Slice destination geometry: exact contiguous bounds with 0.65px subpixel overlap to prevent seams
+      const yDst = yProjA;
+      const sliceDstH = Math.max(0.5, (yProjB - yProjA) + 0.65);
 
-      // Projected position on canvas
-      const yDst = y0 + yRot * s + offY - (currentSliceH * s) / 2;
-      const sliceDstH = currentSliceH * s * 1.05; // slight overlap to prevent rounding gaps
+      // Center and width of slice honoring originX, in-plane offX and scaleX
+      const xDst = x0 + (-x0 + offX) * sxComp * sMid;
+      const sliceDstW = targetW * sxComp * sMid;
 
-      const sliceDstW = targetW * s * sxComp;
-      const xDst = x0 - (x0 * s * sxComp) + offX;
+      // Source rectangle normalized to patternImg native size
+      const sy = (yA / targetH) * imgH;
+      const sh = ((yB - yA) / targetH) * imgH;
 
       ctx.drawImage(
         patternImg,
-        0, ySrc, targetW, currentSliceH,
+        0, sy, imgW, sh,
         xDst, yDst, sliceDstW, sliceDstH
       );
     }
@@ -671,43 +699,62 @@ function drawPatternWithPerspective(
     return;
   }
 
-  // 3D vertical strip projection (2px strips for subpixel smoothness)
-  const sliceW = 2;
-  const numSlices = Math.ceil(targetW / sliceW);
+  // 3. 3D vertical strip projection for wall perspective (rotateY)
+  const numSlices = Math.min(1800, Math.max(900, Math.round(targetW * 0.5)));
+  const deltaX = targetW / numSlices;
+
+  const getProjX = (x: number): number => {
+    const rx = x - x0 + offX;
+    const xLocal = rx * sxComp;
+    const z = -xLocal * Math.sin(rotY);
+    const s = d / Math.max(0.1, d - z);
+    return x0 + (xLocal * Math.cos(rotY)) * s;
+  };
+
+  const getScaleX = (x: number): number => {
+    const rx = x - x0 + offX;
+    const xLocal = rx * sxComp;
+    const z = -xLocal * Math.sin(rotY);
+    return d / Math.max(0.1, d - z);
+  };
+
+  const tanSkew = Math.tan(skewY);
 
   ctx.save();
   for (let i = 0; i < numSlices; i++) {
-    const xSrc = i * sliceW;
-    const currentSliceW = Math.min(sliceW, targetW - xSrc);
+    const xA = i * deltaX;
+    const xB = Math.min(targetW, (i + 1) * deltaX);
+    const xMid = (xA + xB) / 2;
 
-    // X coordinate relative to origin
-    const rx = (xSrc + currentSliceW / 2) - x0;
+    const xProjA = getProjX(xA);
+    const xProjB = getProjX(xB);
 
-    // 3D Rotation around Y axis
-    const xRot = rx * Math.cos(rotY) * sxComp;
-    const zRot = -rx * Math.sin(rotY);
+    const sMid = getScaleX(xMid);
+    if (sMid <= 0 || sMid > 30) continue;
 
-    // Perspective projection factor
-    const s = d / (d - zRot);
-    if (s <= 0) continue;
+    const xDst = xProjA;
+    const sliceDstW = Math.max(0.5, (xProjB - xProjA) + 0.65);
 
-    // Projected position on canvas
-    const xDst = x0 + xRot * s + offX - (currentSliceW * s) / 2;
-    const sliceDstW = currentSliceW * s * 1.02; // slight overlap to prevent rounding gaps
+    // In CSS: y3 = (y - y0 + offY) * syComp + (x - x0 + offX) * sxComp * tan(skewY)
+    const rxMid = xMid - x0 + offX;
+    const skewShift = rxMid * sxComp * tanSkew;
+    const yTopLocal = (-y0 + offY) * syComp + skewShift;
+    const yDstTop = y0 + yTopLocal * sMid;
+    const sliceDstH = targetH * syComp * sMid;
 
-    // Vertical shear and scale
-    const yShift = rx * Math.tan(skewY);
-    const yTopDst = y0 + (-y0 + yShift) * s * syComp + offY;
-    const sliceDstH = targetH * s * syComp;
+    // Source rectangle normalized to patternImg native size
+    const sx = (xA / targetW) * imgW;
+    const sw = ((xB - xA) / targetW) * imgW;
 
     ctx.drawImage(
       patternImg,
-      xSrc, 0, currentSliceW, targetH,
-      xDst, yTopDst, sliceDstW, sliceDstH
+      sx, 0, sw, imgH,
+      xDst, yDstTop, sliceDstW, sliceDstH
     );
   }
   ctx.restore();
 }
+
 /**
  * Render Room Simulation combined with the Mosaic Pattern and export in high-res / 4K
  */
@@ -721,7 +768,8 @@ export async function exportSimulationAsPng(
   resolution: '4k' | '2k' = '4k',
   isForegroundOverlay = false,
   opacity = 1,
-  perspectiveTransform?: PerspectiveTransformConfig
+  perspectiveTransform?: PerspectiveTransformConfig,
+  viewerWidth?: number
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const roomImg = new Image();
@@ -734,7 +782,9 @@ export async function exportSimulationAsPng(
 
       patternImg.onload = () => {
         const targetW = resolution === '4k' ? 3840 : 1920;
-        const aspect = roomImg.width / roomImg.height;
+        const roomNatW = roomImg.naturalWidth || roomImg.width || targetW;
+        const roomNatH = roomImg.naturalHeight || roomImg.height || Math.round(targetW / (16 / 9));
+        const aspect = roomNatW / roomNatH;
         const targetH = Math.round(targetW / aspect);
 
         const canvas = document.createElement('canvas');
@@ -773,7 +823,7 @@ export async function exportSimulationAsPng(
           ctx.save();
           buildSurfacePath();
           ctx.globalAlpha = opacity;
-          drawPatternWithPerspective(ctx, patternImg, targetW, targetH, perspectiveTransform);
+          drawPatternWithPerspective(ctx, patternImg, targetW, targetH, perspectiveTransform, viewerWidth);
 
           // Subtle ambient softening overlay matching interactive viewer
           ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
@@ -793,7 +843,7 @@ export async function exportSimulationAsPng(
           // 3. Apply realistic blend mode and render mosaic pattern with perspective/offsets
           ctx.globalCompositeOperation = blendMode === 'multiply' ? 'multiply' : 'source-over';
           ctx.globalAlpha = opacity;
-          drawPatternWithPerspective(ctx, patternImg, targetW, targetH, perspectiveTransform);
+          drawPatternWithPerspective(ctx, patternImg, targetW, targetH, perspectiveTransform, viewerWidth);
 
           // Subtle ambient softening overlay matching interactive viewer
           ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';

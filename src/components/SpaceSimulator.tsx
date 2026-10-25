@@ -300,9 +300,25 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
     try {
       setIsExporting(true);
       const fileName = `Hisbalit_Coleccion_${motif.name}_Simulacion_${resolution.toUpperCase()}.png`;
+      const exportTargetW = resolution === '4k' ? 3840 : 1920;
+
+      // Generate native resolution pattern SVG for true 4K / 2K vector rasterization
+      const exportSvgStr = generateSimulationWallSvg(
+        motif,
+        customization,
+        composition,
+        currentAspectRatio,
+        scale,
+        customizationsMap,
+        editedMotifIds,
+        exportTargetW
+      );
+
+      const currentViewerWidth = imageContainerRef.current?.getBoundingClientRect().width || imageContainerRef.current?.clientWidth || containerDimensions?.width || 1080;
+
       await exportSimulationAsPng(
         activeImageUrl,
-        simulationSvgStr,
+        exportSvgStr,
         polygonPoints,
         scale,
         blendMode,
@@ -310,7 +326,8 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         resolution,
         isForegroundOverlay,
         opacity,
-        customPhotoUrl ? undefined : activePreset.perspectiveTransform
+        customPhotoUrl ? undefined : activePreset.perspectiveTransform,
+        currentViewerWidth
       );
     } catch (err) {
       console.error('Simulation export error:', err);

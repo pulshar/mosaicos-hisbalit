@@ -540,9 +540,9 @@ export function generateSimulationWallSvg(
 
   const instances: string[] = [];
 
-  // Loop with safety buffer tiles on all borders to prevent edge clipping under any stagger or scale
-  for (let r = -1; r <= rowsCount + 1; r++) {
-    for (let c = -1; c <= colsCount + 1; c++) {
+  // Loop with safety buffer tiles on all borders to prevent edge clipping under any stagger, offset or scale
+  for (let r = -2; r <= rowsCount + 2; r++) {
+    for (let c = -2; c <= colsCount + 2; c++) {
       // Calculate stagger row parity (handles negative r correctly)
       const isOddRow = Math.abs(r) % 2 === 1;
       const offsetX = c * unitW + (composition.staggered && isOddRow ? staggerShiftX : 0);
@@ -622,9 +622,11 @@ function drawPatternWithPerspective(
   // If no 3D rotation, just affine transform
   if (!config.rotateY && !config.rotateX && !config.perspective) {
     ctx.save();
-    ctx.translate(x0 + offX, y0 + offY);
+    ctx.translate(x0, y0);
+    if (config.rotateZ) ctx.rotate((config.rotateZ * Math.PI) / 180);
     if (config.skewY) ctx.transform(1, Math.tan(skewY), 0, 1, 0, 0);
     ctx.scale(sxComp, syComp);
+    ctx.translate(offX, offY);
     ctx.drawImage(patternImg, -x0, -y0, targetW, targetH);
     ctx.restore();
     return;
@@ -746,6 +748,9 @@ export async function exportSimulationAsPng(
           return;
         }
 
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
         // Helper to construct outer surface
         const buildSurfacePath = () => {
           ctx.beginPath();
@@ -764,11 +769,15 @@ export async function exportSimulationAsPng(
           ctx.fillStyle = '#FAF8F5';
           ctx.fillRect(0, 0, targetW, targetH);
 
-          // 2. Render continuous mosaic surface in the wall polygon area
+          // 2. Render continuous mosaic surface with exact perspective and offsets in the wall polygon area
           ctx.save();
           buildSurfacePath();
           ctx.globalAlpha = opacity;
-          ctx.drawImage(patternImg, 0, 0, targetW, targetH);
+          drawPatternWithPerspective(ctx, patternImg, targetW, targetH, perspectiveTransform);
+
+          // Subtle ambient softening overlay matching interactive viewer
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+          ctx.fillRect(0, 0, targetW, targetH);
           ctx.restore();
 
           // 3. Draw foreground room image with transparent wall cutout and realistic shadows on top!
@@ -781,10 +790,14 @@ export async function exportSimulationAsPng(
           ctx.save();
           buildSurfacePath();
 
-          // 3. Apply realistic blend mode
+          // 3. Apply realistic blend mode and render mosaic pattern with perspective/offsets
           ctx.globalCompositeOperation = blendMode === 'multiply' ? 'multiply' : 'source-over';
           ctx.globalAlpha = opacity;
-          ctx.drawImage(patternImg, 0, 0, targetW, targetH);
+          drawPatternWithPerspective(ctx, patternImg, targetW, targetH, perspectiveTransform);
+
+          // Subtle ambient softening overlay matching interactive viewer
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+          ctx.fillRect(0, 0, targetW, targetH);
           ctx.restore();
 
           // Optional subtle lighting overlay if multiply

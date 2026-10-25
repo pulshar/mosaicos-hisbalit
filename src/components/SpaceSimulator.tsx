@@ -310,7 +310,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         resolution,
         isForegroundOverlay,
         opacity,
-        activePreset.perspectiveTransform
+        customPhotoUrl ? undefined : activePreset.perspectiveTransform
       );
     } catch (err) {
       console.error('Simulation export error:', err);
@@ -398,7 +398,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
                     />
                     <div
-                      className="absolute inset-0 bg-black/3"
+                      className="absolute inset-0 bg-black/8"
                     ></div>
                   </div>
 
@@ -436,7 +436,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
                     />
                     <div
-                      className="absolute inset-0 bg-black/3"
+                      className="absolute inset-0 bg-black/8"
                     ></div>
                   </div>
 

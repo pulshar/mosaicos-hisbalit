@@ -101,9 +101,9 @@ export const SPACE_PRESETS: SpacePreset[] = [
       originX: '36.7%',
       originY: '60%',
       scaleX: 1.1,
-      scaleY: 0.99,
+      scaleY: 1,
       offsetX: 0,
-      offsetY: -6
+      offsetY: -5.5
     }
   },
   {

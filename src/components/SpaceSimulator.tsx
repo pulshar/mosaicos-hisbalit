@@ -706,13 +706,13 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
             <span>{isExporting ? 'Generando imagen...' : 'Descargar simulación en 4K'}</span>
           </button>
 
-          {/* <button
+          <button
             onClick={() => handleDownloadSimulation('2k')}
             disabled={isExporting}
             className="w-full py-3 px-4 bg-white/10 hover:bg-white/15 text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
           >
             <span>Descargar PNG estándar</span>
-          </button> */}
+          </button>
         </div>
       </aside>
     </div>

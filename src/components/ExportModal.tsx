@@ -17,7 +17,8 @@ import {
   Check,
   Copy,
   LayoutGrid,
-  Square
+  Square,
+  Loader2
 } from 'lucide-react';
 
 interface ExportModalProps {
@@ -214,6 +215,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const handleDownloadPng = async () => {
     try {
       setIsDownloading(true);
+      await new Promise(resolve => setTimeout(resolve, 60));
       const width = resolution === '4k' ? 3840 : resolution === '2k' ? 1920 : 1080;
       const fileName = `Hisbalit_Coleccion_${motif.name}_${activeFormat}_${width}p.png`;
       await downloadSvgAsPng(currentSvgString, fileName, width);
@@ -283,7 +285,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     {compositionAnalysis.motifsList.length > 1 ? 'Motivos:' : 'Motivo:'}
                   </span>
                   <div className="text-right pl-2">
-                    {compositionAnalysis.motifsList.length === 1 && (
+                    {!compositionAnalysis.isCombined && (
                       <span className="font-bold text-[#242424] block">
                         {compositionAnalysis.motifsTitle}
                       </span>
@@ -510,10 +512,22 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 type="button"
                 onClick={handleDownloadPng}
                 disabled={isDownloading}
-                className="py-2.5 px-6 bg-[#242424] hover:bg-black text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer"
+                className={`py-2.5 px-6 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer ${isDownloading
+                    ? 'bg-[#242424] text-white/90 cursor-wait ring-1 ring-amber-400/40'
+                    : 'bg-[#242424] hover:bg-black text-white'
+                  }`}
               >
-                <Download className="w-4 h-4" />
-                <span>{isDownloading ? 'Generando imagen PNG...' : `Descargar imagen PNG (${resolution.toUpperCase()})`}</span>
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
+                    <span>Generando imagen PNG ({resolution.toUpperCase()})...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Descargar imagen PNG ({resolution.toUpperCase()})</span>
+                  </>
+                )}
               </button>
             ) : (
               <button

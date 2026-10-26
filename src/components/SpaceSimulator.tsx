@@ -12,7 +12,8 @@ import {
   Eye,
   Check,
   RefreshCw,
-  Maximize2
+  Maximize2,
+  Loader2
 } from 'lucide-react';
 
 const getPerspectiveTransformStyle = (config?: PerspectiveTransformConfig): React.CSSProperties => {
@@ -83,7 +84,8 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const [blendMode, setBlendMode] = useState<'multiply' | 'normal'>(() => activePreset.blendMode ?? 'normal');
   const [opacity, setOpacity] = useState<number>(1);
   const [isAdjustingSurface, setIsAdjustingSurface] = useState<boolean>(false);
-  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportingResolution, setExportingResolution] = useState<'4k' | '2k' | null>(null);
+  const isExporting = exportingResolution !== null;
   const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
   const [pendingSpaceId, setPendingSpaceId] = useState<string | null>(null);
   const [loadingPresetTitle, setLoadingPresetTitle] = useState<string | null>(null);
@@ -298,7 +300,10 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   // High resolution download trigger
   const handleDownloadSimulation = async (resolution: '4k' | '2k' = '4k') => {
     try {
-      setIsExporting(true);
+      setExportingResolution(resolution);
+      // Give React an immediate tick to render the spinner before CPU-heavy canvas rasterization
+      await new Promise(resolve => setTimeout(resolve, 80));
+
       const fileName = `Hisbalit_Coleccion_${motif.name}_Simulacion_${resolution.toUpperCase()}.png`;
       const exportTargetW = resolution === '4k' ? 3840 : 1920;
 
@@ -332,7 +337,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
     } catch (err) {
       console.error('Simulation export error:', err);
     } finally {
-      setIsExporting(false);
+      setExportingResolution(null);
     }
   };
 
@@ -415,7 +420,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
                     />
                     <div
-                      className="absolute inset-0 bg-black/6"
+                      className="absolute inset-0 bg-black/3"
                     ></div>
                   </div>
 
@@ -453,7 +458,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
                     />
                     <div
-                      className="absolute inset-0 bg-black/6"
+                      className="absolute inset-0 bg-black/3"
                     ></div>
                   </div>
 
@@ -487,6 +492,27 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
               </div>
             </div>
 
+
+            {/* Subtle Exporting / Generating Indicator */}
+            {/* <div
+              className={`absolute inset-0 z-35 flex items-center justify-center transition-all duration-300 ${isExporting ? 'opacity-100 pointer-events-auto bg-black/40 backdrop-blur-[2px]' : 'opacity-0 pointer-events-none'
+                }`}
+            >
+              <div className="bg-[#1C1C1C]/95 border border-white/20 px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3.5 backdrop-blur-md max-w-sm mx-4 transform transition-all duration-300 scale-100">
+                <div className="relative shrink-0 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-full bg-amber-400/15 border border-amber-400/30 flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
+                  </div>
+                </div>
+                <div className="text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white tracking-wide">
+                      Generando descarga {exportingResolution?.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div> */}
 
             {/* 4. Interactive Polygon Surface Boundary Points (When Adjusting) */}
             {isAdjustingSurface && customPhotoUrl && (
@@ -717,18 +743,47 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
           <button
             onClick={() => handleDownloadSimulation('4k')}
             disabled={isExporting}
-            className="w-full py-3 px-4 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-md text-xs transition-colors flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
+            className={`w-full py-3 px-4 font-bold rounded-md text-xs transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${exportingResolution === '4k'
+              ? 'bg-amber-400 text-black cursor-wait ring-2 ring-amber-400/50'
+              : isExporting
+                ? 'bg-amber-400/40 text-black/40 cursor-not-allowed'
+                : 'bg-amber-400 hover:bg-amber-300 text-black'
+              }`}
           >
-            <Download className="w-4 h-4" />
-            <span>{isExporting ? 'Generando imagen...' : 'Descargar simulación en 4K'}</span>
+            {exportingResolution === '4k' ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-black shrink-0" />
+                <span>Generando simulación en 4K...</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                <span>Descargar simulación en 4K</span>
+              </>
+            )}
           </button>
 
           <button
             onClick={() => handleDownloadSimulation('2k')}
             disabled={isExporting}
-            className="w-full py-3 px-4 bg-white/10 hover:bg-white/15 text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2"
+            className={`w-full py-3 px-4 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-2 cursor-pointer ${exportingResolution === '2k'
+              ? 'bg-white/20 text-white cursor-wait ring-2 ring-white/30'
+              : isExporting
+                ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                : 'bg-white/10 hover:bg-white/15 text-white'
+              }`}
           >
-            <span>Descargar PNG estándar</span>
+            {exportingResolution === '2k' ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
+                <span>Generando simulación en 2K...</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 text-white/70" />
+                <span>Descargar PNG estándar (2K)</span>
+              </>
+            )}
           </button>
         </div>
       </aside>

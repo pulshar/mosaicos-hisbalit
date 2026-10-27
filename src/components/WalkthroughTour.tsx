@@ -359,8 +359,8 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
 
                     {/* Pro Tip Box */}
                     {step.tip && (
-                        <div className="p-2.5 rounded-lg bg-[#FAF8F5] border border-[#E7E4DE] text-[11px] text-[#77736C] flex items-start gap-2">
-                            <Info className="w-3.5 h-3.5 text-[#DDA743] mt-0.5 shrink-0" />
+                        <div className="p-2.5 rounded-lg border bg-slate-100 text-slate-700 border-slate-300 text-[11px] text-[#77736C] flex items-start gap-2">
+                            <Info className="w-4 h-4 shrink-0 stroke-2" />
                             <span className="leading-snug">{step.tip}</span>
                         </div>
                     )}
@@ -389,21 +389,19 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
                         {currentStep > 0 && (
                             <button
                                 onClick={handlePrev}
-                                className="px-3 py-1.5 text-xs font-semibold text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors flex items-center gap-1"
+                                className="px-3 py-1.5 text-xs font-semibold text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-md transition-colors flex items-center gap-1"
                             >
-                                <ChevronLeft className="w-3.5 h-3.5" />
                                 <span>Atrás</span>
                             </button>
                         )}
 
                         <button
                             onClick={handleNext}
-                            className="px-4 py-1.5 text-xs font-semibold text-white bg-[#242424] hover:bg-black rounded-lg transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+                            className="px-4 py-1.5 text-xs font-semibold text-white bg-[#242424] hover:bg-black rounded-md transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
                         >
                             {currentStep < TOUR_STEPS.length - 1 ? (
                                 <>
                                     <span>Siguiente</span>
-                                    <ChevronRight className="w-3.5 h-3.5" />
                                 </>
                             ) : (
                                 <>

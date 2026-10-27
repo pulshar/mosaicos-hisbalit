@@ -115,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="tour-export-button"
           onClick={onOpenExport}
-          className="px-4 py-2 text-xs font-medium text-white bg-[#242424] hover:bg-[#111111] rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap shadow-xs ml-1"
+          className="px-4 py-2 text-xs font-medium text-white bg-[#242424] hover:bg-[#111111] rounded-md transition-colors flex items-center gap-2 whitespace-nowrap shadow-xs ml-1"
         >
           <Download className="w-3.5 h-3.5" />
           <span>Exportar diseño</span>

@@ -752,7 +752,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   {onChangeViewMode && (
                     <button
                       onClick={() => onChangeViewMode('pattern')}
-                      className="w-full py-1.5 px-3 bg-[#242424] hover:bg-black text-white text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                      className="w-full py-1.5 px-3 bg-[#242424] hover:bg-black text-white text-[11px] font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
                     >
                       <span>Cambiar a Composición repetida</span>
                     </button>

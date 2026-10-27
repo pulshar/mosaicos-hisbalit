@@ -18,7 +18,8 @@ import {
   Copy,
   LayoutGrid,
   Square,
-  Loader2
+  Loader2,
+  Info
 } from 'lucide-react';
 
 interface ExportModalProps {
@@ -480,6 +481,25 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Banner to Space Simulator */}
+            <div className="pt-5 border-t border-[#F0EFEB] text-[11px] text-[#242424] flex items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Info className="w-4 h-4 mt-0.5 shrink-0 stroke-2" />
+                  <span>¿Deseas ver la simulación en un espacio real?</span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenSimulation();
+                }}
+                className="py-2 px-3 rounded-lg border border-[#E7E4DE] bg-white hover:bg-[#F7F6F2] text-xs font-semibold text-[#77736C] hover:text-[#242424] transition-colors"
+              >
+                Ir a simulación
+              </button>
+            </div>
           </div>
         </div>
 
@@ -513,8 +533,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 onClick={handleDownloadPng}
                 disabled={isDownloading}
                 className={`py-2.5 px-6 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer ${isDownloading
-                    ? 'bg-[#242424] text-white/90 cursor-wait ring-1 ring-amber-400/40'
-                    : 'bg-[#242424] hover:bg-black text-white'
+                  ? 'bg-[#242424] text-white/90 cursor-wait ring-1 ring-amber-400/40'
+                  : 'bg-[#242424] hover:bg-black text-white'
                   }`}
               >
                 {isDownloading ? (
@@ -541,6 +561,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             )}
           </div>
         </div>
+
       </div>
     </div>
   );

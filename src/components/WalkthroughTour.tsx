@@ -2,14 +2,11 @@ import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from
 import {
     Grid3X3,
     Palette,
-    Sparkles,
     Download,
     ChevronRight,
     ChevronLeft,
     X,
     Check,
-    HelpCircle,
-    Keyboard,
     Info
 } from 'lucide-react';
 

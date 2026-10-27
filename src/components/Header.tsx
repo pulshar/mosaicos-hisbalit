@@ -48,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => onChangeViewMode('single')}
           className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${viewMode === 'single'
-            ? 'bg-[#FFFFFF] text-[#242424] shadow-xs'
+            ? 'bg-[#242424] text-white shadow-xs'
             : 'text-[#77736C] hover:text-[#242424]'
             }`}
           title="Vista detallada de un motivo individual"
@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => onChangeViewMode('pattern')}
           className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${viewMode === 'pattern'
-            ? 'bg-[#FFFFFF] text-[#242424] shadow-xs'
+            ? 'bg-[#242424] text-white shadow-xs'
             : 'text-[#77736C] hover:text-[#242424]'
             }`}
           title="Vista de la composición y repetición continua"

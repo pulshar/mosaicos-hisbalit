@@ -29,6 +29,7 @@ interface DesignCanvasProps {
   editedMotifIds?: Record<string, boolean>;
   onSelectPiece: (pieceId: string | string[] | null, isMulti?: boolean) => void;
   onUpdateComposition?: (settings: Partial<CompositionSettings>) => void;
+  onOpenTour?: () => void;
 }
 
 export const DesignCanvas: React.FC<DesignCanvasProps> = ({
@@ -40,6 +41,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
   editedMotifIds = {},
   onSelectPiece,
   onUpdateComposition,
+  onOpenTour,
 }) => {
   const viewMode = composition.viewMode;
   const selectedPieceId = selectedPieceIds[0] || null;
@@ -56,16 +58,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     y: number;
   } | null>(null);
 
-  const HELP_STORAGE_KEY = 'mosaico_canvas_help_dismissed';
   const PAN_HINT_STORAGE_KEY = 'mosaico_canvas_pan_hint_seen';
-
-  const [showHelpBanner, setShowHelpBanner] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(HELP_STORAGE_KEY) !== 'true';
-    } catch {
-      return true;
-    }
-  });
 
   const [hasSeenPanHint, setHasSeenPanHint] = useState<boolean>(() => {
     try {
@@ -82,19 +75,6 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     } catch (e) {
       console.error('Failed to save pan hint preference to localStorage:', e);
     }
-  };
-
-  const handleDismissHelp = () => {
-    setShowHelpBanner(false);
-    try {
-      localStorage.setItem(HELP_STORAGE_KEY, 'true');
-    } catch (e) {
-      console.error('Failed to save help preference to localStorage:', e);
-    }
-  };
-
-  const handleToggleHelp = () => {
-    setShowHelpBanner(prev => !prev);
   };
 
   const activeFormat: MotifFormat = customization.format;
@@ -546,6 +526,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
   return (
     <main
+      id="tour-design-canvas"
       ref={containerRef}
       onMouseDown={handleMouseDown}
       onClick={handleMainCanvasClick}
@@ -614,13 +595,10 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
           <div className="w-[1px] h-4 bg-[#E7E4DE] mx-1" />
 
           <button
-            onClick={handleToggleHelp}
-            className={`p-2 rounded-lg transition-colors cursor-pointer ${showHelpBanner
-              ? 'bg-[#242424] text-[#DDA743] shadow-xs'
-              : 'text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2]'
-              }`}
-            title={showHelpBanner ? "Ocultar guía de ayuda" : "Ver guía de ayuda e instrucciones"}
-            aria-label="Guía de ayuda e instrucciones"
+            onClick={onOpenTour}
+            className="p-2 rounded-lg transition-colors cursor-pointer text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2]"
+            title="Ver tutorial de uso"
+            aria-label="Ver tutorial de uso"
           >
             <HelpCircle className="w-4 h-4" />
           </button>
@@ -1255,37 +1233,6 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
           />
         );
       })()}
-
-      {/* Floating Onboarding / Instructions Helper (shown first time, dismissable, stored in localStorage) */}
-      {showHelpBanner && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 max-w-xl w-[92%] sm:w-auto bg-white/95 backdrop-blur-md border border-[#E7E4DE] shadow-xl rounded-2xl p-5 flex items-center gap-3.5 animate-fade-in transition-all">
-          <div className="text-xs text-[#242424] min-w-0 pr-1">
-            <div className="font-semibold flex items-center gap-2">
-              <span>
-                {viewMode === 'pattern'
-                  ? 'Personalización de composición'
-                  : 'Personalización de motivo'}
-              </span>
-            </div>
-            <p className="text-[#77736C] text-[11px] mt-0.5 leading-normal">
-              {viewMode === 'pattern'
-                ? 'Haz clic en una placa para personalizarla, o usa Shift / Ctrl + clic para seleccionar varias placas y aplicar cambios en lote.'
-                : 'Haz clic en una pieza del motivo para editarla, usa Ctrl + clic para seleccionar varias o haz clic en el fondo para cambiar su color.'}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0 pl-2">
-            <button
-              onClick={handleDismissHelp}
-              className="px-2.5 py-1.5 rounded-lg bg-[#242424] hover:bg-black text-white text-[11px] font-medium transition-colors cursor-pointer shadow-xs flex items-center gap-1"
-              title="Entendido, guardar preferencia"
-            >
-              <Check className="w-3.5 h-3.5 text-[#DDA743]" />
-              <span>Entendido</span>
-            </button>
-          </div>
-        </div>
-      )}
 
     </main>
   );

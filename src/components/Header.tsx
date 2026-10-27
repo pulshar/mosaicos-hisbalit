@@ -42,36 +42,35 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Zone 2: Navigation & View Mode Switcher */}
-      <nav className="flex items-center gap-1 bg-[#F7F6F2] p-1 rounded-lg border border-[#E7E4DE]">
+      <nav
+        id="tour-view-modes"
+        className="flex items-center gap-1 bg-[#F7F6F2] p-1 rounded-lg border border-[#E7E4DE]">
         <button
           onClick={() => onChangeViewMode('single')}
-          className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
-            viewMode === 'single'
-              ? 'bg-[#FFFFFF] text-[#242424] shadow-xs'
-              : 'text-[#77736C] hover:text-[#242424]'
-          }`}
+          className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${viewMode === 'single'
+            ? 'bg-[#FFFFFF] text-[#242424] shadow-xs'
+            : 'text-[#77736C] hover:text-[#242424]'
+            }`}
           title="Vista detallada de un motivo individual"
         >
           Motivo individual
         </button>
         <button
           onClick={() => onChangeViewMode('pattern')}
-          className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
-            viewMode === 'pattern'
-              ? 'bg-[#FFFFFF] text-[#242424] shadow-xs'
-              : 'text-[#77736C] hover:text-[#242424]'
-          }`}
+          className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${viewMode === 'pattern'
+            ? 'bg-[#FFFFFF] text-[#242424] shadow-xs'
+            : 'text-[#77736C] hover:text-[#242424]'
+            }`}
           title="Vista de la composición y repetición continua"
         >
           Composición repetida
         </button>
         <button
           onClick={() => onChangeViewMode('simulation')}
-          className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${
-            viewMode === 'simulation'
-              ? 'bg-[#242424] text-white shadow-xs'
-              : 'text-[#77736C] hover:text-[#242424]'
-          }`}
+          className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${viewMode === 'simulation'
+            ? 'bg-[#242424] text-white shadow-xs'
+            : 'text-[#77736C] hover:text-[#242424]'
+            }`}
           title="Simular en espacios reales: Baño, Suelo, Cocina"
         >
           <Sparkles className="w-3.5 h-3.5" />
@@ -85,9 +84,8 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onUndo}
             disabled={!canUndo}
-            className={`p-2 rounded-md transition-colors ${
-              canUndo ? 'text-[#242424] hover:bg-[#F7F6F2]' : 'text-[#C5C1BA] cursor-not-allowed'
-            }`}
+            className={`p-2 rounded-md transition-colors ${canUndo ? 'text-[#242424] hover:bg-[#F7F6F2]' : 'text-[#C5C1BA] cursor-not-allowed'
+              }`}
             title="Deshacer (Ctrl+Z)"
             aria-label="Deshacer"
           >
@@ -96,9 +94,8 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onRedo}
             disabled={!canRedo}
-            className={`p-2 rounded-md transition-colors ${
-              canRedo ? 'text-[#242424] hover:bg-[#F7F6F2]' : 'text-[#C5C1BA] cursor-not-allowed'
-            }`}
+            className={`p-2 rounded-md transition-colors ${canRedo ? 'text-[#242424] hover:bg-[#F7F6F2]' : 'text-[#C5C1BA] cursor-not-allowed'
+              }`}
             title="Rehacer (Ctrl+Y)"
             aria-label="Rehacer"
           >
@@ -116,6 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <button
+          id="tour-export-button"
           onClick={onOpenExport}
           className="px-4 py-2 text-xs font-medium text-white bg-[#242424] hover:bg-[#111111] rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap shadow-xs ml-1"
         >

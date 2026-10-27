@@ -13,6 +13,7 @@ import { DesignCanvas } from './components/DesignCanvas';
 import { CustomizationPanel } from './components/CustomizationPanel';
 import { SpaceSimulator } from './components/SpaceSimulator';
 import { ExportModal } from './components/ExportModal';
+import { WalkthroughTour } from './components/WalkthroughTour';
 import {
   generateSingleMotifSvg,
   generateCompositionSvg,
@@ -28,6 +29,7 @@ const STORAGE_KEY_LIBRARY_OPEN = 'mosaico_studio_library_open';
 const STORAGE_KEY_CUSTOMIZATION_PANEL_OPEN = 'mosaico_studio_customization_panel_open';
 const STORAGE_KEY_CUSTOMIZATIONS_MAP = 'mosaico_studio_customizations_map';
 const STORAGE_KEY_EDITED_MOTIFS = 'mosaico_studio_edited_motifs';
+const STORAGE_KEY_TOUR_COMPLETED = 'mosaico_studio_tour_completed';
 
 export default function App() {
   // 1. Initial State from storage or defaults
@@ -215,6 +217,42 @@ export default function App() {
       return true;
     }
   });
+
+  // Tour walkthrough state (opens automatically on first visit)
+  const [isTourOpen, setIsTourOpen] = useState<boolean>(() => {
+    try {
+      const completed = localStorage.getItem(STORAGE_KEY_TOUR_COMPLETED);
+      return completed === null;
+    } catch {
+      return false;
+    }
+  });
+
+  const handleCloseTour = useCallback(() => {
+    setIsTourOpen(false);
+    try {
+      localStorage.setItem(STORAGE_KEY_TOUR_COMPLETED, 'true');
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleOpenTour = useCallback(() => {
+    if (composition.viewMode === 'simulation') {
+      setComposition(prev => ({ ...prev, viewMode: 'single' }));
+    }
+    setIsMotifLibraryOpen(true);
+    setIsCustomizationPanelOpen(true);
+    setIsTourOpen(true);
+  }, [composition.viewMode]);
+
+  const handleTourStepChange = useCallback((stepIndex: number) => {
+    if (stepIndex === 0) {
+      setIsMotifLibraryOpen(true);
+    } else if (stepIndex === 1) {
+      setIsCustomizationPanelOpen(true);
+    }
+  }, []);
 
   // 4. Multi-motif customizations map and edited memory
   const [customizationsMap, setCustomizationsMap] = useState<Record<string, MotifCustomization>>(() => {
@@ -632,6 +670,7 @@ export default function App() {
           <>
             {/* Left Panel: Motifs Library (smooth collapsible animation) */}
             <div
+              id="tour-motif-library"
               className={`h-full shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex relative z-10 ${isMotifLibraryOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 pointer-events-none'
                 }`}
             >
@@ -670,10 +709,12 @@ export default function App() {
               editedMotifIds={editedMotifIds}
               onSelectPiece={handleSelectPiece}
               onUpdateComposition={handleUpdateComposition}
+              onOpenTour={handleOpenTour}
             />
 
             {/* Right Panel: Customization Controls (smooth collapsible animation) */}
             <div
+              id="tour-customization-panel"
               className={`h-full shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex relative z-10 ${isCustomizationPanelOpen ? 'w-94 opacity-100' : 'w-0 opacity-0 pointer-events-none'
                 }`}
             >
@@ -729,6 +770,16 @@ export default function App() {
           editedMotifIds={editedMotifIds}
           onClose={() => setIsExportModalOpen(false)}
           onOpenSimulation={() => setComposition(prev => ({ ...prev, viewMode: 'simulation' }))}
+        />
+      )}
+
+      {/* 4. Walkthrough Tour */}
+      {isTourOpen && (
+        <WalkthroughTour
+          key="walkthrough-tour-active"
+          isOpen={isTourOpen}
+          onClose={handleCloseTour}
+          onStepChange={handleTourStepChange}
         />
       )}
 

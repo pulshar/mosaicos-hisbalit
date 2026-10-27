@@ -1,5 +1,7 @@
 import React from 'react';
-import { Undo2, Redo2, RotateCcw, Download, Sparkles, Layers } from 'lucide-react';
+import { Undo2, Redo2, Download, Sparkles, LayoutGrid } from 'lucide-react';
+import Logo from './icons/logo';
+import IconLetterA from './icons/IconLetterA';
 
 interface HeaderProps {
   onNewDesign: () => void;
@@ -23,11 +25,11 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenExport
 }) => {
   return (
-    <header className="h-16 border-b border-[#E7E4DE] bg-[#FFFFFF] px-6 flex items-center justify-between gap-8 shrink-0 select-none z-30">
+    <header className="h-18 border-b border-[#E7E4DE] bg-[#FFFFFF] px-6 flex items-center justify-between gap-8 shrink-0 select-none z-30">
       {/* Zone 1: Single element brand wordmark */}
       <div className="flex items-center gap-3 shrink-0">
         <a href="/" className="flex items-center gap-2.5 text-decoration-none group">
-          <div className="w-8 h-8 rounded-lg bg-[#242424] flex items-center justify-center text-white font-semibold text-sm tracking-tighter">
+          {/* <div className="w-8 h-8 rounded-lg bg-[#242424] flex items-center justify-center text-white font-semibold text-sm tracking-tighter">
             M
           </div>
           <div className="flex flex-col">
@@ -36,6 +38,12 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
             <span className="text-[11px] text-[#77736C] -mt-0.5 tracking-normal whitespace-nowrap font-medium">
               Colección Petite · Hisbalit
+            </span>
+          </div> */}
+          <div className="flex flex-col gap-1">
+            <Logo className="w-34 h-auto text-brand" />
+            <span className="text-[8px] text-brand font-bold -mt-0.5 tracking-[0.525em] whitespace-nowrap uppercase">
+              Mosaico Studio
             </span>
           </div>
         </a>
@@ -47,28 +55,30 @@ export const Header: React.FC<HeaderProps> = ({
         className="flex items-center gap-1 bg-[#F7F6F2] p-1 rounded-lg border border-[#E7E4DE]">
         <button
           onClick={() => onChangeViewMode('single')}
-          className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${viewMode === 'single'
-            ? 'bg-[#242424] text-white shadow-xs'
+          className={`px-3.5 py-2 text-xs font-medium rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${viewMode === 'single'
+            ? 'bg-brand text-white shadow-xs'
             : 'text-[#77736C] hover:text-[#242424]'
             }`}
           title="Vista detallada de un motivo individual"
         >
+          <IconLetterA className="w-3.5 h-3.5" />
           Motivo individual
         </button>
         <button
           onClick={() => onChangeViewMode('pattern')}
-          className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${viewMode === 'pattern'
-            ? 'bg-[#242424] text-white shadow-xs'
+          className={`px-3.5 py-2 text-xs font-medium rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${viewMode === 'pattern'
+            ? 'bg-brand text-white shadow-xs'
             : 'text-[#77736C] hover:text-[#242424]'
             }`}
           title="Vista de la composición y repetición continua"
         >
+          <LayoutGrid className="w-3.5 h-3.5" />
           Composición repetida
         </button>
         <button
           onClick={() => onChangeViewMode('simulation')}
-          className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${viewMode === 'simulation'
-            ? 'bg-[#242424] text-white shadow-xs'
+          className={`px-3.5 py-2 text-xs font-medium rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${viewMode === 'simulation'
+            ? 'bg-brand text-white shadow-xs'
             : 'text-[#77736C] hover:text-[#242424]'
             }`}
           title="Simular en espacios reales: Baño, Suelo, Cocina"
@@ -115,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="tour-export-button"
           onClick={onOpenExport}
-          className="px-4 py-2 text-xs font-medium text-white bg-[#242424] hover:bg-[#111111] rounded-md transition-colors flex items-center gap-2 whitespace-nowrap shadow-xs ml-1"
+          className="px-4 py-2 text-xs font-medium text-white bg-brand hover:bg-brand-hover rounded-md transition-colors flex items-center gap-2 whitespace-nowrap shadow-xs ml-1"
         >
           <Download className="w-3.5 h-3.5" />
           <span>Exportar diseño</span>

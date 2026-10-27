@@ -1061,7 +1061,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               </button>
               <button
                 onClick={onDownloadPng}
-                className="w-full py-2.5 px-3 bg-[#242424] hover:bg-black text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-between shadow-xs"
+                className="w-full py-2.5 px-3 bg-brand hover:bg-brand-hover text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-between shadow-xs"
               >
                 <span>Descargar imagen 4K Ultra HD</span>
                 <span className="text-[10px] font-mono opacity-80">3840×2160</span>

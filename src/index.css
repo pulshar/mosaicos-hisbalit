@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+@theme {
+  /* Marca & Acentos */
+  --color-brand: #4B8C9B;
+  --color-brand-hover: #3D7481;
+  --color-gold: #DDA743;
+  --color-gold-hover: #c89534;
+
+  /* Neutros oscuros (Tipografía & Botones) */
+  --color-charcoal: #242424;
+  --color-charcoal-hover: #141414;
+  --color-taupe: #77736C;
+  --color-taupe-light: #8C8880;
+  --color-muted-dim: #A8A49C;
+
+  /* Superficies & Fondos */
+  --color-sand: #F7F6F2;
+  --color-cream: #FAF9F5;
+  --color-cream-warm: #FAF8F5;
+
+  /* Bordes & Divisores */
+  --color-warm-border: #E7E4DE;
+  --color-warm-divider: #EFECE6;
+  --color-warm-disabled: #C5C1BA;
+
+  /* Semántica de Mosaico Studio */
+  --color-studio-dark: #242424;
+  --color-studio-gold: #DDA743;
+  --color-studio-bg: #F7F6F2;
+  --color-studio-card: #FAF9F5;
+  --color-studio-border: #E7E4DE;
+  --color-studio-muted: #77736C;
+  --color-studio-subtle: #EFECE6;
+}
+
 @layer base {
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -14,14 +48,16 @@
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #D8D4CC;
   border-radius: 9999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #AFAAA0;
 }
-

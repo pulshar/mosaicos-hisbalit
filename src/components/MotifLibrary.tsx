@@ -20,7 +20,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
   return (
     <aside className="w-80 h-full border-r border-[#E7E4DE] bg-[#FFFFFF] flex flex-col shrink-0 select-none">
       {/* Header of panel */}
-      <div className="p-4 border-b border-[#E7E4DE] flex items-center justify-between">
+      <div className="py-4 px-6 border-b border-[#E7E4DE] flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-[#242424] tracking-tight">
             Biblioteca de motivos
@@ -120,7 +120,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                   )}
 
                   {isActive && (
-                    <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#242424] text-white flex items-center justify-center shadow-xs">
+                    <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-brand text-white flex items-center justify-center shadow-xs">
                       <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </div>
                   )}

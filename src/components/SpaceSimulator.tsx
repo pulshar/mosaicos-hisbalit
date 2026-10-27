@@ -754,21 +754,21 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         </div>
 
         {/* Section: Download High-Resolution Presentation */}
-        <div className="pt-4 border-t border-white/10 space-y-2 mt-4">
+        <div className="pt-5 border-t border-white/10 space-y-4 mt-5">
           <button
             onClick={() => handleDownloadSimulation('4k')}
             disabled={isExporting}
             className={`w-full py-3 px-4 font-bold rounded-md text-xs transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${exportingResolution === '4k'
-              ? 'bg-amber-400 text-black cursor-wait ring-2 ring-amber-400/50'
+              ? 'bg-brand text-white cursor-wait'
               : isExporting
-                ? 'bg-amber-400/40 text-black/40 cursor-not-allowed'
-                : 'bg-amber-400 hover:bg-amber-300 text-black'
+                ? 'bg-brand/40 text-white/30 cursor-not-allowed'
+                : 'bg-brand hover:bg-brand-hover text-white'
               }`}
           >
             {exportingResolution === '4k' ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin text-black shrink-0" />
-                <span>Generando simulación en 4K...</span>
+                <Loader2 className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
+                <span>Generando simulación en 4K</span>
               </>
             ) : (
               <>
@@ -782,7 +782,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
             onClick={() => handleDownloadSimulation('2k')}
             disabled={isExporting}
             className={`w-full py-3 px-4 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-2 cursor-pointer ${exportingResolution === '2k'
-              ? 'bg-white/20 text-white cursor-wait ring-2 ring-white/30'
+              ? 'bg-white/20 text-white cursor-wait'
               : isExporting
                 ? 'bg-white/5 text-white/30 cursor-not-allowed'
                 : 'bg-white/10 hover:bg-white/15 text-white'
@@ -791,12 +791,12 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
             {exportingResolution === '2k' ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
-                <span>Generando simulación en 2K...</span>
+                <span>Generando simulación</span>
               </>
             ) : (
               <>
-                <Download className="w-4 h-4 text-white/70" />
-                <span>Descargar PNG estándar (2K)</span>
+                <Download className="w-4 h-4" />
+                <span>Descargar PNG estándar</span>
               </>
             )}
           </button>

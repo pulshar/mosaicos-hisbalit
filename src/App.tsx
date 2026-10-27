@@ -788,7 +788,7 @@ export default function App() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in select-none">
           <div className="bg-white rounded-2xl border border-[#E7E4DE] shadow-2xl max-w-sm w-full p-6 text-center space-y-4">
             <div className="w-12 h-12 rounded-full bg-[#F7F6F2] border border-[#E7E4DE] mx-auto flex items-center justify-center text-[#242424] font-bold text-lg">
-              <PaletteIcon className="w-6 h-6 text-[#DDA743]" />
+              <PaletteIcon className="w-6 h-6" />
             </div>
             <div>
               <h3 className="text-base font-bold text-[#242424]">
@@ -807,7 +807,7 @@ export default function App() {
               </button>
               <button
                 onClick={handleConfirmNewDesign}
-                className="py-2.5 px-3 rounded-lg bg-[#242424] hover:bg-black text-white text-xs font-semibold transition-colors shadow-xs"
+                className="py-2.5 px-3 rounded-lg bg-brand hover:bg-brand-hover text-white text-xs font-semibold transition-colors shadow-xs"
               >
                 Sí, nuevo diseño
               </button>

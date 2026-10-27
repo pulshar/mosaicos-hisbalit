@@ -404,7 +404,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     }
 
     onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
-    setBackgroundNotice(`Fila ${row + 1} actualizada por completo`);
+    setBackgroundNotice(`Fila ${row + 1} actualizada`);
   };
 
   const handleApplyToCol = (motifId: string | null, rotation: number) => {
@@ -424,7 +424,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
     }
 
     onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
-    setBackgroundNotice(`Columna ${col + 1} actualizada por completo`);
+    setBackgroundNotice(`Columna ${col + 1} actualizada`);
   };
 
   const handleApplyCheckerboard = (motifId: string | null, rotation: number) => {
@@ -544,7 +544,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                 Motivo {motif.catalogueNumber} · {motif.name}
               </span>
               <span className="text-[10px] text-[#77736C] bg-[#F7F6F2] px-1.5 py-0.2 rounded border border-[#E7E4DE] font-medium">
-                {activeFormat === 'round' ? 'Tesela Redonda' : 'Tesela Hexagonal'}
+                {activeFormat === 'round' ? 'Redonda' : 'Hexagonal'}
               </span>
             </div>
             <p className="text-[11px] text-[#77736C]">
@@ -1138,7 +1138,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
       {/* Floating Multi-selection Toolbar / Chip */}
       {viewMode === 'pattern' && selectedGridCells.length > 1 && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 bg-[#242424]/95 backdrop-blur-md text-white px-4 py-2 rounded-xl shadow-lg border border-black/10 flex items-center gap-3 animate-fade-in select-none">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 bg-[#242424]/95 backdrop-blur-md text-white px-4 py-2 rounded-lg shadow-lg border border-black/10 flex items-center gap-3 animate-fade-in select-none">
           <div className="w-2 h-2 rounded-full bg-[#DDA743]" />
           <span className="text-xs font-semibold">
             {selectedGridCells.length} placas seleccionadas

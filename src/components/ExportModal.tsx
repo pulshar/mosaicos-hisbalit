@@ -270,7 +270,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     className="w-full h-full object-contain select-none pointer-events-none drop-shadow-xs transition-opacity duration-200"
                   />
                 ) : (
-                  <div className="text-xs text-[#77736C]">Cargando vista previa...</div>
+                  <div className="text-xs text-[#77736C]">Cargando vista previa</div>
                 )}
 
                 {/* Subtle Format Pill on Preview */}
@@ -533,14 +533,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 onClick={handleDownloadPng}
                 disabled={isDownloading}
                 className={`py-2.5 px-6 font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer ${isDownloading
-                  ? 'bg-[#242424] text-white/90 cursor-wait ring-1 ring-amber-400/40'
-                  : 'bg-[#242424] hover:bg-black text-white'
+                  ? 'bg-brand text-white/60 cursor-wait'
+                  : 'bg-brand hover:bg-brand-hover text-white'
                   }`}
               >
                 {isDownloading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
-                    <span>Generando imagen PNG ({resolution.toUpperCase()})...</span>
+                    <span>Generando imagen PNG ({resolution.toUpperCase()})</span>
                   </>
                 ) : (
                   <>
@@ -553,7 +553,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               <button
                 type="button"
                 onClick={handleDownloadSvg}
-                className="py-2.5 px-6 bg-[#242424] hover:bg-black text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                className="py-2.5 px-6 bg-brand hover:bg-brand-hover text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>Descargar archivo .SVG</span>

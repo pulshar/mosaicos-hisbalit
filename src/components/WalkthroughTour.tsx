@@ -3,10 +3,7 @@ import {
     Grid3X3,
     Palette,
     Download,
-    ChevronRight,
-    ChevronLeft,
     X,
-    Check,
     Info
 } from 'lucide-react';
 
@@ -228,7 +225,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
             );
             return {
                 position: 'fixed',
-                left: `${left - 6}px`,
+                left: `${left - 4}px`,
                 top: `${top}px`,
                 width: `${cardWidth}px`,
                 zIndex: 60
@@ -261,7 +258,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
             const targetRight = targetRect ? targetRect.right : (window.innerWidth - 20);
             const targetBottom = targetRect ? targetRect.bottom : 57;
             const left = Math.max(margin, targetRight - cardWidth);
-            const top = targetBottom + margin;
+            const top = targetBottom + margin + 4;
             return {
                 position: 'fixed',
                 left: `${left}px`,
@@ -351,7 +348,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
                                 key={index}
                                 className="text-[11.5px] text-[#242424] flex items-start gap-2 leading-relaxed"
                             >
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#DDA743] mt-1.5 shrink-0" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-brand mt-1.5 shrink-0" />
                                 <span>{highlight}</span>
                             </li>
                         ))}
@@ -375,7 +372,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
                                 key={idx}
                                 onClick={() => setCurrentStep(idx)}
                                 className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === currentStep
-                                    ? 'w-6 bg-[#DDA743]'
+                                    ? 'w-6 bg-brand'
                                     : 'w-1.5 bg-[#E7E4DE] hover:bg-[#C5C1BA]'
                                     }`}
                                 title={`Ir al paso ${idx + 1}`}
@@ -405,7 +402,6 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
                                 </>
                             ) : (
                                 <>
-                                    <Check className="w-3.5 h-3.5 text-[#DDA743]" />
                                     <span>Empezar a diseñar</span>
                                 </>
                             )}

@@ -556,11 +556,11 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                 </button>
                 <button
                     onClick={onClose}
-                    className="px-3.5 py-1 bg-[#242424] text-white font-semibold rounded-md hover:bg-black transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 bg-brand hover:bg-brand-hover text-white font-semibold rounded-md transition-colors cursor-pointer"
                 >
-                    Listo
+                    Guardar cambios
                 </button>
             </div>
         </div>
-    );
+    )
 };

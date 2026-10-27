@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { SPACE_PRESETS } from '../data/spaces';
 import { SpacePreset, PerspectiveTransformConfig, MotifDefinition, MotifCustomization, CompositionSettings } from '../types';
 import { generateSimulationWallSvg, exportSimulationAsPng } from '../utils/exportUtils';
@@ -86,11 +86,12 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const [isAdjustingSurface, setIsAdjustingSurface] = useState<boolean>(false);
   const [exportingResolution, setExportingResolution] = useState<'4k' | '2k' | null>(null);
   const isExporting = exportingResolution !== null;
-  const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(true);
+  const [isInitialSized, setIsInitialSized] = useState<boolean>(false);
+  const isInitialSizedRef = useRef<boolean>(false);
   const [pendingSpaceId, setPendingSpaceId] = useState<string | null>(null);
   const [loadingPresetTitle, setLoadingPresetTitle] = useState<string | null>(null);
   const switchTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const isInitialMountRef = useRef<boolean>(true);
 
   // Clean up any pending switch timer on unmount
   useEffect(() => {
@@ -99,7 +100,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
     };
   }, []);
 
-  // Dedicated switch handler: loader appears FIRST and old space fades out, then 200ms later the new space loads
+  // Dedicated switch handler: loader appears FIRST and old space fades out, then 150ms later the new space loads
   const handleSelectSpace = (preset: SpacePreset) => {
     if (preset.id === selectedSpaceId && !customPhotoUrl) return;
 
@@ -112,12 +113,12 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
     setLoadingPresetTitle(preset.surfaceLabel || preset.name);
     setIsImageLoading(true);
 
-    // 2. Wait 200ms so the loader and fade-out happen FIRST before swapping the image and geometry
+    // 2. Wait 150ms so the loader and fade-out happen FIRST before swapping the image and geometry
     switchTimerRef.current = setTimeout(() => {
       setCustomPhotoUrl(null);
       setSelectedSpaceId(preset.id);
       setPendingSpaceId(null);
-    }, 200);
+    }, 150);
   };
 
   // Polygon points in % coordinates [[x, y], ...]
@@ -145,25 +146,28 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
 
   const activeImageUrl = customPhotoUrl || activePreset.image;
 
-  // Smooth preloading and transition when switching spaces (guaranteed min 1 second for a calm, polished transition)
+  // Seamless, buffered preloading on mount (or reload/viewMode switch) and when changing space
   useEffect(() => {
-    // Avoid triggering loading animation on initial mount (e.g. toggling from composition tab)
-    if (isInitialMountRef.current) {
-      isInitialMountRef.current = false;
-      return;
-    }
-
     let isMounted = true;
     setIsImageLoading(true);
 
     const startTime = Date.now();
-    const MIN_LOADING_MS = 1000; // Always guarantee at least 1 second
+    // 320ms calm buffer ensures layout dimensions have settled and SVG is rendered
+    const MIN_LOADING_MS = 320;
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = activeImageUrl;
 
-    const finishLoading = () => {
+    const finalizeLoad = async () => {
+      try {
+        if ('decode' in img) {
+          await img.decode();
+        }
+      } catch {
+        // decode might reject if cancelled or already decoded, safe to ignore
+      }
+
       const elapsed = Date.now() - startTime;
       const remainingTime = Math.max(0, MIN_LOADING_MS - elapsed);
 
@@ -176,11 +180,14 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
     };
 
     if (img.complete && img.naturalWidth > 0) {
-      finishLoading();
+      finalizeLoad();
     } else {
-      img.onload = finishLoading;
+      img.onload = finalizeLoad;
       img.onerror = () => {
-        if (isMounted) finishLoading();
+        if (isMounted) {
+          setIsImageLoading(false);
+          setLoadingPresetTitle(null);
+        }
       };
     }
 
@@ -241,7 +248,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const [containerDimensions, setContainerDimensions] = useState<{ width: number; height: number } | null>(null);
 
   // Dynamically compute exact container dimensions so the photo's aspect ratio is always strictly respected without distortion
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!viewportRef.current) return;
     const updateSize = () => {
       if (!viewportRef.current) return;
@@ -264,6 +271,13 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
     };
 
     updateSize();
+
+    // Enable smooth container transitions only AFTER initial sizing has been painted
+    requestAnimationFrame(() => {
+      isInitialSizedRef.current = true;
+      setIsInitialSized(true);
+    });
+
     const ro = new ResizeObserver(updateSize);
     ro.observe(viewportRef.current);
     return () => ro.disconnect();
@@ -390,17 +404,18 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
             ref={imageContainerRef}
             onPointerMove={handlePointerMoveContainer}
             onPointerUp={handlePointerUpContainer}
-            className={`relative rounded-lg overflow-hidden border border-white/10 shadow-2xl max-w-full max-h-full transition-[width,height] duration-200 ease-out ${isImageLoading ? 'bg-[#141414]' : 'bg-[#FAF8F5]'}`}
+            className={`relative rounded-lg overflow-hidden border border-white/10 shadow-2xl max-w-full max-h-full ${isInitialSized ? 'transition-[width,height] duration-300 ease-in-out' : ''} ${isImageLoading ? 'bg-[#141414]' : 'bg-[#FAF8F5]'}`}
             style={{
               aspectRatio: `${currentAspectRatio}`,
-              width: containerDimensions ? `${containerDimensions.width}px` : '100%',
-              height: containerDimensions ? `${containerDimensions.height}px` : 'auto',
-              maxWidth: '1200px'
+              width: containerDimensions ? `${containerDimensions.width}px` : undefined,
+              height: containerDimensions ? `${containerDimensions.height}px` : undefined,
+              maxWidth: '1200px',
+              opacity: containerDimensions ? 1 : 0
             }}
           >
             {/* Visual Layers with Soft Dimming & Blur during Room Transition */}
             <div
-              className={`w-full h-full relative transition-all duration-300 ease-out ${isImageLoading ? 'opacity-0 scale-[0.96]' : 'opacity-100 scale-100'
+              className={`w-full h-full relative transition-all duration-300 ease-out ${isImageLoading ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
                 }`}
             >
               {isForegroundOverlay ? (
@@ -590,7 +605,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                   <button
                     key={preset.id}
                     onClick={() => handleSelectSpace(preset)}
-                    disabled={isImageLoading}
+                    disabled={Boolean(pendingSpaceId)}
                     className={`relative rounded-lg overflow-hidden border p-1 text-left transition-all ${isSelected
                       ? 'border-amber-400 ring-2 ring-amber-400/20 bg-white/10'
                       : 'border-white/10 bg-white/5 hover:border-white/30'

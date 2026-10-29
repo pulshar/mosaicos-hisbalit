@@ -376,13 +376,74 @@ export function downloadFile(content: string, fileName: string, mimeType: string
 }
 
 /**
- * Renders SVG to Canvas and triggers high-resolution PNG download
+* Metadata for rendering technical specifications underneath the exported image
+ */
+export interface ExportImageMetadata {
+  scope: 'single' | 'composition';
+  motifsTitle: string;
+  motifsDetail?: string;
+  colors: import('../data/palette').ColorReferenceInfo[];
+  totalArea: string;
+  totalDimensions: string;
+  formatName: string;
+  collectionTitle?: string;
+}
+
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  if (typeof ctx.roundRect === 'function') {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    return;
+  }
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function drawTextWithEllipsis(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number
+) {
+  if (ctx.measureText(text).width <= maxWidth) {
+    ctx.fillText(text, x, y);
+    return;
+  }
+  let truncated = text;
+  while (truncated.length > 1 && ctx.measureText(truncated + '...').width > maxWidth) {
+    truncated = truncated.slice(0, -1);
+  }
+  ctx.fillText(truncated + '...', x, y);
+}
+
+/**
+ * Renders SVG to Canvas and triggers high-resolution PNG download.
+ * When metadata is provided, appends an architectural technical specifications card underneath the image
+ * showing the motifs used, official color references (never hex codes), and total surface area.
  */
 export async function downloadSvgAsPng(
   svgString: string,
   fileName: string,
   targetWidth = 3840,
-  targetHeight?: number
+  targetHeight?: number,
+  metadata?: ExportImageMetadata
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -391,8 +452,91 @@ export async function downloadSvgAsPng(
 
     img.onload = () => {
       const aspect = img.width / (img.height || 1);
+
+      if (!metadata) {
+        // Standard raw export without footer
+        const canvasW = targetWidth;
+        const canvasH = targetHeight || Math.round(targetWidth / aspect);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          URL.revokeObjectURL(url);
+          reject(new Error('Canvas 2D context not available'));
+          return;
+        }
+
+        // Draw background
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvasW, canvasH);
+
+        // Render crisp image
+        ctx.drawImage(img, 0, 0, canvasW, canvasH);
+
+        canvas.toBlob(blob => {
+          URL.revokeObjectURL(url);
+          if (!blob) {
+            reject(new Error('Failed to create PNG blob'));
+            return;
+          }
+
+          const pngUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = pngUrl;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(pngUrl);
+          resolve();
+        }, 'image/png');
+        return;
+      }
+
+      // High-resolution architectural presentation sheet with technical footer
+      // When targetWidth is 1080 (1K export) or lower, linear scaling s = 1080/1920 (0.5625)
+      // would shrink fonts to 6-10px, making them hard to read.
+      // We calibrate typography and card dimensions so that at 1080px all values and labels
+      // remain large, crisp, and comfortable to read, while scaling proportionally for 2K (1920) and 4K (3840).
+      const is1080 = targetWidth <= 1200;
+      const s = is1080 ? 1 : targetWidth / 1920;
+
+      // Layout spacing (proportional to targetWidth)
+      const margin = Math.round(is1080 ? 32 : 44 * s);
+      const gap = Math.round(is1080 ? 22 : 28 * s);
+      const cardPad = Math.round(is1080 ? 26 : 30 * s);
+      const cardRadius = Math.round(is1080 ? 14 : 16 * s);
+
+      const mosaicW = targetWidth - margin * 2;
+      const mosaicH = Math.round(mosaicW / aspect);
+
+
+      // Typography sizes (px) calibrated for high legibility
+      const fontBrandTitle = Math.round(is1080 ? 15 : 15 * s);
+      const fontBrandSub = Math.round(is1080 ? 13 : 13 * s);
+      const fontBadge = Math.round(is1080 ? 12.5 : 12.5 * s);
+      const fontLabel = Math.round(is1080 ? 11 : 11 * s);
+      const fontMotifTitle = Math.round(is1080 ? 17 : 17 * s);
+      const fontMotifDetail = Math.round(is1080 ? 12 : 12 * s);
+      const fontColorRef = Math.round(is1080 ? 13 : 13 * s);
+      const fontTotalArea = Math.round(is1080 ? 20 : 20 * s);
+      const fontDimensions = Math.round(is1080 ? 12 : 12 * s);
+      const fontFooter = Math.round(is1080 ? 11 : 10.5 * s);
+
+      const swatchR = Math.round(is1080 ? 8 : 8 * s);
+      const colorRowH = Math.round(is1080 ? 28 : 28 * s);
+
+      // Dynamically calculate panel height based on number of colors
+      const numColorRows = Math.max(1, Math.ceil(metadata.colors.length / 2));
+      const colorsBlockH = Math.max(Math.round(84 * s), numColorRows * colorRowH + Math.round(26 * s));
+      const mainContentH = Math.max(Math.round(96 * s), colorsBlockH);
+      const panelH = Math.round(52 * s + mainContentH + 42 * s);
+
       const canvasW = targetWidth;
-      const canvasH = targetHeight || Math.round(targetWidth / aspect);
+      const canvasH = margin + mosaicH + gap + panelH + margin;
 
       const canvas = document.createElement('canvas');
       canvas.width = canvasW;
@@ -405,13 +549,154 @@ export async function downloadSvgAsPng(
         return;
       }
 
-      // Draw background
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // 1. Clean background for entire presentation sheet
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvasW, canvasH);
 
-      // Render crisp image
-      ctx.drawImage(img, 0, 0, canvasW, canvasH);
+      // 2. Render crisp mosaic image
+      ctx.drawImage(img, margin, margin, mosaicW, mosaicH);
 
+      // Delicate border around mosaic
+      ctx.strokeStyle = '#E7E4DE';
+      ctx.lineWidth = Math.max(1, Math.round(1 * s));
+      ctx.strokeRect(margin, margin, mosaicW, mosaicH);
+
+      // 3. Technical footer card underneath the image
+      const panelX = margin;
+      const panelY = margin + mosaicH + gap;
+
+      drawRoundedRect(ctx, panelX, panelY, mosaicW, panelH, cardRadius);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = Math.max(1, Math.round(1.5 * s));
+      ctx.stroke();
+
+      // --- Header Bar of the Technical Card ---
+      const headerY = panelY + Math.round(26 * s);
+
+      // Brand Title
+      ctx.fillStyle = '#242424';
+      ctx.font = `bold ${fontBrandTitle}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+      ctx.fillText('HISBALIT MOSAICO', panelX + cardPad, headerY);
+
+      // Brand Subtitle
+      const brandWidth = ctx.measureText('HISBALIT MOSAICO').width;
+      ctx.fillStyle = '#7B7871';
+      ctx.font = `500 ${fontBrandSub}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+      ctx.fillText('  ·  Colección Petite', panelX + cardPad + brandWidth, headerY);
+
+      // Right format pill/text
+      const formatBadgeText = `${metadata.formatName} · ${metadata.scope === 'single' ? 'Motivo individual' : 'Composición completa'}`;
+      ctx.fillStyle = '#524F4A';
+      ctx.font = `600 ${fontBadge}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+      const formatW = ctx.measureText(formatBadgeText).width;
+      ctx.fillText(formatBadgeText, panelX + mosaicW - cardPad - formatW, headerY);
+
+      // Separator line under header
+      const sep1Y = headerY + Math.round(15 * s);
+      ctx.beginPath();
+      ctx.strokeStyle = '#E7E4DE';
+      ctx.lineWidth = Math.max(1, Math.round(1 * s));
+      ctx.moveTo(panelX + cardPad, sep1Y);
+      ctx.lineTo(panelX + mosaicW - cardPad, sep1Y);
+      ctx.stroke();
+
+      // --- 3-Column Specifications Section ---
+      const contentW = mosaicW - cardPad * 2;
+      const colGap = Math.round(26 * s);
+      const col1W = Math.round(contentW * 0.28);
+      const col3W = Math.round(contentW * 0.24);
+      const col2W = contentW - col1W - col3W - colGap * 2;
+
+      const labelY = sep1Y + Math.round(24 * s);
+
+      // COLUMN 1: MOTIVO(S) UTILIZADOS
+      const c1X = panelX + cardPad;
+      ctx.fillStyle = '#7B7871';
+      ctx.font = `bold ${fontLabel}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+      const motifLabel = metadata.motifsTitle.includes('+') || metadata.motifsTitle.includes(',')
+        ? 'MOTIVOS UTILIZADOS'
+        : 'MOTIVO UTILIZADO';
+      ctx.fillText(motifLabel, c1X, labelY);
+
+      ctx.fillStyle = '#242424';
+      ctx.font = `bold ${fontMotifTitle}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+      drawTextWithEllipsis(ctx, metadata.motifsTitle, c1X, labelY + Math.round(24 * s), col1W);
+
+      if (metadata.motifsDetail) {
+        ctx.fillStyle = '#524F4A';
+        ctx.font = `normal ${fontMotifDetail}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+        drawTextWithEllipsis(ctx, metadata.motifsDetail, c1X, labelY + Math.round(44 * s), col1W);
+      }
+
+      // COLUMN 2: COLORES UTILIZADOS (REFERENCIAS)
+      const c2X = c1X + col1W + colGap;
+      ctx.fillStyle = '#7B7871';
+      ctx.font = `bold ${fontLabel}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+      ctx.fillText('COLORES UTILIZADOS', c2X, labelY);
+
+      const halfColors = Math.ceil(metadata.colors.length / 2);
+      const subColW = Math.round((col2W - Math.round(16 * s)) / 2);
+
+      metadata.colors.forEach((col, i) => {
+        const inSecondSubCol = i >= halfColors && metadata.colors.length > 2;
+        const itemX = inSecondSubCol ? c2X + subColW + Math.round(16 * s) : c2X;
+        const rowIdx = inSecondSubCol ? (i - halfColors) : i;
+        const itemY = labelY + Math.round(22 * s) + rowIdx * colorRowH;
+
+        // Circular swatch
+        ctx.beginPath();
+        ctx.arc(itemX + swatchR, itemY - Math.round(4 * s), swatchR, 0, Math.PI * 2);
+        ctx.fillStyle = col.hex;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.lineWidth = Math.max(1, Math.round(1 * s));
+        ctx.stroke();
+
+        // Reference text (Reference code and name, no hex)
+        ctx.fillStyle = '#242424';
+        ctx.font = `600 ${fontColorRef}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+        const maxTextW = (metadata.colors.length > 2 ? subColW : col2W) - swatchR * 2 - Math.round(10 * s);
+        drawTextWithEllipsis(ctx, col.reference, itemX + swatchR * 2 + Math.round(8 * s), itemY, maxTextW);
+      });
+
+      // COLUMN 3: SUPERFICIE TOTAL
+      const c3X = c2X + col2W + colGap;
+      ctx.fillStyle = '#7B7871';
+      ctx.font = `bold ${fontLabel}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+      ctx.fillText('SUPERFICIE TOTAL', c3X, labelY);
+
+      ctx.fillStyle = '#242424';
+      ctx.font = `bold ${fontTotalArea}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+      drawTextWithEllipsis(ctx, metadata.totalArea, c3X, labelY + Math.round(24 * s), col3W);
+
+      ctx.fillStyle = '#524F4A';
+      ctx.font = `normal ${fontDimensions}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+      drawTextWithEllipsis(ctx, metadata.totalDimensions, c3X, labelY + Math.round(44 * s), col3W);
+
+      // --- Bottom fine print and footer ---
+      const bottomLineY = panelY + panelH - Math.round(30 * s);
+      ctx.beginPath();
+      ctx.strokeStyle = '#E7E4DE';
+      ctx.lineWidth = Math.max(1, Math.round(1 * s));
+      ctx.moveTo(panelX + cardPad, bottomLineY);
+      ctx.lineTo(panelX + mosaicW - cardPad, bottomLineY);
+      ctx.stroke();
+
+      const footerTextY = bottomLineY + Math.round(18 * s);
+      ctx.fillStyle = '#8C8880';
+      ctx.font = `normal ${fontFooter}px "General Sans", "Plus Jakarta Sans", system-ui, sans-serif`;
+      ctx.fillText('www.hisbalit.es · Mosaico de vidrio 100% reciclado y ecológico', panelX + cardPad, footerTextY);
+
+      const creditText = 'Configurado con Mosaico Studio';
+      const creditW = ctx.measureText(creditText).width;
+      ctx.fillText(creditText, panelX + mosaicW - cardPad - creditW, footerTextY);
+
+      // 4. Output blob and download
       canvas.toBlob(blob => {
         URL.revokeObjectURL(url);
         if (!blob) {

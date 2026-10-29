@@ -629,7 +629,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
               <div
                 key={id}
                 className="w-6 h-6 rounded-full border-2 border-white shadow-xs shrink-0"
-                style={{ backgroundColor: customization.pieceColors[id] || '#DDA743' }}
+                style={{ backgroundColor: customization.pieceColors[id] || '#000000' }}
               />
             ))}
             {selectedPieceIds.length > 5 && (

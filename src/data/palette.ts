@@ -97,6 +97,84 @@ export function findMaterialByCode(code: string): ColorSwatch | undefined {
   return HISBALIT_PALETTE.find(s => s.code === code);
 }
 
+export interface ColorReferenceInfo {
+  hex: string;
+  code: string;
+  name: string;
+  reference: string;
+  shortReference: string;
+}
+
+/**
+ * Returns the official Hisbalit color reference for a given hex code.
+ * Always resolves to a human-readable reference name and code, never returning a raw hex string.
+ */
+export function getColorReference(hex: string): ColorReferenceInfo {
+  if (!hex) {
+    return {
+      hex: '#000000',
+      code: '—',
+      name: 'Sin color',
+      reference: 'Sin color',
+      shortReference: 'Ref. —'
+    };
+  }
+
+  let cleanHex = hex.trim().toUpperCase();
+  if (cleanHex.length === 4 && cleanHex.startsWith('#')) {
+    cleanHex = `#${cleanHex[1]}${cleanHex[1]}${cleanHex[2]}${cleanHex[2]}${cleanHex[3]}${cleanHex[3]}`;
+  }
+
+  const direct = findMaterialByHex(cleanHex);
+  if (direct) {
+    return {
+      hex: direct.hex,
+      code: direct.code,
+      name: direct.name,
+      reference: `Ref. ${direct.code} · ${direct.name}`,
+      shortReference: `Ref. ${direct.code}`
+    };
+  }
+
+  // Parse RGB for closest match in Hisbalit palette
+  const r1 = parseInt(cleanHex.slice(1, 3), 16) || 0;
+  const g1 = parseInt(cleanHex.slice(3, 5), 16) || 0;
+  const b1 = parseInt(cleanHex.slice(5, 7), 16) || 0;
+
+  let bestMatch: ColorSwatch | null = null;
+  let minDiff = Infinity;
+
+  for (const swatch of HISBALIT_PALETTE) {
+    const sHex = swatch.hex.toUpperCase();
+    const r2 = parseInt(sHex.slice(1, 3), 16) || 0;
+    const g2 = parseInt(sHex.slice(3, 5), 16) || 0;
+    const b2 = parseInt(sHex.slice(5, 7), 16) || 0;
+    const diff = Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2);
+    if (diff < minDiff) {
+      minDiff = diff;
+      bestMatch = swatch;
+    }
+  }
+
+  if (bestMatch && minDiff < 30) {
+    return {
+      hex: cleanHex,
+      code: bestMatch.code,
+      name: bestMatch.name,
+      reference: `Ref. ${bestMatch.code} · ${bestMatch.name}`,
+      shortReference: `Ref. ${bestMatch.code}`
+    };
+  }
+
+  return {
+    hex: cleanHex,
+    code: 'Especial',
+    name: 'Color a medida',
+    reference: 'Ref. Especial · Color a medida',
+    shortReference: 'Ref. Especial'
+  };
+}
+
 export const RECENT_COLORS_STORAGE_KEY = 'mosaico_studio_recent_colors';
 
 export function getStoredRecentColors(): string[] {
@@ -123,3 +201,10 @@ export function saveRecentColor(color: string): string[] {
     return [color];
   }
 }
+
+export {
+  isLightColor,
+  getContrastTextColor,
+  getContrastHex,
+  getRelativeLuminance
+} from '../utils/colorContrast';

@@ -5,10 +5,13 @@ import {
   generateCompositionSvg,
   downloadFile,
   downloadSvgAsPng,
-  getCellMotif
+  getCellMotif,
+  ExportImageMetadata
 } from '../utils/exportUtils';
 import { getMotifById } from '../data/motifs';
 import { resolveEffectiveMotifCustomization } from '../utils/motifColorUtils';
+import { findMaterialByHex } from '../data/palette';
+import { getColorReference } from '../data/palette';
 import {
   X,
   Download,
@@ -44,6 +47,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [exportScope, setExportScope] = useState<'single' | 'composition'>('composition');
   const [exportFormat, setExportFormat] = useState<'png' | 'svg'>('png');
   const [resolution, setResolution] = useState<'4k' | '2k' | '1k'>('4k');
+  const [includeFooter, setIncludeFooter] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [copiedSvg, setCopiedSvg] = useState(false);
 
@@ -169,6 +173,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     };
   }, [exportScope, motif, customization, composition, customizationsMap, editedMotifIds]);
 
+  // Resolve official Hisbalit color references (codes and names, never raw hex)
+  const colorReferences = useMemo(() => {
+    return compositionAnalysis.palette.map(hex => getColorReference(hex));
+  }, [compositionAnalysis.palette]);
+
   // Exact plate dimensions requested by user:
   // Redondo: 31,00 x 33,33 cm | Hexagonal: 31,2 x 33,2 cm
   const plateSpecs = useMemo(() => {
@@ -218,8 +227,22 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       setIsDownloading(true);
       await new Promise(resolve => setTimeout(resolve, 60));
       const width = resolution === '4k' ? 3840 : resolution === '2k' ? 1920 : 1080;
-      const fileName = `Hisbalit_Coleccion_${motif.name}_${activeFormat}_${width}p.png`;
-      await downloadSvgAsPng(currentSvgString, fileName, width);
+      // const fileName = `Hisbalit_Coleccion_${motif.name}_${activeFormat}_${width}p.png`;
+      const fileName = `Hisbalit_Coleccion_${motif.name}_${activeFormat}_${exportScope}_${resolution.toUpperCase()}.png`;
+      const metadata: ExportImageMetadata | undefined = includeFooter ? {
+        scope: exportScope,
+        motifsTitle: compositionAnalysis.motifsTitle,
+        motifsDetail: exportScope === 'single'
+          ? `1 placa individual (${plateSpecs.plateDimensions})`
+          : `Cuadrícula ${composition.repeatX} × ${composition.repeatY} placas (${composition.repeatX * composition.repeatY} placas en total)`,
+        colors: colorReferences,
+        totalArea: plateSpecs.areaM2,
+        totalDimensions: plateSpecs.totalDimensions,
+        formatName: customization.format === 'round' ? 'Tesela redonda' : 'Tesela hexagonal',
+        collectionTitle: 'Colección Petite · Hisbalit Mosaico'
+      } : undefined;
+
+      await downloadSvgAsPng(currentSvgString, fileName, width, undefined, metadata);
     } catch (err) {
       console.error('Export error:', err);
     } finally {
@@ -316,14 +339,18 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                    {compositionAnalysis.palette.map((col, idx) => (
-                      <span
-                        key={idx}
-                        className="w-4 h-4 rounded-full border border-black/15 shadow-2xs inline-block transition-transform hover:scale-110"
-                        style={{ backgroundColor: col }}
-                        title={col}
-                      />
-                    ))}
+                    {compositionAnalysis.palette.map((col, idx) => {
+                      const material = findMaterialByHex(col);
+
+                      return (
+                        <span
+                          key={idx}
+                          className="w-4 h-4 rounded-full border border-black/15 shadow-2xs inline-block transition-transform hover:scale-110"
+                          style={{ backgroundColor: col }}
+                          title={material ? `Ref. ${material.code} · ${material.name}` : col}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
                 <div className="flex items-start justify-between gap-2">
@@ -424,50 +451,78 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             <div>
               <label className="text-xs font-bold text-charcoal flex items-center gap-1.5 mb-2.5">
                 <span className="w-4 h-4 rounded-full bg-charcoal text-white text-[10px] font-bold flex items-center justify-center">3</span>
-                <span>Resolución de salida</span>
+                <span>Resolución y opciones de salida</span>
               </label>
 
               {exportFormat === 'png' ? (
-                <div className="p-1 bg-[#F0EFEB] rounded-xl flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setResolution('4k')}
-                    className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '4k'
-                      ? 'bg-white text-charcoal shadow-xs'
-                      : 'text-taupe hover:text-charcoal'
-                      }`}
+                <div className="space-y-3">
+                  <div className="p-1 bg-[#F0EFEB] rounded-xl flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setResolution('4k')}
+                      className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '4k'
+                        ? 'bg-white text-charcoal shadow-xs'
+                        : 'text-taupe hover:text-charcoal'
+                        }`}
+                    >
+                      <span>4K Ultra</span>
+                      <span className={`text-[10px] font-mono ${resolution === '4k' ? 'text-taupe' : 'opacity-70'}`}>
+                        (3840px)
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setResolution('2k')}
+                      className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '2k'
+                        ? 'bg-white text-charcoal shadow-xs'
+                        : 'text-taupe hover:text-charcoal'
+                        }`}
+                    >
+                      <span>2K Full HD</span>
+                      <span className={`text-[10px] font-mono ${resolution === '2k' ? 'text-taupe' : 'opacity-70'}`}>
+                        (1920px)
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setResolution('1k')}
+                      className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '1k'
+                        ? 'bg-white text-charcoal shadow-xs'
+                        : 'text-taupe hover:text-charcoal'
+                        }`}
+                    >
+                      <span>1080p</span>
+                      <span className={`text-[10px] font-mono ${resolution === '1k' ? 'text-taupe' : 'opacity-70'}`}>
+                        (1080px)
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Toggle to include technical specifications sheet underneath the image */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setIncludeFooter(!includeFooter)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setIncludeFooter(!includeFooter);
+                      }
+                    }}
+                    className="flex items-center justify-between cursor-pointer transition-colors"
                   >
-                    <span>4K Ultra</span>
-                    <span className={`text-[10px] font-mono ${resolution === '4k' ? 'text-taupe' : 'opacity-70'}`}>
-                      (3840px)
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setResolution('2k')}
-                    className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '2k'
-                      ? 'bg-white text-charcoal shadow-xs'
-                      : 'text-taupe hover:text-charcoal'
-                      }`}
-                  >
-                    <span>2K Full HD</span>
-                    <span className={`text-[10px] font-mono ${resolution === '2k' ? 'text-taupe' : 'opacity-70'}`}>
-                      (1920px)
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setResolution('1k')}
-                    className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '1k'
-                      ? 'bg-white text-charcoal shadow-xs'
-                      : 'text-taupe hover:text-charcoal'
-                      }`}
-                  >
-                    <span>1080p</span>
-                    <span className={`text-[10px] font-mono ${resolution === '1k' ? 'text-taupe' : 'opacity-70'}`}>
-                      (1080px)
-                    </span>
-                  </button>
+                    <div className="flex items-center gap-2.5 pr-2">
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${includeFooter ? 'bg-brand border-brand' : 'border-[#C5C1BA] bg-white'
+                        }`}>
+                        {includeFooter && <Check className="w-2.5 h-2.5 stroke-[4] text-white" />}
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-charcoal">
+                          Incluir ficha técnica al pie de la imagen
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="p-1 bg-[#F0EFEB] rounded-xl flex gap-1">

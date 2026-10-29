@@ -6,7 +6,13 @@ import {
   MotifFormat,
   PlainTileCadence
 } from '../types';
-import { HISBALIT_PALETTE, getStoredRecentColors, saveRecentColor } from '../data/palette';
+import {
+  HISBALIT_PALETTE,
+  getStoredRecentColors,
+  saveRecentColor,
+  isLightColor,
+  getContrastTextColor
+} from '../data/palette';
 import { getCompositionPlatesCount } from '../utils/exportUtils';
 import { getMotifById } from '../data/motifs';
 import {
@@ -335,17 +341,14 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           key={p.id}
                           onClick={(e) => onSelectPiece(p.id, e.ctrlKey || e.metaKey || e.shiftKey)}
                           className={`h-8 rounded-lg border flex items-center justify-center relative transition-all cursor-pointer ${isSel
-                            ? 'border-charcoal ring-2 ring-charcoal/30 scale-105 z-10 shadow-xs'
+                            ? 'border-charcoal ring-2 ring-charcoal/30 z-10'
                             : 'border-[#E7E4DE] hover:border-[#AFAAA0]'
                             }`}
                           style={{ backgroundColor: col }}
                           title={`${p.name} - Pulsa Ctrl+Clic para selección múltiple`}
                         >
                           <span
-                            className={`text-[9px] font-bold flex items-center justify-center gap-1.5 ${col.toLowerCase() === '#ffffff' || col.toLowerCase() === '#f5f3ec'
-                              ? 'text-black'
-                              : 'text-white'
-                              }`}
+                            className={`text-[9px] font-bold flex items-center justify-center gap-1.5 ${getContrastTextColor(col)}`}
                           >
                             <span>{idx + 1}</span>
                             {svgData.motifPieces.length === 1 && (
@@ -553,26 +556,21 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     const isSelected = currentColor
                       ? swatch.hex.toUpperCase() === currentColor.toUpperCase()
                       : false;
-                    const isLight = [
-                      '#FFFFFF', '#F8F6A8', '#F7DF00', '#DDE6EA', '#D2DFE8', '#D9D9D9',
-                      '#F3EEDA', '#C7DFD5', '#E5D5B9', '#EBDEB3', '#DED7BF', '#F5D79B',
-                      '#CBD526', '#A1C677', '#A0B2AB', '#A7CBD2', '#DCBCBB', '#B9AAB9',
-                      '#C9C6AE', '#C1BEAC', '#BFBCB5', '#E0C693'
-                    ].includes(swatch.hex.toUpperCase());
+                    const isLight = isLightColor(swatch.hex);
 
                     return (
                       <button
                         key={swatch.code}
                         onClick={() => handleSelectMaterial(swatch.hex)}
                         className={`group relative flex flex-col items-center rounded-lg p-0.5 border transition-all text-center ${isSelected
-                          ? 'border-charcoal bg-[#FAF9F5] ring-2 ring-charcoal/20 shadow-xs scale-105 z-10'
+                          ? 'border-charcoal bg-[#FAF9F5] ring-2 ring-charcoal/20 z-10'
                           : 'border-transparent hover:border-[#E7E4DE] hover:bg-[#FBFBFA]'
                           }`}
-                        title={`Ref. ${swatch.code} - ${swatch.name} (${swatch.hex})`}
+                        title={`Ref. ${swatch.code} - ${swatch.name}`}
                       >
                         <div
                           className={`w-full aspect-square rounded-md border flex items-center justify-center relative transition-transform ${isSelected
-                            ? 'border-charcoal/40 shadow-xs'
+                            ? 'border-charcoal/40'
                             : 'border-black/10 group-hover:scale-105'
                             }`}
                           style={{ backgroundColor: swatch.hex }}

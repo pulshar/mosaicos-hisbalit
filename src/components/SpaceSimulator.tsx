@@ -360,7 +360,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
       {/* Main Simulation Viewport (Left/Center) */}
       <div className="flex-1 h-full flex flex-col overflow-hidden relative">
         {/* Top Control Bar inside Simulator */}
-        <div className="h-14 bg-[#242424]/90 backdrop-blur-md px-6 border-b border-white/10 flex items-center justify-between z-20 shrink-0">
+        <div className="h-14 bg-charcoal/90 backdrop-blur-md px-6 border-b border-white/10 flex items-center justify-between z-20 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
             <div>
@@ -561,7 +561,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         </div>
 
         {/* Bottom Helper Bar */}
-        <div className="h-10 bg-[#242424] px-6 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
+        <div className="h-10 bg-charcoal px-6 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
           {customPhotoUrl && (
             <div className="flex items-center gap-3">
               <span>Arrastra los 4 puntos para adaptar el mosaico a cualquier superficie</span>

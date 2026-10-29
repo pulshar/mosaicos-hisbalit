@@ -65,6 +65,10 @@
   --color-gold-hover: #c89534;
 
   /* Neutros oscuros (Tipografía & Botones) */
+  /* --color-charcoal: #23303e;
+  --color-charcoal-hover: #1a232e;
+  --color-taupe: #52677a;
+  --color-taupe-light: #758690; */
   --color-charcoal: #242424;
   --color-charcoal-hover: #141414;
   --color-taupe: #77736C;
@@ -94,8 +98,8 @@
 @layer base {
   body {
     font-family: 'General Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #F7F6F2;
-    color: #242424;
+    background-color: var(--color-sand);
+    color: var(--color-charcoal);
     overflow-x: hidden;
   }
 }

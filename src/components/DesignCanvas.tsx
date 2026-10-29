@@ -537,17 +537,17 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       <div className="absolute top-4 left-5 right-5 flex items-center justify-between z-20 pointer-events-none">
         {/* Active Motif Title Badge & Show Library Toggle */}
         <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-xl border border-[#E7E4DE] shadow-xs flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#242424]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-charcoal" />
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-[#242424]">
+              <span className="text-xs font-bold text-charcoal">
                 Motivo {motif.catalogueNumber} · {motif.name}
               </span>
-              <span className="text-[10px] text-[#77736C] bg-[#F7F6F2] px-1.5 py-0.2 rounded border border-[#E7E4DE] font-medium">
+              <span className="text-[10px] text-taupe bg-[#F7F6F2] px-1.5 py-0.2 rounded border border-[#E7E4DE] font-medium">
                 {activeFormat === 'round' ? 'Redonda' : 'Hexagonal'}
               </span>
             </div>
-            <p className="text-[11px] text-[#77736C]">
+            <p className="text-[11px] text-taupe">
               {viewMode === 'single'
                 ? 'Vista detallada'
                 : `Composición ${composition.repeatX}×${composition.repeatY}`}
@@ -560,21 +560,21 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         <div className="pointer-events-auto flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-[#E7E4DE] shadow-xs">
           <button
             onClick={() => onUpdateComposition?.({ zoom: Math.max(0.4, Math.round((composition.zoom - 0.15) * 100) / 100) })}
-            className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
+            className="p-2 text-taupe hover:text-charcoal hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
             title="Reducir zoom (Ctrl + rueda hacia abajo)"
             aria-label="Reducir zoom"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
           <span
-            className="text-xs font-mono text-[#242424] px-1 w-12 text-center tabular-nums cursor-default"
+            className="text-xs font-mono text-charcoal px-1 w-12 text-center tabular-nums cursor-default"
             title="Zoom actual (Ctrl + rueda del ratón)"
           >
             {Math.round(composition.zoom * 100)}%
           </span>
           <button
             onClick={() => onUpdateComposition?.({ zoom: Math.min(2.5, Math.round((composition.zoom + 0.15) * 100) / 100) })}
-            className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
+            className="p-2 text-taupe hover:text-charcoal hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
             title="Aumentar zoom (Ctrl + rueda hacia arriba)"
             aria-label="Aumentar zoom"
           >
@@ -585,7 +585,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
           <button
             onClick={() => onUpdateComposition?.({ zoom: 1.0, panX: 0, panY: 0 })}
-            className="p-2 text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
+            className="p-2 text-taupe hover:text-charcoal hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
             title="Centrar y restablecer vista (Zoom 100% y posición original)"
             aria-label="Centrar y restablecer vista"
           >
@@ -596,7 +596,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
           <button
             onClick={onOpenTour}
-            className="p-2 rounded-lg transition-colors cursor-pointer text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2]"
+            className="p-2 rounded-lg transition-colors cursor-pointer text-taupe hover:text-charcoal hover:bg-[#F7F6F2]"
             title="Ver tutorial de uso"
             aria-label="Ver tutorial de uso"
           >
@@ -607,7 +607,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
       {/* Floating Spacebar Pan Cue (only shown the very first time the user triggers the gesture) */}
       {isSpacePressed && !hasSeenPanHint && (
-        <div className="absolute top-18 left-1/2 -translate-x-1/2 bg-[#242424]/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-medium shadow-md z-30 flex items-center gap-2 animate-fade-in pointer-events-none">
+        <div className="absolute top-18 left-1/2 -translate-x-1/2 bg-charcoal/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-medium shadow-md z-30 flex items-center gap-2 animate-fade-in pointer-events-none">
           <span className="w-2 h-2 rounded-full bg-[#DDA743] animate-pulse" />
           <span>Arrastra con el ratón para mover el lienzo</span>
         </div>
@@ -615,7 +615,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
       {/* Background feedback notice toast */}
       {backgroundNotice && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-[#242424] text-white px-4 py-2 rounded-lg text-xs font-medium shadow-lg z-30 flex items-center gap-2 animate-fade-in pointer-events-none">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-charcoal text-white px-4 py-2 rounded-lg text-xs font-medium shadow-lg z-30 flex items-center gap-2 animate-fade-in pointer-events-none">
           <HelpCircle className="w-4 h-4 text-[#DDA743]" />
           <span>{backgroundNotice}</span>
         </div>
@@ -623,7 +623,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
       {/* Floating Selected Piece(s) Tooltip / Quick Info */}
       {selectedPieceIds.length > 1 && !selectedPieceIds.includes('background') && viewMode !== 'simulation' && (
-        <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 px-4 rounded-xl border border-[#242424] shadow-md flex items-center gap-3 animate-fade-in">
+        <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 px-4 rounded-xl border border-charcoal shadow-md flex items-center gap-3 animate-fade-in">
           <div className="flex -space-x-1.5 overflow-hidden">
             {selectedPieceIds.slice(0, 5).map(id => (
               <div
@@ -633,16 +633,16 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
               />
             ))}
             {selectedPieceIds.length > 5 && (
-              <div className="w-6 h-6 rounded-full bg-[#242424] text-white text-[9px] font-bold flex items-center justify-center border-2 border-white shrink-0">
+              <div className="w-6 h-6 rounded-full bg-charcoal text-white text-[9px] font-bold flex items-center justify-center border-2 border-white shrink-0">
                 +{selectedPieceIds.length - 5}
               </div>
             )}
           </div>
           <div>
-            <div className="text-xs font-bold text-[#242424]">
+            <div className="text-xs font-bold text-charcoal">
               {selectedPieceIds.length} piezas seleccionadas
             </div>
-            <div className="text-[11px] text-[#77736C]">
+            <div className="text-[11px] text-taupe">
               Ctrl + clic para añadir o quitar piezas
             </div>
           </div>
@@ -651,7 +651,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
               e.stopPropagation();
               onSelectPiece(null);
             }}
-            className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2.5 py-1 rounded-lg bg-[#F7F6F2] hover:bg-[#EDEBE6] border border-[#E7E4DE] cursor-pointer transition-colors"
+            className="text-[11px] text-taupe hover:text-charcoal ml-2 px-2.5 py-1 rounded-lg bg-[#F7F6F2] hover:bg-[#EDEBE6] border border-[#E7E4DE] cursor-pointer transition-colors"
           >
             Deseleccionar
           </button>
@@ -662,14 +662,14 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         const pieceColor = customization.pieceColors[selectedPiece.id] || selectedPiece.originalColor || '#000000';
         const pieceMat = findMaterialByHex(pieceColor);
         return (
-          <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-[#242424] shadow-md flex items-center gap-3 animate-fade-in">
+          <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-charcoal shadow-md flex items-center gap-3 animate-fade-in">
             <div
               className="w-7 h-7 rounded-full border border-black/10 shadow-xs shrink-0"
               style={{ backgroundColor: pieceColor }}
             />
             <div>
-              <div className="text-xs font-bold text-[#242424]">{selectedPiece.name}</div>
-              <div className="text-[11px] text-[#77736C]">
+              <div className="text-xs font-bold text-charcoal">{selectedPiece.name}</div>
+              <div className="text-[11px] text-taupe">
                 {pieceMat ? `Ref. ${pieceMat.code} · ${pieceMat.name}` : pieceColor}
               </div>
             </div>
@@ -678,7 +678,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                 e.stopPropagation();
                 onSelectPiece(null);
               }}
-              className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
+              className="text-[11px] text-taupe hover:text-charcoal ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
             >
               Deseleccionar
             </button>
@@ -690,14 +690,14 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         const bgHex = customization.backgroundColor || '#D9D9D9';
         const bgMat = findMaterialByHex(bgHex);
         return (
-          <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-[#242424] shadow-md flex items-center gap-3 animate-fade-in">
+          <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-charcoal shadow-md flex items-center gap-3 animate-fade-in">
             <div
               className="w-7 h-7 rounded-full border border-black/10 shadow-xs shrink-0"
               style={{ backgroundColor: bgHex }}
             />
             <div>
-              <div className="text-xs font-bold text-[#242424]">Fondo del mosaico</div>
-              <div className="text-[11px] text-[#77736C]">
+              <div className="text-xs font-bold text-charcoal">Fondo del mosaico</div>
+              <div className="text-[11px] text-taupe">
                 {bgMat ? `Ref. ${bgMat.code} · ${bgMat.name}` : bgHex}
               </div>
             </div>
@@ -706,7 +706,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                 e.stopPropagation();
                 onSelectPiece(null);
               }}
-              className="text-[11px] text-[#77736C] hover:text-[#242424] ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
+              className="text-[11px] text-taupe hover:text-charcoal ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
             >
               Deseleccionar
             </button>
@@ -731,10 +731,10 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
           {!svgData ? (
             <div className="w-[420px] h-[420px] bg-white rounded-2xl border border-dashed border-[#C5C1BA] flex flex-col items-center justify-center p-8 text-center shadow-xs">
               <Layers className="w-10 h-10 text-[#AFAAA0] mb-3 stroke-[1.5]" />
-              <h3 className="text-sm font-semibold text-[#242424]">
+              <h3 className="text-sm font-semibold text-charcoal">
                 Trazado oficial pendiente
               </h3>
-              <p className="text-xs text-[#77736C] mt-1 max-w-xs leading-relaxed">
+              <p className="text-xs text-taupe mt-1 max-w-xs leading-relaxed">
                 El motivo <strong>{motif.name}</strong> está registrado en la colección Petite. Selecciona <strong>07 · Soleil</strong> para interactuar con las teselas redondas y hexagonales.
               </p>
             </div>
@@ -750,7 +750,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
               return (
                 <div
                   className={`bg-white rounded-2xl p-8 shadow-sm transition-all duration-150 relative ${selectedPieceIds.includes('background') || selectedPieceId === 'background'
-                    ? 'border-2 border-[#242424] ring-4 ring-[#242424]/10 shadow-md'
+                    ? 'border-2 border-charcoal ring-4 ring-charcoal/10 shadow-md'
                     : 'border border-[#E7E4DE]'
                     }`}
                   style={{
@@ -1138,7 +1138,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
       {/* Floating Multi-selection Toolbar / Chip */}
       {viewMode === 'pattern' && selectedGridCells.length > 1 && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 bg-[#242424]/95 backdrop-blur-md text-white px-4 py-2 rounded-lg shadow-lg border border-black/10 flex items-center gap-3 animate-fade-in select-none">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 bg-charcoal/95 backdrop-blur-md text-white px-4 py-2 rounded-lg shadow-lg border border-black/10 flex items-center gap-3 animate-fade-in select-none">
           <div className="w-2 h-2 rounded-full bg-[#DDA743]" />
           <span className="text-xs font-semibold">
             {selectedGridCells.length} placas seleccionadas

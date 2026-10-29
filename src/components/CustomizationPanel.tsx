@@ -216,16 +216,16 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
       {/* Panel Title */}
       <div className="p-4 border-b border-[#E7E4DE] flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur-md z-20">
         <div>
-          <h2 className="text-sm font-semibold text-[#242424] tracking-tight">
+          <h2 className="text-sm font-semibold text-charcoal tracking-tight">
             Personalización
           </h2>
-          <p className="text-[11px] text-[#77736C] mt-0.5">
+          <p className="text-[11px] text-taupe mt-0.5">
             Colores, formato, escala y repetición
           </p>
         </div>
         <button
           onClick={onResetMotifOriginalColors}
-          className="text-[11px] text-[#77736C] hover:text-[#242424] px-2.5 py-1 rounded bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] transition-colors flex items-center gap-1.5 font-medium"
+          className="text-[11px] text-taupe hover:text-charcoal px-2.5 py-1 rounded bg-[#F7F6F2] hover:bg-[#EFECE6] border border-[#E7E4DE] transition-colors flex items-center gap-1.5 font-medium"
           title="Restaurar colores originales de las teselas y del fondo"
         >
           <RefreshCw className="w-3 h-3" />
@@ -243,13 +243,13 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             className="w-full px-3.5 py-3 flex items-center justify-between text-left hover:bg-[#FAF9F5] transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Palette className="w-4 h-4 text-[#242424]" />
-              <span className="text-xs font-semibold text-[#242424]">Colores del mosaico</span>
+              <Palette className="w-4 h-4 text-charcoal" />
+              <span className="text-xs font-semibold text-charcoal">Colores del mosaico</span>
             </div>
             {openSections.colors ? (
-              <ChevronUp className="w-4 h-4 text-[#77736C]" />
+              <ChevronUp className="w-4 h-4 text-taupe" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[#77736C]" />
+              <ChevronDown className="w-4 h-4 text-taupe" />
             )}
           </button>
 
@@ -257,7 +257,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-4">
               {/* Target selector: Pieza vs Fondo */}
               <div>
-                <label className="text-[11px] font-medium text-[#77736C] block mb-1.5">
+                <label className="text-[11px] font-medium text-taupe block mb-1.5">
                   Elemento a personalizar:
                 </label>
                 <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F7F6F2] rounded-lg border border-[#E7E4DE]">
@@ -269,8 +269,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       }
                     }}
                     className={`py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 cursor-pointer ${colorTarget === 'piece'
-                      ? 'bg-white text-[#242424] shadow-xs font-semibold'
-                      : 'text-[#77736C] hover:text-[#242424]'
+                      ? 'bg-white text-charcoal shadow-xs font-semibold'
+                      : 'text-taupe hover:text-charcoal'
                       }`}
                   >
                     <div
@@ -285,8 +285,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       onSelectPiece('background');
                     }}
                     className={`py-1.5 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${colorTarget === 'background'
-                      ? 'bg-white text-[#242424] shadow-xs font-semibold'
-                      : 'text-[#77736C] hover:text-[#242424]'
+                      ? 'bg-white text-charcoal shadow-xs font-semibold'
+                      : 'text-taupe hover:text-charcoal'
                       }`}
                   >
                     <div
@@ -303,7 +303,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               {colorTarget === 'piece' && svgData && (
                 <div>
                   {/* <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-medium text-[#77736C]">
+                    <span className="text-[11px] font-medium text-taupe">
                       Piezas editables:
                     </span>
                     <div className="flex items-center gap-1.5">
@@ -335,7 +335,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           key={p.id}
                           onClick={(e) => onSelectPiece(p.id, e.ctrlKey || e.metaKey || e.shiftKey)}
                           className={`h-8 rounded-lg border flex items-center justify-center relative transition-all cursor-pointer ${isSel
-                            ? 'border-[#242424] ring-2 ring-[#242424]/30 scale-105 z-10 shadow-xs'
+                            ? 'border-charcoal ring-2 ring-charcoal/30 scale-105 z-10 shadow-xs'
                             : 'border-[#E7E4DE] hover:border-[#AFAAA0]'
                             }`}
                           style={{ backgroundColor: col }}
@@ -358,7 +358,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   </div>
 
                   {/* Quick actions for multi-selection */}
-                  <div className="flex items-center justify-between mt-1.5 text-[10px] text-[#77736C]">
+                  <div className="flex items-center justify-between mt-1.5 text-[10px] text-taupe">
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
@@ -371,7 +371,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                             onSelectPiece(allIds);
                           }
                         }}
-                        className="font-semibold text-[#77736C] hover:text-[#242424] underline underline-offset-2 cursor-pointer transition-colors"
+                        className="font-semibold text-taupe hover:text-charcoal underline underline-offset-2 cursor-pointer transition-colors"
                         title="Seleccionar todas las piezas del motivo"
                       >
                         Seleccionar todas
@@ -386,7 +386,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       <button
                         type="button"
                         onClick={() => onSelectPiece(null)}
-                        className="font-semibold hover:text-[#242424] underline underline-offset-2 cursor-pointer transition-colors"
+                        className="font-semibold hover:text-charcoal underline underline-offset-2 cursor-pointer transition-colors"
                       >
                         Limpiar selección
                       </button>
@@ -405,10 +405,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         style={{ backgroundColor: currentColor || '#D9D9D9' }}
                       />
                       <div>
-                        <div className="text-xs font-bold text-[#242424]">
+                        <div className="text-xs font-bold text-charcoal">
                           {activeMaterial ? `Ref. ${activeMaterial.code} · ${activeMaterial.name}` : 'Color personalizado'}
                         </div>
-                        <div className="text-[11px] text-[#77736C]">
+                        <div className="text-[11px] text-taupe">
                           Fondo de la malla
                         </div>
                       </div>
@@ -423,10 +423,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           style={{ backgroundColor: currentColor || '#000000' }}
                         />
                         <div>
-                          <div className="text-xs font-bold text-[#242424]">
+                          <div className="text-xs font-bold text-charcoal">
                             {activeMaterial ? `Ref. ${activeMaterial.code} · ${activeMaterial.name}` : 'Color personalizado'}
                           </div>
-                          <div className="text-[11px] text-[#77736C]">
+                          <div className="text-[11px] text-taupe">
                             {selectedPieceIds.length > 1
                               ? `${selectedPieceIds.length} piezas seleccionadas`
                               : selectedPiece
@@ -441,9 +441,9 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     {currentColor && (
                       <button
                         onClick={() => onApplyColorToAllMotifPieces(currentColor)}
-                        className="w-full py-1.5 px-2 text-[11px] font-medium text-[#242424] bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                        className="w-full py-1.5 px-2 text-[11px] font-medium text-charcoal bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-[#77736C]" />
+                        <Sparkles className="w-3.5 h-3.5 text-taupe" />
                         <span>Aplicar este color a todo el motivo</span>
                       </button>
                     )}
@@ -451,14 +451,14 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                 ) : (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg border border-dashed border-[#AFAAA0] bg-white/80 shrink-0 flex items-center justify-center text-[#77736C]">
-                        <MousePointerClick className="w-4 h-4 text-[#77736C]" />
+                      <div className="w-8 h-8 rounded-lg border border-dashed border-[#AFAAA0] bg-white/80 shrink-0 flex items-center justify-center text-taupe">
+                        <MousePointerClick className="w-4 h-4 text-taupe" />
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-[#242424]">
+                        <div className="text-xs font-bold text-charcoal">
                           Ninguna pieza seleccionada
                         </div>
-                        <div className="text-[11px] text-[#77736C]">
+                        <div className="text-[11px] text-taupe">
                           Utiliza el dibujo o los números de arriba
                         </div>
                       </div>
@@ -475,9 +475,9 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           }
                         }
                       }}
-                      className="w-full py-1.5 px-2 text-[11px] font-medium text-[#242424] bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                      className="w-full py-1.5 px-2 text-[11px] font-medium text-charcoal bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                     >
-                      <Layers className="w-3.5 h-3.5 text-[#77736C]" />
+                      <Layers className="w-3.5 h-3.5 text-taupe" />
                       <span>Seleccionar todas las piezas del motivo</span>
                     </button>
                   </div>
@@ -499,10 +499,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               {/* Material Palette Selection */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-semibold text-[#242424]">
+                  <span className="text-[11px] font-semibold text-charcoal">
                     Paleta Unicolor Hisbalit:
                   </span>
-                  <span className="text-[10px] text-[#77736C] font-mono">
+                  <span className="text-[10px] text-taupe font-mono">
                     {filteredMaterials.length} de {HISBALIT_PALETTE.length}
                   </span>
                 </div>
@@ -516,12 +516,12 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Buscar por ref. o nombre (ej. 335, azul)..."
-                      className="w-full pl-8 pr-7 py-1 text-[11px] bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg focus:outline-none focus:border-[#242424] focus:bg-white transition-colors"
+                      className="w-full pl-8 pr-7 py-1 text-[11px] bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg focus:outline-none focus:border-charcoal focus:bg-white transition-colors"
                     />
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[#77736C] hover:text-[#242424]"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-taupe hover:text-charcoal"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -537,8 +537,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           setSearchQuery('');
                         }}
                         className={`px-2 py-0.5 text-[10px] font-medium rounded-md whitespace-nowrap transition-colors ${materialCategory === cat && !searchQuery
-                          ? 'bg-[#242424] text-white shadow-2xs'
-                          : 'bg-[#F7F6F2] text-[#77736C] hover:text-[#242424] hover:bg-[#EFECE6]'
+                          ? 'bg-charcoal text-white shadow-2xs'
+                          : 'bg-[#F7F6F2] text-taupe hover:text-charcoal hover:bg-[#EFECE6]'
                           }`}
                       >
                         {cat}
@@ -565,14 +565,14 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         key={swatch.code}
                         onClick={() => handleSelectMaterial(swatch.hex)}
                         className={`group relative flex flex-col items-center rounded-lg p-0.5 border transition-all text-center ${isSelected
-                          ? 'border-[#242424] bg-[#FAF9F5] ring-2 ring-[#242424]/20 shadow-xs scale-105 z-10'
+                          ? 'border-charcoal bg-[#FAF9F5] ring-2 ring-charcoal/20 shadow-xs scale-105 z-10'
                           : 'border-transparent hover:border-[#E7E4DE] hover:bg-[#FBFBFA]'
                           }`}
                         title={`Ref. ${swatch.code} - ${swatch.name} (${swatch.hex})`}
                       >
                         <div
                           className={`w-full aspect-square rounded-md border flex items-center justify-center relative transition-transform ${isSelected
-                            ? 'border-[#242424]/40 shadow-xs'
+                            ? 'border-charcoal/40 shadow-xs'
                             : 'border-black/10 group-hover:scale-105'
                             }`}
                           style={{ backgroundColor: swatch.hex }}
@@ -586,8 +586,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         </div>
                         <span
                           className={`mt-1 text-[9px] font-mono leading-none tracking-tight transition-colors ${isSelected
-                            ? 'font-bold text-[#242424]'
-                            : 'text-[#77736C] group-hover:text-[#242424]'
+                            ? 'font-bold text-charcoal'
+                            : 'text-taupe group-hover:text-charcoal'
                             }`}
                         >
                           {swatch.code}
@@ -599,9 +599,9 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               </div>
 
               {/* Material Legend List */}
-              <div className="pt-2 border-t border-[#E7E4DE] text-[10px] text-[#77736C] flex items-center justify-between">
+              <div className="pt-2 border-t border-[#E7E4DE] text-[10px] text-taupe flex items-center justify-between">
                 <span>57 referencias oficiales Unicolor</span>
-                <span className="font-medium text-[#242424]">Hisbalit Mosaico</span>
+                <span className="font-medium text-charcoal">Hisbalit Mosaico</span>
               </div>
             </div>
           )}
@@ -616,45 +616,45 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             className="w-full px-3.5 py-3 flex items-center justify-between text-left hover:bg-[#FAF9F5] transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Shapes className="w-4 h-4 text-[#242424]" />
-              <span className="text-xs font-semibold text-[#242424]">Formato de tesela</span>
+              <Shapes className="w-4 h-4 text-charcoal" />
+              <span className="text-xs font-semibold text-charcoal">Formato de tesela</span>
             </div>
             {openSections.format ? (
-              <ChevronUp className="w-4 h-4 text-[#77736C]" />
+              <ChevronUp className="w-4 h-4 text-taupe" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[#77736C]" />
+              <ChevronDown className="w-4 h-4 text-taupe" />
             )}
           </button>
 
           {openSections.format && (
             <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-2">
-              <p className="text-[11px] text-[#77736C] leading-relaxed">
+              <p className="text-[11px] text-taupe leading-relaxed">
                 Selecciona la geometría de la tesela:
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => onUpdateFormat('round')}
                   className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-center transition-all ${activeFormat === 'round'
-                    ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
+                    ? 'border-charcoal bg-[#FAF9F5] shadow-xs ring-1 ring-charcoal/10'
                     : 'border-[#E7E4DE] hover:border-[#C5C1BA] bg-white'
                     }`}
                 >
-                  <Circle className="w-5 h-5 text-[#242424]" />
+                  <Circle className="w-5 h-5 text-charcoal" />
                   <div>
-                    <div className="text-xs font-bold text-[#242424]">Redondo</div>
+                    <div className="text-xs font-bold text-charcoal">Redondo</div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => onUpdateFormat('hexagonal')}
                   className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 text-center transition-all ${activeFormat === 'hexagonal'
-                    ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
+                    ? 'border-charcoal bg-[#FAF9F5] shadow-xs ring-1 ring-charcoal/10'
                     : 'border-[#E7E4DE] hover:border-[#C5C1BA] bg-white'
                     }`}
                 >
-                  <Hexagon className="w-5 h-5 text-[#242424]" />
+                  <Hexagon className="w-5 h-5 text-charcoal" />
                   <div>
-                    <div className="text-xs font-bold text-[#242424]">Hexagonal</div>
+                    <div className="text-xs font-bold text-charcoal">Hexagonal</div>
                   </div>
                 </button>
               </div>
@@ -671,21 +671,21 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             className="w-full px-3.5 py-3 flex items-center justify-between text-left hover:bg-[#FAF9F5] transition-colors"
           >
             <div className="flex items-center gap-2">
-              <RotateCw className="w-4 h-4 text-[#242424]" />
-              <span className="text-xs font-semibold text-[#242424]">Rotación del motivo</span>
+              <RotateCw className="w-4 h-4 text-charcoal" />
+              <span className="text-xs font-semibold text-charcoal">Rotación del motivo</span>
             </div>
             {openSections.rotation ? (
-              <ChevronUp className="w-4 h-4 text-[#77736C]" />
+              <ChevronUp className="w-4 h-4 text-taupe" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[#77736C]" />
+              <ChevronDown className="w-4 h-4 text-taupe" />
             )}
           </button>
 
           {openSections.rotation && (
             <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-2.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-[11px] font-medium text-[#77736C]">Ángulo de giro:</span>
-                <span className="font-mono font-medium text-[#242424]">
+                <span className="text-[11px] font-medium text-taupe">Ángulo de giro:</span>
+                <span className="font-mono font-medium text-charcoal">
                   {customization.rotation}°
                 </span>
               </div>
@@ -695,8 +695,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     key={angle}
                     onClick={() => onUpdateRotation(angle)}
                     className={`py-2 text-xs font-medium rounded-lg border transition-all ${customization.rotation === angle
-                      ? 'border-[#242424] bg-[#242424] text-white shadow-xs font-semibold'
-                      : 'border-[#E7E4DE] bg-white text-[#242424] hover:bg-[#FAF9F5]'
+                      ? 'border-charcoal bg-charcoal text-white shadow-xs font-semibold'
+                      : 'border-[#E7E4DE] bg-white text-charcoal hover:bg-[#FAF9F5]'
                       }`}
                   >
                     {angle}°
@@ -719,22 +719,22 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             className="w-full px-3.5 py-3 flex items-center justify-between text-left hover:bg-[#FAF9F5] transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Grid className={`w-4 h-4 ${isSingleMode ? 'text-[#8C8880]' : 'text-[#242424]'}`} />
-              <span className={`text-xs font-semibold ${isSingleMode ? 'text-[#77736C]' : 'text-[#242424]'}`}>
+              <Grid className={`w-4 h-4 ${isSingleMode ? 'text-taupe-light' : 'text-charcoal'}`} />
+              <span className={`text-xs font-semibold ${isSingleMode ? 'text-taupe' : 'text-charcoal'}`}>
                 Distribución y escala
               </span>
               {/*
               {isSingleMode && (
-                <span className="text-[10px] text-[#8C8880] bg-[#EFECE6] px-1.5 py-0.5 rounded font-medium">
+                <span className="text-[10px] text-taupe-light bg-[#EFECE6] px-1.5 py-0.5 rounded font-medium">
                   Solo en repetición
                 </span>
               )}
               */}
             </div>
             {openSections.distribution ? (
-              <ChevronUp className="w-4 h-4 text-[#77736C]" />
+              <ChevronUp className="w-4 h-4 text-taupe" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[#77736C]" />
+              <ChevronDown className="w-4 h-4 text-taupe" />
             )}
           </button>
 
@@ -744,15 +744,15 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-3">
                 <div className="p-3 bg-white rounded-xl border border-[#E7E4DE] space-y-2.5 shadow-2xs">
                   <div className="flex items-start gap-2">
-                    <Layers className="w-4 h-4 text-[#77736C] shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-[#77736C] leading-relaxed">
+                    <Layers className="w-4 h-4 text-taupe shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-taupe leading-relaxed">
                       La cuadrícula de repeticiones y la alineación se configuran en la <strong>Composición repetida</strong>.
                     </p>
                   </div>
                   {onChangeViewMode && (
                     <button
                       onClick={() => onChangeViewMode('pattern')}
-                      className="w-full py-1.5 px-3 bg-[#242424] hover:bg-black text-white text-[11px] font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                      className="w-full py-1.5 px-3 bg-charcoal hover:bg-black text-white text-[11px] font-medium rounded-md transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
                     >
                       <span>Cambiar a Composición repetida</span>
                     </button>
@@ -763,49 +763,49 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                 <div className="space-y-3.5 opacity-40 pointer-events-none select-none">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-medium text-[#77736C]">
+                      <span className="text-[11px] font-medium text-taupe">
                         Repetición en cuadrícula:
                       </span>
-                      <span className="text-[11px] font-mono text-[#77736C] font-medium">
+                      <span className="text-[11px] font-mono text-taupe font-medium">
                         {composition.repeatX} col × {composition.repeatY} fil
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] text-[#8C8880] block mb-1">Columnas</label>
+                        <label className="text-[10px] text-taupe-light block mb-1">Columnas</label>
                         <input
                           type="range"
                           min={1}
                           max={10}
                           disabled
                           value={composition.repeatX}
-                          className="w-full accent-[#242424]"
+                          className="w-full accent-charcoal"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-[#8C8880] block mb-1">Filas</label>
+                        <label className="text-[10px] text-taupe-light block mb-1">Filas</label>
                         <input
                           type="range"
                           min={1}
                           max={10}
                           disabled
                           value={composition.repeatY}
-                          className="w-full accent-[#242424]"
+                          className="w-full accent-charcoal"
                         />
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-[11px] font-medium text-[#77736C] block mb-1.5">
+                    <span className="text-[11px] font-medium text-taupe block mb-1.5">
                       Alineación de teselas:
                     </span>
                     <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F7F6F2] rounded-lg border border-[#E7E4DE]">
                       <button
                         disabled
                         className={`py-1.5 text-xs font-medium rounded-md ${!composition.staggered
-                          ? 'bg-white text-[#242424] shadow-xs'
-                          : 'text-[#77736C]'
+                          ? 'bg-white text-charcoal shadow-xs'
+                          : 'text-taupe'
                           }`}
                       >
                         Regular
@@ -813,8 +813,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       <button
                         disabled
                         className={`py-1.5 text-xs font-medium rounded-md ${composition.staggered
-                          ? 'bg-white text-[#242424] shadow-xs'
-                          : 'text-[#77736C]'
+                          ? 'bg-white text-charcoal shadow-xs'
+                          : 'text-taupe'
                           }`}
                       >
                         Alternada
@@ -823,7 +823,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   </div>
 
                   <div>
-                    <span className="text-[11px] font-medium text-[#77736C] block mb-1.5">
+                    <span className="text-[11px] font-medium text-taupe block mb-1.5">
                       Módulos lisos de fondo:
                     </span>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -833,10 +833,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           className="p-2 rounded-lg border border-[#E7E4DE] bg-white text-left"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-[#77736C]">{preset.label}</span>
-                            <span className="text-[9px] font-mono text-[#8C8880]">{preset.badge}</span>
+                            <span className="text-xs font-semibold text-taupe">{preset.label}</span>
+                            <span className="text-[9px] font-mono text-taupe-light">{preset.badge}</span>
                           </div>
-                          <span className="text-[10px] text-[#8C8880]">{preset.subtitle}</span>
+                          <span className="text-[10px] text-taupe-light">{preset.subtitle}</span>
                         </div>
                       ))}
                     </div>
@@ -849,18 +849,18 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                 {/* Repetitions Columns & Rows */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-medium text-[#77736C]">
+                    <span className="text-[11px] font-medium text-taupe">
                       Repetición en cuadrícula:
                     </span>
-                    <span className="text-[11px] font-mono text-[#242424] font-medium">
+                    <span className="text-[11px] font-mono text-charcoal font-medium">
                       {composition.repeatX} col × {composition.repeatY} fil
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-[10px] text-[#8C8880]">Columnas</label>
-                        <span className="text-[10px] font-mono text-[#242424] font-semibold">{composition.repeatX}</span>
+                        <label className="text-[10px] text-taupe-light">Columnas</label>
+                        <span className="text-[10px] font-mono text-charcoal font-semibold">{composition.repeatX}</span>
                       </div>
                       <input
                         type="range"
@@ -870,13 +870,13 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         onChange={(e) =>
                           onUpdateComposition({ repeatX: parseInt(e.target.value) })
                         }
-                        className="w-full accent-[#242424] cursor-pointer"
+                        className="w-full accent-charcoal cursor-pointer"
                       />
                     </div>
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-[10px] text-[#8C8880]">Filas</label>
-                        <span className="text-[10px] font-mono text-[#242424] font-semibold">{composition.repeatY}</span>
+                        <label className="text-[10px] text-taupe-light">Filas</label>
+                        <span className="text-[10px] font-mono text-charcoal font-semibold">{composition.repeatY}</span>
                       </div>
                       <input
                         type="range"
@@ -886,7 +886,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         onChange={(e) =>
                           onUpdateComposition({ repeatY: parseInt(e.target.value) })
                         }
-                        className="w-full accent-[#242424] cursor-pointer"
+                        className="w-full accent-charcoal cursor-pointer"
                       />
                     </div>
                   </div>
@@ -894,15 +894,15 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
 
                 {/* Alignment: Regular vs Staggered */}
                 <div>
-                  <span className="text-[11px] font-medium text-[#77736C] block mb-1.5">
+                  <span className="text-[11px] font-medium text-taupe block mb-1.5">
                     Alineación de teselas:
                   </span>
                   <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F7F6F2] rounded-lg border border-[#E7E4DE]">
                     <button
                       onClick={() => onUpdateComposition({ staggered: false })}
                       className={`py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${!composition.staggered
-                        ? 'bg-white text-[#242424] shadow-xs'
-                        : 'text-[#77736C] hover:text-[#242424]'
+                        ? 'bg-white text-charcoal shadow-xs'
+                        : 'text-taupe hover:text-charcoal'
                         }`}
                     >
                       Regular
@@ -910,8 +910,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     <button
                       onClick={() => onUpdateComposition({ staggered: true })}
                       className={`py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${composition.staggered
-                        ? 'bg-white text-[#242424] shadow-xs'
-                        : 'text-[#77736C] hover:text-[#242424]'
+                        ? 'bg-white text-charcoal shadow-xs'
+                        : 'text-taupe hover:text-charcoal'
                         }`}
                     >
                       Alternada
@@ -922,7 +922,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                 {/* Módulos lisos de fondo (Intercalado) */}
                 <div className="pt-2.5 border-t border-[#E7E4DE] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium text-[#77736C]">
+                    <span className="text-[11px] font-medium text-taupe">
                       Módulos lisos de fondo:
                     </span>
                   </div>
@@ -937,8 +937,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           key={preset.id}
                           onClick={() => onUpdateComposition({ plainTileCadence: preset.id, cellOverrides: {} })}
                           className={`p-2 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${isActive
-                            ? 'border-[#242424] bg-[#242424] text-white shadow-xs'
-                            : 'border-[#E7E4DE] bg-white text-[#242424] hover:bg-[#FAF9F5]'
+                            ? 'border-charcoal bg-charcoal text-white shadow-xs'
+                            : 'border-[#E7E4DE] bg-white text-charcoal hover:bg-[#FAF9F5]'
                             }`}
                         >
                           <div className="flex items-center justify-between gap-1 w-full">
@@ -946,14 +946,14 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                             <span
                               className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-semibold ${isActive
                                 ? 'bg-white/20 text-white'
-                                : 'bg-[#F7F6F2] text-[#77736C] border border-[#E7E4DE]'
+                                : 'bg-[#F7F6F2] text-taupe border border-[#E7E4DE]'
                                 }`}
                             >
                               {preset.badge}
                             </span>
                           </div>
                           <span
-                            className={`text-[10px] mt-0.5 leading-snug ${isActive ? 'text-white/80' : 'text-[#77736C]'
+                            className={`text-[10px] mt-0.5 leading-snug ${isActive ? 'text-white/80' : 'text-taupe'
                               }`}
                           >
                             {preset.subtitle}
@@ -974,7 +974,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     ]);
                     const count = customCellKeys.size;
                     return (
-                      <div className="p-2.5 rounded-lg border-[#242424] bg-[#242424] shadow-xs flex items-center justify-between text-[11px] animate-fade-in">
+                      <div className="p-2.5 rounded-lg border-charcoal bg-charcoal shadow-xs flex items-center justify-between text-[11px] animate-fade-in">
                         <div className="flex items-center gap-1.5 text-white">
                           <div>
                             <p className="font-semibold">Personalizado</p>
@@ -985,7 +985,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         </div>
                         <button
                           onClick={() => onUpdateComposition({ cellOverrides: {}, cellRotations: {} })}
-                          className="text-[10px] font-semibold text-[#242424] hover:text-black bg-white hover:bg-[#F0EEE9] px-2 py-0.5 rounded border border-[#E7E4DE] transition-colors"
+                          className="text-[10px] font-semibold text-charcoal hover:text-black bg-white hover:bg-[#F0EEE9] px-2 py-0.5 rounded border border-[#E7E4DE] transition-colors"
                           title="Restablecer patrón automático sin modificaciones manuales"
                         >
                           Restablecer
@@ -997,11 +997,11 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   {/* Resumen de placas de producción */}
                   <div className="p-2.5 bg-[#FAF9F5] rounded-lg border border-[#E7E4DE] text-[11px] space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-[#77736C]">
-                        <Layers className="w-3.5 h-3.5 text-[#242424]" />
+                      <div className="flex items-center gap-1.5 text-taupe">
+                        <Layers className="w-3.5 h-3.5 text-charcoal" />
                         <span>Total de placas ({plates.totalCount}):</span>
                       </div>
-                      <div className="font-mono text-xs font-semibold text-[#242424]">
+                      <div className="font-mono text-xs font-semibold text-charcoal">
                         {plates.totalCount} placas
                       </div>
                     </div>
@@ -1012,14 +1012,14 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         return (
                           <span
                             key={mId}
-                            className="px-1.5 py-0.5 rounded bg-white border border-[#E7E4DE] text-[10px] font-medium text-[#242424]"
+                            className="px-1.5 py-0.5 rounded bg-white border border-[#E7E4DE] text-[10px] font-medium text-charcoal"
                           >
                             {count}× {mDef?.name || mId}
                           </span>
                         );
                       })}
                       {plates.plainCount > 0 && (
-                        <span className="px-1.5 py-0.5 rounded bg-white border border-[#E7E4DE] text-[10px] font-medium text-[#77736C]">
+                        <span className="px-1.5 py-0.5 rounded bg-white border border-[#E7E4DE] text-[10px] font-medium text-taupe">
                           {plates.plainCount}× Lisa{plates.plainCount !== 1 ? 's' : ''}
                         </span>
                       )}
@@ -1040,13 +1040,13 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             className="w-full px-3.5 py-3 flex items-center justify-between text-left hover:bg-[#FAF9F5] transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Download className="w-4 h-4 text-[#242424]" />
-              <span className="text-xs font-semibold text-[#242424]">Descargas inmediatas</span>
+              <Download className="w-4 h-4 text-charcoal" />
+              <span className="text-xs font-semibold text-charcoal">Descargas inmediatas</span>
             </div>
             {openSections.export ? (
-              <ChevronUp className="w-4 h-4 text-[#77736C]" />
+              <ChevronUp className="w-4 h-4 text-taupe" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[#77736C]" />
+              <ChevronDown className="w-4 h-4 text-taupe" />
             )}
           </button>
 
@@ -1054,10 +1054,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             <div className="p-3.5 pt-3 border-t border-[#E7E4DE] space-y-2">
               <button
                 onClick={onDownloadSvg}
-                className="w-full py-2.5 px-3 border border-[#E7E4DE] hover:border-[#242424] bg-white hover:bg-[#FAF9F5] rounded-lg text-xs font-semibold text-[#242424] transition-colors flex items-center justify-between"
+                className="w-full py-2.5 px-3 border border-[#E7E4DE] hover:border-charcoal bg-white hover:bg-[#FAF9F5] rounded-lg text-xs font-semibold text-charcoal transition-colors flex items-center justify-between"
               >
                 <span>Descargar patrón vectorial (SVG)</span>
-                <span className="text-[10px] font-mono text-[#77736C]">.svg</span>
+                <span className="text-[10px] font-mono text-taupe">.svg</span>
               </button>
               <button
                 onClick={onDownloadPng}

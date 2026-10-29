@@ -22,10 +22,10 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
       {/* Header of panel */}
       <div className="py-4 px-6 border-b border-[#E7E4DE] flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-[#242424] tracking-tight">
+          <h2 className="text-sm font-semibold text-charcoal tracking-tight">
             Biblioteca de motivos
           </h2>
-          <p className="text-[11px] text-[#77736C] mt-0.5">
+          <p className="text-[11px] text-taupe mt-0.5">
             Colección Petite · 10 diseños de autor
           </p>
         </div>
@@ -53,7 +53,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                 }
               }}
               className={`group relative p-3 rounded-xl border transition-all text-left ${isActive
-                ? 'border-[#242424] bg-[#FBFBFA] shadow-xs ring-1 ring-[#242424]/10'
+                ? 'border-charcoal bg-[#FBFBFA] shadow-xs ring-1 ring-charcoal/10'
                 : isAvailable
                   ? 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA] hover:bg-[#FAF9F5] cursor-pointer'
                   : 'border-[#EDEBE6] bg-[#FCFCFB] opacity-75 cursor-default'
@@ -63,7 +63,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                 {/* Thumbnail container */}
                 <div
                   className={`w-14 h-14 rounded-lg border flex items-center justify-center shrink-0 overflow-hidden relative ${isActive
-                    ? 'border-[#242424] bg-white'
+                    ? 'border-charcoal bg-white'
                     : isAvailable
                       ? 'border-[#E7E4DE] bg-[#F7F6F2] group-hover:border-[#C5C1BA]'
                       : 'border-[#EDEBE6] bg-[#F4F3EF]'
@@ -110,7 +110,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                   })() : (
                     /* Elegant placeholder sketch for pending motif */
                     <div className="flex flex-col items-center justify-center text-center p-1">
-                      <div className="w-5 h-5 rounded-sm border border-dashed border-[#AFAAA0] flex items-center justify-center mb-1 text-[9px] font-mono text-[#77736C]">
+                      <div className="w-5 h-5 rounded-sm border border-dashed border-[#AFAAA0] flex items-center justify-center mb-1 text-[9px] font-mono text-taupe">
                         {motif.catalogueNumber}
                       </div>
                       <span className="text-[8px] uppercase tracking-wider text-[#9E9A91] font-medium leading-none">
@@ -129,16 +129,16 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                 {/* Motif Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-semibold text-[#242424] truncate">
+                    <span className="text-xs font-semibold text-charcoal truncate">
                       {motif.catalogueNumber}. {motif.name}
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-[#77736C] line-clamp-1 mt-0.5">
+                  <p className="text-[11px] text-taupe line-clamp-1 mt-0.5">
                     {motif.description}
                   </p>
 
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px] text-[#8C8880]">
+                  <div className="flex items-center gap-2 mt-1.5 text-[10px] text-taupe-light">
                     <span>Formatos:</span>
                     <span className="font-medium text-[#555]">
                       {isAvailable ? 'Redondo · Hexagonal' : 'Redondo · Hexagonal'}
@@ -148,7 +148,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
               </div>
 
               {!isAvailable && (
-                <div className="mt-2 pt-2 border-t border-[#EDEBE6] flex items-center gap-1.5 text-[10px] text-[#8C8880]">
+                <div className="mt-2 pt-2 border-t border-[#EDEBE6] flex items-center gap-1.5 text-[10px] text-taupe-light">
                   <Info className="w-3 h-3 text-[#AFAAA0] shrink-0" />
                   <span>Pendiente de incorporar trazado oficial</span>
                 </div>

@@ -687,7 +687,7 @@ export default function App() {
             {/* Subtle edge toggle handle button on the seam */}
             <button
               onClick={() => setIsMotifLibraryOpen(prev => !prev)}
-              className={`absolute z-30 top-1/2 -translate-y-1/2 w-4 h-12 bg-white/95 backdrop-blur-xs border border-[#E7E4DE] rounded-r-md shadow-xs hover:bg-[#F7F6F2] text-[#77736C] hover:text-[#242424] flex items-center justify-center transition-all duration-300 ease-in-out group cursor-pointer ${isMotifLibraryOpen ? 'left-80' : 'left-0'
+              className={`absolute z-30 top-1/2 -translate-y-1/2 w-4 h-12 bg-white/95 backdrop-blur-xs border border-[#E7E4DE] rounded-r-md shadow-xs hover:bg-[#F7F6F2] text-taupe hover:text-charcoal flex items-center justify-center transition-all duration-300 ease-in-out group cursor-pointer ${isMotifLibraryOpen ? 'left-80' : 'left-0'
                 }`}
               title={isMotifLibraryOpen ? "Ocultar biblioteca de motivos (Ctrl+B)" : "Mostrar biblioteca de motivos (Ctrl+B)"}
               aria-label={isMotifLibraryOpen ? "Ocultar biblioteca de motivos" : "Mostrar biblioteca de motivos"}
@@ -745,7 +745,7 @@ export default function App() {
             {/* Subtle edge toggle handle button on the right seam */}
             <button
               onClick={() => setIsCustomizationPanelOpen(prev => !prev)}
-              className={`absolute z-30 top-1/2 -translate-y-1/2 w-4 h-12 bg-white/95 backdrop-blur-xs border border-[#E7E4DE] rounded-l-md shadow-xs hover:bg-[#F7F6F2] text-[#77736C] hover:text-[#242424] flex items-center justify-center transition-all duration-300 ease-in-out group cursor-pointer ${isCustomizationPanelOpen ? 'right-94' : 'right-0'
+              className={`absolute z-30 top-1/2 -translate-y-1/2 w-4 h-12 bg-white/95 backdrop-blur-xs border border-[#E7E4DE] rounded-l-md shadow-xs hover:bg-[#F7F6F2] text-taupe hover:text-charcoal flex items-center justify-center transition-all duration-300 ease-in-out group cursor-pointer ${isCustomizationPanelOpen ? 'right-94' : 'right-0'
                 }`}
               title={isCustomizationPanelOpen ? "Ocultar panel de personalización (Ctrl+B)" : "Mostrar panel de personalización (Ctrl+B)"}
               aria-label={isCustomizationPanelOpen ? "Ocultar panel de personalización" : "Mostrar panel de personalización"}
@@ -787,21 +787,21 @@ export default function App() {
       {isConfirmNewModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in select-none">
           <div className="bg-white rounded-2xl border border-[#E7E4DE] shadow-2xl max-w-sm w-full p-6 text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-[#F7F6F2] border border-[#E7E4DE] mx-auto flex items-center justify-center text-[#242424] font-bold text-lg">
+            <div className="w-12 h-12 rounded-full bg-[#F7F6F2] border border-[#E7E4DE] mx-auto flex items-center justify-center text-charcoal font-bold text-lg">
               <PaletteIcon className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#242424]">
+              <h3 className="text-base font-bold text-charcoal">
                 ¿Iniciar un nuevo diseño?
               </h3>
-              <p className="text-xs text-[#77736C] mt-1.5 leading-relaxed">
+              <p className="text-xs text-taupe mt-1.5 leading-relaxed">
                 Esto reiniciará el proyecto desde cero. Los colores volverán a los tonos originales, la rotación a 0°, y la cuadrícula a la vista individual por defecto.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 pt-2">
               <button
                 onClick={() => setIsConfirmNewModalOpen(false)}
-                className="py-2.5 px-3 rounded-lg border border-[#E7E4DE] bg-white hover:bg-[#F7F6F2] text-xs font-semibold text-[#77736C] hover:text-[#242424] transition-colors"
+                className="py-2.5 px-3 rounded-lg border border-[#E7E4DE] bg-white hover:bg-[#F7F6F2] text-xs font-semibold text-taupe hover:text-charcoal transition-colors"
               >
                 Cancelar
               </button>

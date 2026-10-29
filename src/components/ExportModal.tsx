@@ -239,16 +239,16 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-[#E7E4DE] flex items-center justify-between bg-white shrink-0">
           <div>
-            <h3 className="text-base font-bold text-[#242424]">
+            <h3 className="text-base font-bold text-charcoal">
               Exportar proyecto de mosaico
             </h3>
-            <p className="text-xs text-[#77736C] mt-0.5">
+            <p className="text-xs text-taupe mt-0.5">
               Descarga vectores limpios o imágenes en alta fidelidad listas para presentación y planos
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] transition-colors"
+            className="p-1.5 rounded-lg text-taupe hover:text-charcoal hover:bg-[#F7F6F2] transition-colors"
             title="Cerrar ventana"
           >
             <X className="w-5 h-5" />
@@ -270,11 +270,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     className="w-full h-full object-contain select-none pointer-events-none drop-shadow-xs transition-opacity duration-200"
                   />
                 ) : (
-                  <div className="text-xs text-[#77736C]">Cargando vista previa</div>
+                  <div className="text-xs text-taupe">Cargando vista previa</div>
                 )}
 
                 {/* Subtle Format Pill on Preview */}
-                <div className="absolute bottom-2.5 right-2.5 bg-white/90 backdrop-blur-xs border border-[#E7E4DE] text-[10px] font-semibold text-[#242424] px-2 py-0.5 rounded-md shadow-xs pointer-events-none">
+                <div className="absolute bottom-2.5 right-2.5 bg-white/90 backdrop-blur-xs border border-[#E7E4DE] text-[10px] font-semibold text-charcoal px-2 py-0.5 rounded-md shadow-xs pointer-events-none">
                   {customization.format === 'round' ? 'Tesela redonda' : 'Tesela hexagonal'}
                 </div>
               </div>
@@ -282,12 +282,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               {/* Technical Specifications Card */}
               <div className="bg-white rounded-xl border border-[#E7E4DE] p-3.5 space-y-2.5 shadow-xs text-xs">
                 <div className="flex items-start justify-between pb-2 border-b border-[#F0EFEB]">
-                  <span className="text-[#77736C] shrink-0 pt-0.5">
+                  <span className="text-taupe shrink-0 pt-0.5">
                     {compositionAnalysis.motifsList.length > 1 ? 'Motivos:' : 'Motivo:'}
                   </span>
                   <div className="text-right pl-2">
                     {!compositionAnalysis.isCombined && (
-                      <span className="font-bold text-[#242424] block">
+                      <span className="font-bold text-charcoal block">
                         {compositionAnalysis.motifsTitle}
                       </span>
                     )}
@@ -297,13 +297,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                           <span
                             key={m.id}
                           >
-                            <span className="font-bold text-[#242424] block">
+                            <span className="font-bold text-charcoal block">
                               {m.count} {m.name}{index < compositionAnalysis.motifsList.length - 1 ? "," : ""}
                             </span>
                           </span>
                         ))}
                         {compositionAnalysis.plainCount > 0 && (
-                          <span className="font-bold text-[#242424] block">, {compositionAnalysis.plainCount} Lisa</span>
+                          <span className="font-bold text-charcoal block">, {compositionAnalysis.plainCount} Lisa</span>
                         )}
                       </div>
                     )}
@@ -311,7 +311,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 </div>
                 <div className="flex items-center justify-between pb-2 border-b border-[#F0EFEB]">
                   <div className="shrink-0 pt-0.5">
-                    <span className="text-[#8C8880]">
+                    <span className="text-taupe">
                       {compositionAnalysis.palette.length} color{compositionAnalysis.palette.length !== 1 ? 'es' : ''} usados
                     </span>
                   </div>
@@ -327,8 +327,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   </div>
                 </div>
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-[#77736C]">Superficie total:</span>
-                  <span className="font-semibold text-[#242424]">
+                  <span className="text-taupe">Superficie total:</span>
+                  <span className="font-semibold text-charcoal">
                     {plateSpecs.summaryText}
                   </span>
 
@@ -341,8 +341,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           <div className="md:w-[60%] p-5 sm:p-6 flex flex-col space-y-8 overflow-y-auto">
             {/* STEP 1: What to Export */}
             <div>
-              <label className="text-xs font-bold text-[#242424] flex items-center gap-1.5 mb-2.5">
-                <span className="w-4 h-4 rounded-full bg-[#242424] text-white text-[10px] font-bold flex items-center justify-center">1</span>
+              <label className="text-xs font-bold text-charcoal flex items-center gap-1.5 mb-2.5">
+                <span className="w-4 h-4 rounded-full bg-charcoal text-white text-[10px] font-bold flex items-center justify-center">1</span>
                 <span>Selecciona el contenido a exportar</span>
               </label>
               <div className="grid grid-cols-2 gap-2.5">
@@ -350,17 +350,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   type="button"
                   onClick={() => setExportScope('composition')}
                   className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${exportScope === 'composition'
-                    ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
+                    ? 'border-charcoal bg-[#FAF9F5] shadow-xs ring-1 ring-charcoal/10'
                     : 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA]'
                     }`}
                 >
                   <div className="flex gap-2 mb-1">
-                    <LayoutGrid className={`w-4 h-4 ${exportScope === 'composition' ? 'text-[#242424]' : 'text-[#77736C]'}`} />
-                    <span className="text-xs font-bold text-[#242424]">
+                    <LayoutGrid className={`w-4 h-4 ${exportScope === 'composition' ? 'text-charcoal' : 'text-taupe'}`} />
+                    <span className="text-xs font-bold text-charcoal">
                       Composición completa
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#77736C] leading-snug">
+                  <p className="text-[11px] text-taupe leading-snug">
                     Cuadrícula {composition.repeatX}×{composition.repeatY} placas.
                   </p>
                 </button>
@@ -369,17 +369,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   type="button"
                   onClick={() => setExportScope('single')}
                   className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${exportScope === 'single'
-                    ? 'border-[#242424] bg-[#FAF9F5] shadow-xs ring-1 ring-[#242424]/10'
+                    ? 'border-charcoal bg-[#FAF9F5] shadow-xs ring-1 ring-charcoal/10'
                     : 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA]'
                     }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Square className={`w-4 h-4 ${exportScope === 'single' ? 'text-[#242424]' : 'text-[#77736C]'}`} />
-                    <span className="text-xs font-bold text-[#242424]">
+                    <Square className={`w-4 h-4 ${exportScope === 'single' ? 'text-charcoal' : 'text-taupe'}`} />
+                    <span className="text-xs font-bold text-charcoal">
                       Motivo individual
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#77736C] leading-snug">
+                  <p className="text-[11px] text-taupe leading-snug">
                     1 placa aislada de {motif.name}.
                   </p>
                 </button>
@@ -388,8 +388,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
             {/* STEP 2: Format Selection */}
             <div>
-              <label className="text-xs font-bold text-[#242424] flex items-center gap-1.5 mb-2.5">
-                <span className="w-4 h-4 rounded-full bg-[#242424] text-white text-[10px] font-bold flex items-center justify-center">2</span>
+              <label className="text-xs font-bold text-charcoal flex items-center gap-1.5 mb-2.5">
+                <span className="w-4 h-4 rounded-full bg-charcoal text-white text-[10px] font-bold flex items-center justify-center">2</span>
                 <span>Elige el formato de archivo</span>
               </label>
 
@@ -399,8 +399,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   type="button"
                   onClick={() => setExportFormat('png')}
                   className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${exportFormat === 'png'
-                    ? 'bg-white text-[#242424] shadow-xs'
-                    : 'text-[#77736C] hover:text-[#242424]'
+                    ? 'bg-white text-charcoal shadow-xs'
+                    : 'text-taupe hover:text-charcoal'
                     }`}
                 >
                   <ImageIcon className="w-4 h-4" />
@@ -410,8 +410,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   type="button"
                   onClick={() => setExportFormat('svg')}
                   className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${exportFormat === 'svg'
-                    ? 'bg-white text-[#242424] shadow-xs'
-                    : 'text-[#77736C] hover:text-[#242424]'
+                    ? 'bg-white text-charcoal shadow-xs'
+                    : 'text-taupe hover:text-charcoal'
                     }`}
                 >
                   <FileCode className="w-4 h-4" />
@@ -422,8 +422,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
             {/* STEP 3: Resolution / Output Settings */}
             <div>
-              <label className="text-xs font-bold text-[#242424] flex items-center gap-1.5 mb-2.5">
-                <span className="w-4 h-4 rounded-full bg-[#242424] text-white text-[10px] font-bold flex items-center justify-center">3</span>
+              <label className="text-xs font-bold text-charcoal flex items-center gap-1.5 mb-2.5">
+                <span className="w-4 h-4 rounded-full bg-charcoal text-white text-[10px] font-bold flex items-center justify-center">3</span>
                 <span>Resolución de salida</span>
               </label>
 
@@ -433,12 +433,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     type="button"
                     onClick={() => setResolution('4k')}
                     className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '4k'
-                      ? 'bg-white text-[#242424] shadow-xs'
-                      : 'text-[#77736C] hover:text-[#242424]'
+                      ? 'bg-white text-charcoal shadow-xs'
+                      : 'text-taupe hover:text-charcoal'
                       }`}
                   >
                     <span>4K Ultra</span>
-                    <span className={`text-[10px] font-mono ${resolution === '4k' ? 'text-[#77736C]' : 'opacity-70'}`}>
+                    <span className={`text-[10px] font-mono ${resolution === '4k' ? 'text-taupe' : 'opacity-70'}`}>
                       (3840px)
                     </span>
                   </button>
@@ -446,12 +446,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     type="button"
                     onClick={() => setResolution('2k')}
                     className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '2k'
-                      ? 'bg-white text-[#242424] shadow-xs'
-                      : 'text-[#77736C] hover:text-[#242424]'
+                      ? 'bg-white text-charcoal shadow-xs'
+                      : 'text-taupe hover:text-charcoal'
                       }`}
                   >
                     <span>2K Full HD</span>
-                    <span className={`text-[10px] font-mono ${resolution === '2k' ? 'text-[#77736C]' : 'opacity-70'}`}>
+                    <span className={`text-[10px] font-mono ${resolution === '2k' ? 'text-taupe' : 'opacity-70'}`}>
                       (1920px)
                     </span>
                   </button>
@@ -459,31 +459,31 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     type="button"
                     onClick={() => setResolution('1k')}
                     className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${resolution === '1k'
-                      ? 'bg-white text-[#242424] shadow-xs'
-                      : 'text-[#77736C] hover:text-[#242424]'
+                      ? 'bg-white text-charcoal shadow-xs'
+                      : 'text-taupe hover:text-charcoal'
                       }`}
                   >
                     <span>1080p</span>
-                    <span className={`text-[10px] font-mono ${resolution === '1k' ? 'text-[#77736C]' : 'opacity-70'}`}>
+                    <span className={`text-[10px] font-mono ${resolution === '1k' ? 'text-taupe' : 'opacity-70'}`}>
                       (1080px)
                     </span>
                   </button>
                 </div>
               ) : (
                 <div className="p-1 bg-[#F0EFEB] rounded-xl flex gap-1">
-                  <div className="flex-1 py-2 px-3 rounded-lg text-xs font-bold bg-white text-[#242424] shadow-xs flex items-center justify-between">
+                  <div className="flex-1 py-2 px-3 rounded-lg text-xs font-bold bg-white text-charcoal shadow-xs flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                      <FileCode className="w-4 h-4 text-[#77736C]" />
+                      <FileCode className="w-4 h-4 text-taupe" />
                       <span>Vectorial SVG</span>
                     </span>
-                    <span className="text-[11px] text-[#77736C] font-normal">Escalable a cualquier tamaño sin pixelar</span>
+                    <span className="text-[11px] text-taupe font-normal">Escalable a cualquier tamaño sin pixelar</span>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Banner to Space Simulator */}
-            <div className="pt-5 border-t border-[#F0EFEB] text-[11px] text-[#242424] flex items-center justify-between gap-4">
+            <div className="pt-5 border-t border-[#F0EFEB] text-[11px] text-charcoal flex items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-1.5 text-xs">
                   <Info className="w-4 h-4 mt-0.5 shrink-0 stroke-2" />
@@ -495,7 +495,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   onClose();
                   onOpenSimulation();
                 }}
-                className="py-2 px-3 rounded-lg border border-[#E7E4DE] bg-white hover:bg-[#F7F6F2] text-xs font-semibold text-[#77736C] hover:text-[#242424] transition-colors"
+                className="py-2 px-3 rounded-lg border border-[#E7E4DE] bg-white hover:bg-[#F7F6F2] text-xs font-semibold text-taupe hover:text-charcoal transition-colors"
               >
                 Ir a simulación
               </button>
@@ -511,7 +511,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               <button
                 type="button"
                 onClick={handleCopySvgCode}
-                className="py-2.5 px-4 bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] text-[#242424] font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
+                className="py-2.5 px-4 bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] text-charcoal font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
               >
                 {copiedSvg ? (
                   <>

@@ -29,14 +29,14 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Zone 1: Single element brand wordmark */}
       <div className="flex items-center gap-3 shrink-0">
         <a href="/" className="flex items-center gap-2.5 text-decoration-none group">
-          {/* <div className="w-8 h-8 rounded-lg bg-[#242424] flex items-center justify-center text-white font-semibold text-sm tracking-tighter">
+          {/* <div className="w-8 h-8 rounded-lg bg-charcoal flex items-center justify-center text-white font-semibold text-sm tracking-tighter">
             M
           </div>
           <div className="flex flex-col">
-            <span className="text-base font-bold tracking-tight text-[#242424] whitespace-nowrap">
+            <span className="text-base font-bold tracking-tight text-charcoal whitespace-nowrap">
               Mosaico Studio
             </span>
-            <span className="text-[11px] text-[#77736C] -mt-0.5 tracking-normal whitespace-nowrap font-medium">
+            <span className="text-[11px] text-taupe -mt-0.5 tracking-normal whitespace-nowrap font-medium">
               Colección Petite · Hisbalit
             </span>
           </div> */}
@@ -57,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onChangeViewMode('single')}
           className={`px-3.5 py-2 text-xs font-medium rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${viewMode === 'single'
             ? 'bg-brand text-white shadow-xs'
-            : 'text-[#77736C] hover:text-[#242424]'
+            : 'text-taupe hover:text-charcoal'
             }`}
           title="Vista detallada de un motivo individual"
         >
@@ -68,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onChangeViewMode('pattern')}
           className={`px-3.5 py-2 text-xs font-medium rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${viewMode === 'pattern'
             ? 'bg-brand text-white shadow-xs'
-            : 'text-[#77736C] hover:text-[#242424]'
+            : 'text-taupe hover:text-charcoal'
             }`}
           title="Vista de la composición y repetición continua"
         >
@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onChangeViewMode('simulation')}
           className={`px-3.5 py-2 text-xs font-medium rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${viewMode === 'simulation'
             ? 'bg-brand text-white shadow-xs'
-            : 'text-[#77736C] hover:text-[#242424]'
+            : 'text-taupe hover:text-charcoal'
             }`}
           title="Simular en espacios reales: Baño, Suelo, Cocina"
         >
@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onUndo}
             disabled={!canUndo}
-            className={`p-2 rounded-md transition-colors ${canUndo ? 'text-[#242424] hover:bg-[#F7F6F2]' : 'text-[#C5C1BA] cursor-not-allowed'
+            className={`p-2 rounded-md transition-colors ${canUndo ? 'text-charcoal hover:bg-[#F7F6F2]' : 'text-[#C5C1BA] cursor-not-allowed'
               }`}
             title="Deshacer (Ctrl+Z)"
             aria-label="Deshacer"
@@ -104,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onRedo}
             disabled={!canRedo}
-            className={`p-2 rounded-md transition-colors ${canRedo ? 'text-[#242424] hover:bg-[#F7F6F2]' : 'text-[#C5C1BA] cursor-not-allowed'
+            className={`p-2 rounded-md transition-colors ${canRedo ? 'text-charcoal hover:bg-[#F7F6F2]' : 'text-[#C5C1BA] cursor-not-allowed'
               }`}
             title="Rehacer (Ctrl+Y)"
             aria-label="Rehacer"
@@ -116,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={onNewDesign}
-          className="px-3 py-1.5 text-xs font-medium text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-md transition-colors whitespace-nowrap"
+          className="px-3 py-1.5 text-xs font-medium text-taupe hover:text-charcoal hover:bg-[#F7F6F2] rounded-md transition-colors whitespace-nowrap"
           title="Iniciar nuevo diseño"
         >
           Nuevo diseño

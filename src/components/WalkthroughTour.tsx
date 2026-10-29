@@ -316,7 +316,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
                         <div>
-                            <h3 className="text-sm font-bold text-[#242424] leading-snug">
+                            <h3 className="text-sm font-bold text-charcoal leading-snug">
                                 {step.title}
                             </h3>
                         </div>
@@ -324,7 +324,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
 
                     <button
                         onClick={onClose}
-                        className="w-7 h-7 rounded-md hover:bg-[#F7F6F2] text-[#77736C] hover:text-[#242424] flex items-center justify-center transition-colors shrink-0"
+                        className="w-7 h-7 rounded-md hover:bg-[#F7F6F2] text-taupe hover:text-charcoal flex items-center justify-center transition-colors shrink-0"
                         title="Omitir tutorial (Esc)"
                         aria-label="Cerrar tutorial"
                     >
@@ -346,7 +346,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
                         {step.highlights?.map((highlight, index) => (
                             <li
                                 key={index}
-                                className="text-[11.5px] text-[#242424] flex items-start gap-2 leading-relaxed"
+                                className="text-[11.5px] text-charcoal flex items-start gap-2 leading-relaxed"
                             >
                                 <div className="w-1.5 h-1.5 rounded-full bg-brand mt-1.5 shrink-0" />
                                 <span>{highlight}</span>
@@ -356,7 +356,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
 
                     {/* Pro Tip Box */}
                     {step.tip && (
-                        <div className="p-2.5 rounded-lg border bg-slate-100 text-slate-700 border-slate-300 text-[11px] text-[#77736C] flex items-start gap-2">
+                        <div className="p-2.5 rounded-lg border bg-slate-100 text-slate-700 border-slate-300 text-[11px] text-taupe flex items-start gap-2">
                             <Info className="w-4 h-4 shrink-0 stroke-2" />
                             <span className="leading-snug">{step.tip}</span>
                         </div>
@@ -386,7 +386,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
                         {currentStep > 0 && (
                             <button
                                 onClick={handlePrev}
-                                className="px-3 py-1.5 text-xs font-semibold text-[#77736C] hover:text-[#242424] hover:bg-[#F7F6F2] rounded-md transition-colors flex items-center gap-1"
+                                className="px-3 py-1.5 text-xs font-semibold text-taupe hover:text-charcoal hover:bg-[#F7F6F2] rounded-md transition-colors flex items-center gap-1"
                             >
                                 <span>Atrás</span>
                             </button>
@@ -394,7 +394,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
 
                         <button
                             onClick={handleNext}
-                            className="px-4 py-1.5 text-xs font-semibold text-white bg-[#242424] hover:bg-black rounded-md transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+                            className="px-4 py-1.5 text-xs font-semibold text-white bg-charcoal hover:bg-black rounded-md transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
                         >
                             {currentStep < TOUR_STEPS.length - 1 ? (
                                 <>

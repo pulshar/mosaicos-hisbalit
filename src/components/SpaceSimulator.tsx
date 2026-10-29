@@ -5,15 +5,9 @@ import { generateSimulationWallSvg, exportSimulationAsPng } from '../utils/expor
 import {
   Download,
   Upload,
-  Sliders,
-  Move,
-  Layers,
-  Sparkles,
-  Eye,
-  Check,
   RefreshCw,
-  Maximize2,
-  Loader2
+  Loader2,
+  Expand
 } from 'lucide-react';
 
 const getPerspectiveTransformStyle = (config?: PerspectiveTransformConfig): React.CSSProperties => {
@@ -79,6 +73,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   // Active space preset
   const activePreset = SPACE_PRESETS.find(s => s.id === selectedSpaceId) || SPACE_PRESETS[0];
   const isForegroundOverlay = customPhotoUrl ? customIsOverlay : Boolean(activePreset.isForegroundOverlay);
+  const activePerspectiveTransform = customPhotoUrl ? undefined : activePreset.perspectiveTransform;
 
   const [scale, setScale] = useState<number>(() => activePreset.defaultScale ?? 1.0);
   const [blendMode, setBlendMode] = useState<'multiply' | 'normal'>(() => activePreset.blendMode ?? 'normal');
@@ -218,6 +213,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
   const handleCustomPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setLoadingPresetTitle('tu fotografía');
       setIsImageLoading(true);
       const url = URL.createObjectURL(file);
       const img = new Image();
@@ -226,6 +222,9 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
           setCustomAspectRatio(img.naturalWidth / img.naturalHeight);
         }
         setCustomPhotoUrl(url);
+        setCustomIsOverlay(false);
+        setBlendMode('normal');
+        setOpacity(1.0);
         // Set reasonable default polygon covering center wall/floor
         setPolygonPoints([
           [20, 20],
@@ -235,9 +234,15 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         ]);
         setScale(1.0);
         setIsAdjustingSurface(true);
-        setTimeout(() => setIsImageLoading(false), 1000);
+        setTimeout(() => {
+          setIsImageLoading(false);
+          setLoadingPresetTitle(null);
+        }, 350);
       };
       img.src = url;
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -345,7 +350,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
         resolution,
         isForegroundOverlay,
         opacity,
-        customPhotoUrl ? undefined : activePreset.perspectiveTransform,
+        activePerspectiveTransform,
         currentViewerWidth
       );
     } catch (err) {
@@ -375,20 +380,39 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
 
           <div className="flex items-center gap-2">
             {customPhotoUrl && (
-              <button
-                onClick={() => setIsAdjustingSurface(!isAdjustingSurface)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${isAdjustingSurface
-                  ? 'bg-amber-400 text-black font-semibold'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-                  }`}
-              >
-                <Move className="w-3.5 h-3.5" />
-                <span>{isAdjustingSurface ? 'Finalizar ajuste' : 'Ajustar superficie'}</span>
-              </button>
+              <>
+                {isAdjustingSurface && (
+                  <>
+                    <button
+                      onClick={() => setPolygonPoints([[0, 0], [100, 0], [100, 100], [0, 100]])}
+                      className="px-2.5 py-1.5 text-xs font-medium bg-white/10 text-white/70 hover:bg-white/20 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+                      title="Ajustar los tiradores para cubrir toda la fotografía"
+                    >
+                      <Expand className="w-3.5 h-3.5 text-amber-400" />
+                    </button>
+                    <button
+                      onClick={() => setPolygonPoints([[20, 20], [80, 20], [80, 80], [20, 80]])}
+                      className="px-2.5 py-1.5 text-xs font-medium bg-white/10 text-white/70 hover:bg-white/20 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+                      title="Restablecer tiradores a la zona central"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setIsAdjustingSurface(!isAdjustingSurface)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 cursor-pointer ${isAdjustingSurface
+                    ? 'bg-amber-400 text-black font-semibold'
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                >
+                  <span>{isAdjustingSurface ? 'Finalizar ajuste' : 'Ajustar superficie'}</span>
+                </button>
+              </>
             )}
             <button
               onClick={onClose}
-              className="px-3 py-1.5 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
             >
               Volver al lienzo
             </button>
@@ -432,7 +456,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       src={svgDataUri}
                       alt="Mosaico simulación"
                       className="w-full h-full object-cover block select-none pointer-events-none"
-                      style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
+                      style={getPerspectiveTransformStyle(activePerspectiveTransform)}
                     />
                     <div
                       className="absolute inset-0 bg-black/3"
@@ -470,7 +494,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       src={svgDataUri}
                       alt="Mosaico simulación"
                       className="w-full h-full object-cover block select-none pointer-events-none"
-                      style={getPerspectiveTransformStyle(activePreset.perspectiveTransform)}
+                      style={getPerspectiveTransformStyle(activePerspectiveTransform)}
                     />
                     <div
                       className="absolute inset-0 bg-black/3"
@@ -591,7 +615,7 @@ export const SpaceSimulator: React.FC<SpaceSimulatorProps> = ({
                       setCustomPhotoUrl(null);
                     }, 200);
                   }}
-                  className="text-[10px] text-amber-400 hover:underline"
+                  className="text-[11px] font-medium text-amber-400 hover:underline"
                 >
                   Restaurar predefinidos
                 </button>

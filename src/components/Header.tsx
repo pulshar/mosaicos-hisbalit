@@ -1,7 +1,8 @@
 import React from 'react';
-import { Undo2, Redo2, Download, Sparkles, LayoutGrid } from 'lucide-react';
+import { Undo2, Redo2, Download, Sparkles, LayoutGrid, Monitor } from 'lucide-react';
 import Logo from './icons/logo';
 import IconLetterA from './icons/IconLetterA';
+import { usePwaInstall } from '../hooks/usePwaInstall';
 
 interface HeaderProps {
   onNewDesign: () => void;
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   onChangeViewMode,
   onOpenExport
 }) => {
+  const { isInstallable, installApp } = usePwaInstall();
   return (
     <header className="h-18 border-b border-[#E7E4DE] bg-[#FFFFFF] px-6 flex items-center justify-between gap-8 shrink-0 select-none z-30">
       {/* Zone 1: Single element brand wordmark */}
@@ -91,6 +93,16 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Zone 3: Actions & Primary Export CTA */}
       <div className="flex items-center gap-2 shrink-0">
         <div className="flex items-center border-r border-[#E7E4DE] pr-2 mr-1 gap-1">
+          {isInstallable && (
+            <button
+              onClick={installApp}
+              className="px-4 py-2 mr-2 text-xs font-medium text-taupe bg-[#F7F6F2] hover:bg-[#EFECE6] hover:text-charcoal rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer shadow-2xs"
+              title="Instalar Mosaico Studio en tu ordenador"
+            >
+              <Monitor className="w-3.5 h-3.5 text-brand" />
+              <span className="hidden sm:inline">Instalar app</span>
+            </button>
+          )}
           <button
             onClick={onUndo}
             disabled={!canUndo}
@@ -112,8 +124,6 @@ export const Header: React.FC<HeaderProps> = ({
             <Redo2 className="w-4 h-4" />
           </button>
         </div>
-
-
         <button
           onClick={onNewDesign}
           className="px-3 py-1.5 text-xs font-medium text-taupe hover:text-charcoal hover:bg-[#F7F6F2] rounded-md transition-colors whitespace-nowrap"

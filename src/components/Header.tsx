@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
           {isInstallable && (
             <button
               onClick={installApp}
-              className="px-4 py-2 mr-2 text-xs font-medium text-taupe bg-[#F7F6F2] hover:bg-[#EFECE6] hover:text-charcoal rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer shadow-2xs"
+              className="px-3 py-1.5 mr-2 text-xs font-medium text-taupe border border-[#E7E4DE] bg-[#F7F6F2] hover:bg-[#EFECE6] hover:text-charcoal rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer shadow-2xs"
               title="Instalar Mosaico Studio en tu ordenador"
             >
               <Monitor className="w-3.5 h-3.5 text-brand" />

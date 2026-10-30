@@ -276,8 +276,8 @@ export function getPatternPeriod(
     case 'ratio1_2':
       return {
         periodX: 3,
-        periodY: composition.staggered ? 2 : 1,
-        label: `Intercalado 1:2 (${3}×${composition.staggered ? 2 : 1})`,
+        periodY: 3,
+        label: 'Intercalado 1:2 (3×3)',
         isUniform: false
       };
     case 'ratio1_3':

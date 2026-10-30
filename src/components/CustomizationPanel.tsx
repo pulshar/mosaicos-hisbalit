@@ -13,7 +13,7 @@ import {
   isLightColor,
   getContrastTextColor
 } from '../data/palette';
-import { getCompositionPlatesCount } from '../utils/exportUtils';
+import { getCompositionPlatesCount, calculateSurfaceSpecs } from '../utils/exportUtils';
 import { getMotifById } from '../data/motifs';
 import {
   Palette,
@@ -115,6 +115,13 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
     composition.plainTileCadence || 'none',
     composition.cellOverrides,
     motif.id
+  );
+
+  const surfaceSpecs = calculateSurfaceSpecs(
+    activeFormat,
+    composition.repeatX,
+    composition.repeatY,
+    isSingleMode ? 'single' : 'composition'
   );
 
   // Active target for coloring: either the selected piece or the background
@@ -243,7 +250,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         {/* ======================================================== */}
         {/* 1. SECCIÓN DE COLORES                                    */}
         {/* ======================================================== */}
-        <div className="border border-[#E7E4DE] rounded-xl overflow-hidden bg-white">
+        <div className="border border-[#E7E4DE] rounded-lg overflow-hidden bg-white">
           <button
             onClick={() => toggleSection('colors')}
             className="w-full px-3.5 py-3 flex items-center justify-between text-left hover:bg-[#FAF9F5] transition-colors"
@@ -399,7 +406,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               )}
 
               {/* Active Material Display Card */}
-              <div className="p-3 bg-[#FAF9F5] rounded-xl border border-[#E7E4DE] space-y-2.5">
+              <div className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E7E4DE] space-y-2.5">
                 {colorTarget === 'background' ? (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
@@ -478,7 +485,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           }
                         }
                       }}
-                      className="w-full py-1.5 px-2 text-[11px] font-medium text-charcoal bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                      className="w-full py-1.5 px-2 text-[11px] font-medium text-charcoal bg-white hover:bg-[#F7F6F2] border border-[#E7E4DE] rounded-md transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                     >
                       <Layers className="w-3.5 h-3.5 text-taupe" />
                       <span>Seleccionar todas las piezas del motivo</span>
@@ -519,7 +526,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Buscar por ref. o nombre (ej. 335, azul)..."
-                      className="w-full pl-8 pr-7 py-1 text-[11px] bg-[#F7F6F2] border border-[#E7E4DE] rounded-lg focus:outline-none focus:border-charcoal focus:bg-white transition-colors"
+                      className="w-full pl-8 pr-7 py-1.5 text-[11px] bg-[#F7F6F2] border border-[#E7E4DE] rounded-md focus:outline-none focus:border-charcoal focus:bg-white transition-colors"
                     />
                     {searchQuery && (
                       <button
@@ -539,7 +546,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           setMaterialCategory(cat);
                           setSearchQuery('');
                         }}
-                        className={`px-2 py-0.5 text-[10px] font-medium rounded-md whitespace-nowrap transition-colors ${materialCategory === cat && !searchQuery
+                        className={`px-2 py-0.5 text-[10px] font-medium rounded-sm whitespace-nowrap transition-colors ${materialCategory === cat && !searchQuery
                           ? 'bg-charcoal text-white shadow-2xs'
                           : 'bg-[#F7F6F2] text-taupe hover:text-charcoal hover:bg-[#EFECE6]'
                           }`}
@@ -608,7 +615,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         {/* ======================================================== */}
         {/* 2. SECCIÓN DE FORMATO                                    */}
         {/* ======================================================== */}
-        <div className="border border-[#E7E4DE] rounded-xl overflow-hidden bg-white">
+        <div className="border border-[#E7E4DE] rounded-lg overflow-hidden bg-white">
           <button
             onClick={() => toggleSection('format')}
             className="w-full px-3.5 py-3 flex items-center justify-between text-left hover:bg-[#FAF9F5] transition-colors"
@@ -663,7 +670,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         {/* ======================================================== */}
         {/* 3. ROTACIÓN DEL MOTIVO                                   */}
         {/* ======================================================== */}
-        <div className="border border-[#E7E4DE] rounded-xl overflow-hidden bg-white">
+        <div className="border border-[#E7E4DE] rounded-lg overflow-hidden bg-white">
           <button
             onClick={() => toggleSection('rotation')}
             className="w-full px-3.5 py-3 flex items-center justify-between text-left hover:bg-[#FAF9F5] transition-colors"
@@ -706,10 +713,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         </div>
 
         {/* ======================================================== */}
-        {/* 4. DISTRIBUCIÓN Y ESCALA                                 */}
+        {/* 4. DISTRIBUCIÓN Y TAMAÑO                                 */}
         {/* ======================================================== */}
         <div
-          className={`border rounded-xl overflow-hidden transition-all ${isSingleMode ? 'border-[#E7E4DE] bg-[#FAF9F5]' : 'border-[#E7E4DE] bg-white'
+          className={`border rounded-lg overflow-hidden transition-all ${isSingleMode ? 'border-[#E7E4DE] bg-[#FAF9F5]' : 'border-[#E7E4DE] bg-white'
             }`}
         >
           <button
@@ -719,7 +726,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             <div className="flex items-center gap-2">
               <Grid className={`w-4 h-4 ${isSingleMode ? 'text-taupe-light' : 'text-charcoal'}`} />
               <span className={`text-xs font-semibold ${isSingleMode ? 'text-taupe' : 'text-charcoal'}`}>
-                Distribución y escala
+                Distribución y tamaño
               </span>
               {/*
               {isSingleMode && (
@@ -997,14 +1004,16 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-taupe">
                         <Layers className="w-3.5 h-3.5 text-charcoal" />
-                        <span>Total de placas ({plates.totalCount}):</span>
+                        <span>Total de placas:</span>
                       </div>
-                      <div className="font-mono text-xs font-semibold text-charcoal">
+                      <div className="text-xs font-semibold text-charcoal">
                         {plates.totalCount} placas
                       </div>
                     </div>
+
+
                     {/* Breakdown by motif */}
-                    <div className="flex flex-wrap gap-1 pt-1 border-t border-[#E7E4DE]">
+                    <div className="flex flex-wrap gap-1 pt-2 mb-2 border-t border-[#E7E4DE]">
                       {Object.entries(plates.motifCounts).map(([mId, count]) => {
                         const mDef = getMotifById(mId);
                         return (
@@ -1022,6 +1031,17 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         </span>
                       )}
                     </div>
+                    <div className="flex items-end justify-between pt-2 border-t border-[#E7E4DE]">
+                      <span className="text-taupe">Superficie total:</span>
+                      <div className="text-right flex items-end gap-1.5">
+                        <span className="text-[11px] text-taupe font-medium">
+                          {surfaceSpecs.totalDimensions} ·
+                        </span>
+                        <span className="text-xs font-semibold text-charcoal">
+                          {surfaceSpecs.areaM2}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1032,7 +1052,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
         {/* ======================================================== */}
         {/* 5. EXPORTACIÓN RÁPIDA                                    */}
         {/* ======================================================== */}
-        <div className="border border-[#E7E4DE] rounded-xl overflow-hidden bg-white">
+        {/* <div className="border border-[#E7E4DE] rounded-xl overflow-hidden bg-white">
           <button
             onClick={() => toggleSection('export')}
             className="w-full px-3.5 py-3 flex items-center justify-between text-left hover:bg-[#FAF9F5] transition-colors"
@@ -1066,7 +1086,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               </button>
             </div>
           )}
-        </div>
+        </div> */}
       </div>
     </aside>
   );

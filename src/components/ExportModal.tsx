@@ -6,7 +6,8 @@ import {
   downloadFile,
   downloadSvgAsPng,
   getCellMotif,
-  ExportImageMetadata
+  ExportImageMetadata,
+  calculateSurfaceSpecs
 } from '../utils/exportUtils';
 import { getMotifById } from '../data/motifs';
 import { resolveEffectiveMotifCustomization } from '../utils/motifColorUtils';
@@ -178,43 +179,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     return compositionAnalysis.palette.map(hex => getColorReference(hex));
   }, [compositionAnalysis.palette]);
 
-  // Exact plate dimensions requested by user:
-  // Redondo: 31,00 x 33,33 cm | Hexagonal: 31,2 x 33,2 cm
+  // Exact plate dimensions: Redondo: 31,00 x 33,33 cm | Hexagonal: 31,2 x 33,2 cm
   const plateSpecs = useMemo(() => {
-    const isRound = customization.format === 'round';
-    const widthCm = isRound ? 31.00 : 31.2;
-    const heightCm = isRound ? 33.33 : 33.2;
-    const widthFormatted = isRound ? '31,00' : '31,2';
-    const heightFormatted = isRound ? '33,33' : '33,2';
-    const singlePlateDimensions = `${widthFormatted} × ${heightFormatted} cm`;
-
-    if (exportScope === 'single') {
-      const areaM2 = ((widthCm * heightCm) / 10000).toFixed(2).replace('.', ',');
-      return {
-        formatName: isRound ? 'Redondo' : 'Hexagonal',
-        plateDimensions: singlePlateDimensions,
-        totalDimensions: singlePlateDimensions,
-        areaM2: `${areaM2} m²`,
-        summaryText: `${singlePlateDimensions} (${areaM2} m²)`
-      };
-    } else {
-      const totalWidthVal = composition.repeatX * widthCm;
-      const totalHeightVal = composition.repeatY * heightCm;
-      const totalWidthCm = (totalWidthVal % 1 === 0 ? totalWidthVal.toFixed(1) : totalWidthVal.toFixed(2))
-        .replace(/\.?0+$/, '')
-        .replace('.', ',');
-      const totalHeightCm = (totalHeightVal % 1 === 0 ? totalHeightVal.toFixed(1) : totalHeightVal.toFixed(2))
-        .replace(/\.?0+$/, '')
-        .replace('.', ',');
-      const totalAreaM2 = ((totalWidthVal * totalHeightVal) / 10000).toFixed(2).replace('.', ',');
-      return {
-        formatName: isRound ? 'Redondo' : 'Hexagonal',
-        plateDimensions: singlePlateDimensions,
-        totalDimensions: `${totalWidthCm} × ${totalHeightCm} cm`,
-        areaM2: `${totalAreaM2} m²`,
-        summaryText: `${totalWidthCm} × ${totalHeightCm} cm (${totalAreaM2} m²)`
-      };
-    }
+    return calculateSurfaceSpecs(
+      customization.format,
+      composition.repeatX,
+      composition.repeatY,
+      exportScope
+    );
   }, [customization.format, exportScope, composition.repeatX, composition.repeatY]);
 
   const handleDownloadSvg = () => {

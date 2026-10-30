@@ -1,4 +1,4 @@
-import { MotifDefinition, MotifCustomization, CompositionSettings, SpacePreset, PerspectiveTransformConfig, PlainTileCadence } from '../types';
+import { MotifDefinition, MotifCustomization, CompositionSettings, SpacePreset, PerspectiveTransformConfig, PlainTileCadence, MotifFormat } from '../types';
 import { getMotifById } from '../data/motifs';
 import { resolveEffectiveMotifCustomization } from './motifColorUtils';
 
@@ -117,6 +117,56 @@ export function getCompositionPlatesCount(
     totalCount,
     motifCounts
   };
+}
+
+/**
+ * Calculates official dimensions (cm) and total surface area (m²) for Hisbalit Petite plates.
+ * Real plate dimensions:
+ * - Redondo: 31,00 × 33,33 cm
+ * - Hexagonal: 31,2 × 33,2 cm
+ */
+export function calculateSurfaceSpecs(
+  format: MotifFormat,
+  repeatX: number = 1,
+  repeatY: number = 1,
+  scope: 'single' | 'composition' = 'composition'
+) {
+  const isRound = format === 'round';
+  const widthCm = isRound ? 31.00 : 31.2;
+  const heightCm = isRound ? 33.33 : 33.2;
+  const widthFormatted = isRound ? '31,00' : '31,2';
+  const heightFormatted = isRound ? '33,33' : '33,2';
+  const singlePlateDimensions = `${widthFormatted} × ${heightFormatted} cm`;
+
+  if (scope === 'single') {
+    const areaM2 = ((widthCm * heightCm) / 10000).toFixed(2).replace('.', ',');
+    return {
+      formatName: isRound ? 'Redondo' : 'Hexagonal',
+      plateDimensions: singlePlateDimensions,
+      totalDimensions: singlePlateDimensions,
+      areaM2: `${areaM2} m²`,
+      totalAreaVal: (widthCm * heightCm) / 10000,
+      summaryText: `${singlePlateDimensions} (${areaM2} m²)`
+    };
+  } else {
+    const totalWidthVal = repeatX * widthCm;
+    const totalHeightVal = repeatY * heightCm;
+    const totalWidthCm = (totalWidthVal % 1 === 0 ? totalWidthVal.toFixed(1) : totalWidthVal.toFixed(2))
+      .replace(/\.?0+$/, '')
+      .replace('.', ',');
+    const totalHeightCm = (totalHeightVal % 1 === 0 ? totalHeightVal.toFixed(1) : totalHeightVal.toFixed(2))
+      .replace(/\.?0+$/, '')
+      .replace('.', ',');
+    const totalAreaM2 = ((totalWidthVal * totalHeightVal) / 10000).toFixed(2).replace('.', ',');
+    return {
+      formatName: isRound ? 'Redondo' : 'Hexagonal',
+      plateDimensions: singlePlateDimensions,
+      totalDimensions: `${totalWidthCm} × ${totalHeightCm} cm`,
+      areaM2: `${totalAreaM2} m²`,
+      totalAreaVal: (totalWidthVal * totalHeightVal) / 10000,
+      summaryText: `${totalWidthCm} × ${totalHeightCm} cm (${totalAreaM2} m²)`
+    };
+  }
 }
 
 /**

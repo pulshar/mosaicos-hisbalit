@@ -668,10 +668,10 @@ export default function App() {
         ) : (
           /* Design Mode: Left Panel, Center Canvas, Right Panel */
           <>
-            {/* Left Panel: Motifs Library (smooth collapsible animation) */}
+            {/* Left Panel: Motifs Library */}
             <div
               id="tour-motif-library"
-              className={`h-full shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex relative z-10 ${isMotifLibraryOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+              className={`h-full shrink-0 transition-all duration-300 ease-in-out overflow-hidden flex justify-end relative z-10 ${isMotifLibraryOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 pointer-events-none'
                 }`}
             >
               <div className="w-80 h-full">

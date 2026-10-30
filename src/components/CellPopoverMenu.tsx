@@ -22,7 +22,6 @@ interface CellPopoverMenuProps {
     primaryMotif: MotifDefinition;
     clickPosition: { x: number; y: number };
     initialPosition?: { x: number; y: number } | null;
-    boundaryRef?: React.RefObject<HTMLElement | null>;
     getCustomizationForMotif: (motifId: string) => MotifCustomization;
     onSelectMotif: (motifId: string | null) => void;
     onSelectRotation: (rotation: number) => void;
@@ -45,7 +44,6 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
     primaryMotif,
     clickPosition,
     initialPosition,
-    boundaryRef,
     getCustomizationForMotif,
     onSelectMotif,
     onSelectRotation,
@@ -59,37 +57,46 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
 }) => {
     const popoverRef = useRef<HTMLDivElement>(null);
 
-    // Position state (draggable within editor bounds)
+    // Helpers to compute screen bounds with header as the only top obstacle
+    const getHeaderBottom = (): number => {
+        if (typeof document === 'undefined') return 72;
+        const header = document.querySelector('header');
+        if (header) {
+            const rect = header.getBoundingClientRect();
+            return rect.bottom > 0 ? rect.bottom : 72;
+        }
+        return 72;
+    };
+
+    const getPopoverBounds = (popWidth = 350, popHeight = 480) => {
+        const minX = 8;
+        const winWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+        const winHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+        const maxX = Math.max(minX, winWidth - popWidth - 8);
+
+        const headerBottom = getHeaderBottom();
+        // The only boundary at the top: strictly below the header so it never overlaps
+        const minY = headerBottom + 8;
+        const maxY = Math.max(minY, winHeight - popHeight - 8);
+
+        return { minX, maxX, minY, maxY };
+    };
+
+    // Position state (draggable freely across the window, bounded only below the header)
     const [position, setPosition] = useState<{ x: number; y: number }>(() => {
         const popWidth = 350;
         const popHeight = 480;
+        const bounds = getPopoverBounds(popWidth, popHeight);
+
         let targetX = initialPosition ? initialPosition.x : clickPosition.x + 20;
         let targetY = initialPosition ? initialPosition.y : clickPosition.y - 40;
 
-        if (boundaryRef?.current) {
-            const rect = boundaryRef.current.getBoundingClientRect();
-            const minX = rect.left + 8;
-            const maxX = Math.max(minX, rect.right - popWidth - 8);
-            const minY = rect.top + 8;
-            const maxY = Math.max(minY, rect.bottom - popHeight - 8);
-
-            if (!initialPosition && targetX + popWidth > rect.right - 8) {
-                targetX = Math.max(minX, clickPosition.x - popWidth - 20);
-            }
-            targetX = Math.min(Math.max(targetX, minX), maxX);
-            targetY = Math.min(Math.max(targetY, minY), maxY);
-        } else {
-            const minX = 16;
-            const maxX = Math.max(minX, window.innerWidth - popWidth - 16);
-            const minY = 60;
-            const maxY = Math.max(minY, window.innerHeight - popHeight - 16);
-
-            if (!initialPosition && targetX + popWidth > window.innerWidth - 16) {
-                targetX = Math.max(minX, clickPosition.x - popWidth - 20);
-            }
-            targetX = Math.min(Math.max(targetX, minX), maxX);
-            targetY = Math.min(Math.max(targetY, minY), maxY);
+        if (!initialPosition && targetX + popWidth > bounds.maxX + popWidth) {
+            targetX = Math.max(bounds.minX, clickPosition.x - popWidth - 20);
         }
+
+        targetX = Math.min(Math.max(targetX, bounds.minX), bounds.maxX);
+        targetY = Math.min(Math.max(targetY, bounds.minY), bounds.maxY);
 
         return { x: targetX, y: targetY };
     });
@@ -113,78 +120,46 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
         if (!initialPosition) {
             const popWidth = popoverRef.current?.offsetWidth || 350;
             const popHeight = popoverRef.current?.offsetHeight || 480;
+            const bounds = getPopoverBounds(popWidth, popHeight);
+
             let targetX = clickPosition.x + 20;
             let targetY = clickPosition.y - 40;
 
-            if (boundaryRef?.current) {
-                const rect = boundaryRef.current.getBoundingClientRect();
-                const minX = rect.left + 8;
-                const maxX = Math.max(minX, rect.right - popWidth - 8);
-                const minY = rect.top + 8;
-                const maxY = Math.max(minY, rect.bottom - popHeight - 8);
-
-                if (targetX + popWidth > rect.right - 8) {
-                    targetX = Math.max(minX, clickPosition.x - popWidth - 20);
-                }
-                targetX = Math.min(Math.max(targetX, minX), maxX);
-                targetY = Math.min(Math.max(targetY, minY), maxY);
-            } else {
-                const minX = 16;
-                const maxX = Math.max(minX, window.innerWidth - popWidth - 16);
-                const minY = 60;
-                const maxY = Math.max(minY, window.innerHeight - popHeight - 16);
-
-                if (targetX + popWidth > window.innerWidth - 16) {
-                    targetX = Math.max(minX, clickPosition.x - popWidth - 20);
-                }
-                targetX = Math.min(Math.max(targetX, minX), maxX);
-                targetY = Math.min(Math.max(targetY, minY), maxY);
+            if (targetX + popWidth > window.innerWidth - 8) {
+                targetX = Math.max(bounds.minX, clickPosition.x - popWidth - 20);
             }
+
+            targetX = Math.min(Math.max(targetX, bounds.minX), bounds.maxX);
+            targetY = Math.min(Math.max(targetY, bounds.minY), bounds.maxY);
 
             setPosition({ x: targetX, y: targetY });
         }
-    }, [clickPosition.x, clickPosition.y, initialPosition, boundaryRef]);
+    }, [clickPosition.x, clickPosition.y, initialPosition]);
 
-    // Keep position clamped if boundaries change (e.g. sidebar toggle or window resize)
+    // Keep position clamped if window resizes so it stays within viewport and below header
     useEffect(() => {
         const clampPosition = () => {
             if (!popoverRef.current) return;
             const popWidth = popoverRef.current.offsetWidth || 350;
             const popHeight = popoverRef.current.offsetHeight || 480;
+            const bounds = getPopoverBounds(popWidth, popHeight);
 
-            if (boundaryRef?.current) {
-                const rect = boundaryRef.current.getBoundingClientRect();
-                const minX = rect.left + 8;
-                const maxX = Math.max(minX, rect.right - popWidth - 8);
-                const minY = rect.top + 8;
-                const maxY = Math.max(minY, rect.bottom - popHeight - 8);
-
-                setPosition(prev => {
-                    const clampedX = Math.min(Math.max(prev.x, minX), maxX);
-                    const clampedY = Math.min(Math.max(prev.y, minY), maxY);
-                    if (clampedX !== prev.x || clampedY !== prev.y) {
-                        onPositionChange?.({ x: clampedX, y: clampedY });
-                        return { x: clampedX, y: clampedY };
-                    }
-                    return prev;
-                });
-            }
+            setPosition(prev => {
+                const clampedX = Math.min(Math.max(prev.x, bounds.minX), bounds.maxX);
+                const clampedY = Math.min(Math.max(prev.y, bounds.minY), bounds.maxY);
+                if (clampedX !== prev.x || clampedY !== prev.y) {
+                    onPositionChange?.({ x: clampedX, y: clampedY });
+                    return { x: clampedX, y: clampedY };
+                }
+                return prev;
+            });
         };
 
         window.addEventListener('resize', clampPosition);
-        let observer: ResizeObserver | null = null;
-        if (boundaryRef?.current && typeof ResizeObserver !== 'undefined') {
-            observer = new ResizeObserver(() => {
-                clampPosition();
-            });
-            observer.observe(boundaryRef.current);
-        }
-
         return () => {
             window.removeEventListener('resize', clampPosition);
-            if (observer) observer.disconnect();
         };
-    }, [boundaryRef, onPositionChange]);
+    }, [onPositionChange]);
 
     // Drag handlers on Header
     const handleHeaderMouseDown = (e: React.MouseEvent) => {
@@ -216,26 +191,12 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
             let newX = dragStartRef.current.posX + deltaX;
             let newY = dragStartRef.current.posY + deltaY;
 
-            if (boundaryRef?.current && popoverRef.current) {
-                const rect = boundaryRef.current.getBoundingClientRect();
-                const popWidth = popoverRef.current.offsetWidth || 350;
-                const popHeight = popoverRef.current.offsetHeight || 480;
+            const popWidth = popoverRef.current?.offsetWidth || 350;
+            const popHeight = popoverRef.current?.offsetHeight || 480;
+            const bounds = getPopoverBounds(popWidth, popHeight);
 
-                const minX = rect.left + 8;
-                const maxX = Math.max(minX, rect.right - popWidth - 8);
-                const minY = rect.top + 8;
-                const maxY = Math.max(minY, rect.bottom - popHeight - 8);
-
-                newX = Math.min(Math.max(newX, minX), maxX);
-                newY = Math.min(Math.max(newY, minY), maxY);
-            } else {
-                const minX = 8;
-                const maxX = window.innerWidth - (popoverRef.current?.offsetWidth || 350) - 8;
-                const minY = 8;
-                const maxY = window.innerHeight - (popoverRef.current?.offsetHeight || 480) - 8;
-                newX = Math.min(Math.max(newX, minX), maxX);
-                newY = Math.min(Math.max(newY, minY), maxY);
-            }
+            newX = Math.min(Math.max(newX, bounds.minX), bounds.maxX);
+            newY = Math.min(Math.max(newY, bounds.minY), bounds.maxY);
 
             currentPosRef.current = { x: newX, y: newY };
             setPosition({ x: newX, y: newY });
@@ -255,7 +216,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isDragging, boundaryRef, onPositionChange]);
+    }, [isDragging, onPositionChange]);
 
     // Close on Escape or click outside
     useEffect(() => {
@@ -315,7 +276,7 @@ export const CellPopoverMenu: React.FC<CellPopoverMenuProps> = ({
                 onMouseDown={handleHeaderMouseDown}
                 className={`px-4 py-2.5 bg-[#FAF9F5] border-b border-[#E7E4DE] flex items-center justify-between select-none cursor-grab active:cursor-grabbing transition-colors ${isDragging ? 'bg-[#F2EFE8]' : 'hover:bg-[#F5F2EA]'
                     }`}
-                title="Arrastrar para mover por el editor"
+                title="Arrastrar para mover libremente"
             >
                 <div className="flex items-center gap-2">
                     <div className="text-[#A8A49C] hover:text-charcoal cursor-grab active:cursor-grabbing p-0.5 -ml-1">

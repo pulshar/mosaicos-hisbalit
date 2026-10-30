@@ -1216,7 +1216,6 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             primaryMotif={motif}
             clickPosition={{ x: activeCellMenu.x, y: activeCellMenu.y }}
             initialPosition={popoverCustomPos}
-            boundaryRef={containerRef}
             getCustomizationForMotif={getCustomizationForMotif}
             onSelectMotif={handleSelectCellMotif}
             onSelectRotation={handleSelectCellRotation}

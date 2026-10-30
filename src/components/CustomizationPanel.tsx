@@ -26,7 +26,6 @@ import {
   Shapes,
   Grid,
   RotateCw,
-  Download,
   ChevronDown,
   ChevronUp,
   RefreshCw,
@@ -39,7 +38,8 @@ import {
   X,
   Info,
   MousePointerClick,
-  Repeat,
+  CircleAlert,
+  CircleCheck,
 } from 'lucide-react';
 
 interface CustomizationPanelProps {
@@ -920,21 +920,19 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     <div className="relative flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-semibold text-charcoal">
-                            Continuidad de patrón
+                          <span>
+                            {patternPeriod.isUniform || isAlreadyContinuous ? (
+                              <CircleCheck className="w-4 h-4" />
+                            ) : (
+                              <CircleAlert className="w-4 h-4 text-red-500" />
+                            )}
                           </span>
-
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full ${patternPeriod.isUniform || isAlreadyContinuous
-                              ? 'bg-emerald-500'
-                              : 'bg-red-500'
-                              }`}
-                            title={
-                              patternPeriod.isUniform || isAlreadyContinuous
-                                ? 'Patrón continuo'
-                                : 'Patrón no continuo'
+                          <span className="text-[11px] font-semibold text-charcoal">
+                            {patternPeriod.isUniform || isAlreadyContinuous
+                              ? 'Periodicidad correcta'
+                              : 'Periodicidad incorrecta'
                             }
-                          />
+                          </span>
                         </div>
                       </div>
 

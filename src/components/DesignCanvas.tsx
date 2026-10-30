@@ -581,10 +581,10 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       {/* Top Floating Controls Bar */}
       <div className="absolute top-4 left-5 right-5 flex items-center justify-between z-20 pointer-events-none">
         {/* Active Motif Title Badge & Show Library Toggle */}
-        <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-lg border border-[#E7E4DE] shadow-xs flex items-center gap-3">
+        <div className="bg-white/95 backdrop-blur-md px-4 py-2 pr-2 rounded-lg border border-[#E7E4DE] shadow-xs flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-charcoal" />
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <span className="text-xs font-bold text-charcoal">
                 Motivo {motif.catalogueNumber} · {motif.name}
               </span>
@@ -696,7 +696,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
               e.stopPropagation();
               onSelectPiece(null);
             }}
-            className="text-[11px] text-taupe hover:text-charcoal ml-2 px-2.5 py-1 rounded-lg bg-[#F7F6F2] hover:bg-[#EDEBE6] border border-[#E7E4DE] cursor-pointer transition-colors"
+            className="text-[11px] text-taupe hover:text-charcoal ml-4 px-2.5 py-1 rounded-lg bg-[#F7F6F2] hover:bg-[#EDEBE6] border border-[#E7E4DE] cursor-pointer transition-colors"
           >
             Deseleccionar
           </button>
@@ -723,7 +723,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                 e.stopPropagation();
                 onSelectPiece(null);
               }}
-              className="text-[11px] text-taupe hover:text-charcoal ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
+              className="text-[11px] text-taupe hover:text-charcoal ml-4 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
             >
               Deseleccionar
             </button>
@@ -751,7 +751,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                 e.stopPropagation();
                 onSelectPiece(null);
               }}
-              className="text-[11px] text-taupe hover:text-charcoal ml-2 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
+              className="text-[11px] text-taupe hover:text-charcoal ml-4 px-2 py-1 rounded bg-[#F7F6F2] border border-[#E7E4DE] cursor-pointer"
             >
               Deseleccionar
             </button>

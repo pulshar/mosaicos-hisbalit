@@ -5,7 +5,7 @@ import {
   CompositionSettings,
   MotifFormat
 } from '../types';
-import { getTileRotationTransform, isCellWithMotif, getCellMotif } from '../utils/exportUtils';
+import { getTileRotationTransform, isCellWithMotif, getCellMotif, getCellRotationOffset } from '../utils/exportUtils';
 import { getMotifById } from '../data/motifs';
 import { findMaterialByHex } from '../data/palette';
 import { resolveEffectiveMotifCustomization } from '../utils/motifColorUtils';
@@ -340,6 +340,9 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
     const nextOverrides = { ...(composition.cellOverrides || {}) };
 
+    let unitX = composition.patternUnitX || composition.repeatX;
+    let unitY = composition.patternUnitY || composition.repeatY;
+
     targets.forEach(({ row, col }) => {
       const key = `${row}-${col}`;
       if (motifId === null) {
@@ -347,9 +350,16 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       } else {
         nextOverrides[key] = motifId;
       }
+      if (col >= unitX) unitX = col + 1;
+      if (row >= unitY) unitY = row + 1;
     });
 
-    onUpdateComposition({ cellOverrides: nextOverrides });
+    onUpdateComposition({
+      cellOverrides: nextOverrides,
+      patternUnitX: unitX,
+      patternUnitY: unitY,
+      isPatternTiled: true
+    });
 
     const motifName = motifId === null ? 'Fondo liso' : (getMotifById(motifId)?.name || motifId);
     if (targets.length > 1) {
@@ -368,6 +378,9 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
     const nextRotations = { ...(composition.cellRotations || {}) };
 
+    let unitX = composition.patternUnitX || composition.repeatX;
+    let unitY = composition.patternUnitY || composition.repeatY;
+
     targets.forEach(({ row, col }) => {
       const key = `${row}-${col}`;
       if (rotation === 0) {
@@ -375,9 +388,16 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       } else {
         nextRotations[key] = rotation;
       }
+      if (col >= unitX) unitX = col + 1;
+      if (row >= unitY) unitY = row + 1;
     });
 
-    onUpdateComposition({ cellRotations: nextRotations });
+    onUpdateComposition({
+      cellRotations: nextRotations,
+      patternUnitX: unitX,
+      patternUnitY: unitY,
+      isPatternTiled: true
+    });
 
     const rotLabel = rotation === 180 ? 'Invertida (+180°)' : 'Normal (0°)';
     if (targets.length > 1) {
@@ -403,7 +423,13 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       }
     }
 
-    onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
+    onUpdateComposition({
+      cellOverrides: nextOverrides,
+      cellRotations: nextRotations,
+      patternUnitX: composition.patternUnitX || composition.repeatX,
+      patternUnitY: composition.patternUnitY || composition.repeatY,
+      isPatternTiled: true
+    });
     setBackgroundNotice(`Fila ${row + 1} actualizada`);
   };
 
@@ -423,7 +449,13 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       }
     }
 
-    onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
+    onUpdateComposition({
+      cellOverrides: nextOverrides,
+      cellRotations: nextRotations,
+      patternUnitX: composition.patternUnitX || composition.repeatX,
+      patternUnitY: composition.patternUnitY || composition.repeatY,
+      isPatternTiled: true
+    });
     setBackgroundNotice(`Columna ${col + 1} actualizada`);
   };
 
@@ -449,7 +481,13 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       }
     }
 
-    onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
+    onUpdateComposition({
+      cellOverrides: nextOverrides,
+      cellRotations: nextRotations,
+      patternUnitX: composition.patternUnitX || composition.repeatX,
+      patternUnitY: composition.patternUnitY || composition.repeatY,
+      isPatternTiled: true
+    });
     setBackgroundNotice('Patrón damero aplicado');
   };
 
@@ -469,7 +507,14 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       delete nextRotations[key];
     });
 
-    onUpdateComposition({ cellOverrides: nextOverrides, cellRotations: nextRotations });
+    const hasAnyCustom = Object.keys(nextOverrides).length > 0 || Object.keys(nextRotations).length > 0;
+
+    onUpdateComposition({
+      cellOverrides: nextOverrides,
+      cellRotations: nextRotations,
+      isPatternTiled: hasAnyCustom,
+      ...(hasAnyCustom ? {} : { patternUnitX: undefined, patternUnitY: undefined })
+    });
 
     if (targets.length > 1) {
       setBackgroundNotice(`${targets.length} placas restablecidas`);
@@ -979,10 +1024,20 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                           composition.plainTileCadence || 'none',
                           composition.repeatX,
                           composition.cellOverrides,
-                          motif.id
+                          motif.id,
+                          composition.patternUnitX,
+                          composition.patternUnitY,
+                          composition.isPatternTiled
                         );
                         const hasMotif = cellMotifId !== null;
-                        const cellOffset = composition.cellRotations?.[cellKey] ?? 0;
+                        const cellOffset = getCellRotationOffset(
+                          rowIndex,
+                          colIndex,
+                          composition.cellRotations,
+                          composition.patternUnitX,
+                          composition.patternUnitY,
+                          composition.isPatternTiled
+                        );
                         const cellRot = ((customization.rotation ?? 0) + cellOffset) % 360;
                         const cellMotifDef = cellMotifId ? (getMotifById(cellMotifId) || motif) : motif;
                         const cellSvgData = cellMotifDef.svgData[activeFormat] || svgData;
@@ -996,9 +1051,16 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
                         const isHovered =
                           hoveredGridCell?.row === rowIndex && hoveredGridCell?.col === colIndex;
 
-                        const isOverridden =
-                          composition.cellOverrides &&
-                          composition.cellOverrides[cellKey] !== undefined;
+                        const isOverridden = Boolean(
+                          (composition.cellOverrides && composition.cellOverrides[cellKey] !== undefined) ||
+                          (composition.cellRotations && composition.cellRotations[cellKey] !== undefined) ||
+                          (composition.isPatternTiled && (
+                            (composition.patternUnitX && composition.patternUnitY && (
+                              (composition.cellOverrides && composition.cellOverrides[`${rowIndex % composition.patternUnitY}-${colIndex % composition.patternUnitX}`] !== undefined) ||
+                              (composition.cellRotations && composition.cellRotations[`${rowIndex % composition.patternUnitY}-${colIndex % composition.patternUnitX}`] !== undefined)
+                            ))
+                          ))
+                        );
 
                         return (
                           <g
@@ -1172,7 +1234,10 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             composition.plainTileCadence || 'none',
             composition.repeatX,
             composition.cellOverrides,
-            motif.id
+            motif.id,
+            composition.patternUnitX,
+            composition.patternUnitY,
+            composition.isPatternTiled
           );
           const allSameMotif = selectedGridCells.every(c => {
             const mId = getCellMotif(
@@ -1181,15 +1246,32 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
               composition.plainTileCadence || 'none',
               composition.repeatX,
               composition.cellOverrides,
-              motif.id
+              motif.id,
+              composition.patternUnitX,
+              composition.patternUnitY,
+              composition.isPatternTiled
             );
             return mId === firstMotifId;
           });
           currentMotifId = allSameMotif ? firstMotifId : undefined as unknown as string | null;
 
-          const firstOffset = composition.cellRotations?.[`${firstCell.row}-${firstCell.col}`] ?? 0;
+          const firstOffset = getCellRotationOffset(
+            firstCell.row,
+            firstCell.col,
+            composition.cellRotations,
+            composition.patternUnitX,
+            composition.patternUnitY,
+            composition.isPatternTiled
+          );
           const allSameRot = selectedGridCells.every(c => {
-            const r = composition.cellRotations?.[`${c.row}-${c.col}`] ?? 0;
+            const r = getCellRotationOffset(
+              c.row,
+              c.col,
+              composition.cellRotations,
+              composition.patternUnitX,
+              composition.patternUnitY,
+              composition.isPatternTiled
+            );
             return r === firstOffset;
           });
           currentRotation = allSameRot ? firstOffset : -1;
@@ -1200,9 +1282,19 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
             composition.plainTileCadence || 'none',
             composition.repeatX,
             composition.cellOverrides,
-            motif.id
+            motif.id,
+            composition.patternUnitX,
+            composition.patternUnitY,
+            composition.isPatternTiled
           );
-          currentRotation = composition.cellRotations?.[`${refRow}-${refCol}`] ?? 0;
+          currentRotation = getCellRotationOffset(
+            refRow,
+            refCol,
+            composition.cellRotations,
+            composition.patternUnitX,
+            composition.patternUnitY,
+            composition.isPatternTiled
+          );
         }
 
         return (

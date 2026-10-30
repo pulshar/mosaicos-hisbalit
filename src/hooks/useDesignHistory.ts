@@ -6,6 +6,8 @@ export interface DesignCompositionState {
   repeatY: number;
   patternUnitX?: number;
   patternUnitY?: number;
+  isPatternTiled?: boolean;
+  ensureContinuity?: boolean;
   spacingX: number;
   spacingY: number;
   staggered: boolean;

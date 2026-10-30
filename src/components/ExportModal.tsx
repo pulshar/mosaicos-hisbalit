@@ -100,7 +100,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const cellMotifId = getCellMotif(r, c, cadence, cols, cellOverrides, motif.id);
+        const cellMotifId = getCellMotif(
+          r,
+          c,
+          cadence,
+          cols,
+          cellOverrides,
+          motif.id,
+          composition.patternUnitX,
+          composition.patternUnitY,
+          composition.isPatternTiled
+        );
         if (!cellMotifId) {
           plainCount++;
         } else {

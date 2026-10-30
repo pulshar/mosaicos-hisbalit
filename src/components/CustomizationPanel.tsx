@@ -13,7 +13,13 @@ import {
   isLightColor,
   getContrastTextColor
 } from '../data/palette';
-import { getCompositionPlatesCount, calculateSurfaceSpecs } from '../utils/exportUtils';
+import {
+  getCompositionPlatesCount,
+  calculateSurfaceSpecs,
+  getCellMotif,
+  getPatternPeriod,
+  snapToNearestMultiple
+} from '../utils/exportUtils';
 import { getMotifById } from '../data/motifs';
 import {
   Palette,
@@ -33,6 +39,7 @@ import {
   X,
   Info,
   MousePointerClick,
+  Repeat,
 } from 'lucide-react';
 
 interface CustomizationPanelProps {
@@ -114,7 +121,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
     composition.repeatY,
     composition.plainTileCadence || 'none',
     composition.cellOverrides,
-    motif.id
+    motif.id,
+    composition.patternUnitX,
+    composition.patternUnitY,
+    composition.isPatternTiled
   );
 
   const surfaceSpecs = calculateSurfaceSpecs(
@@ -123,6 +133,12 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
     composition.repeatY,
     isSingleMode ? 'single' : 'composition'
   );
+
+  const patternPeriod = getPatternPeriod(composition);
+  const closestCols = snapToNearestMultiple(composition.repeatX, patternPeriod.periodX, 1, 10);
+  const closestRows = snapToNearestMultiple(composition.repeatY, patternPeriod.periodY, 1, 10);
+  const isAlreadyContinuous =
+    composition.repeatX === closestCols && composition.repeatY === closestRows;
 
   // Active target for coloring: either the selected piece or the background
   const [colorTarget, setColorTarget] = useState<'piece' | 'background'>('piece');
@@ -850,10 +866,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               </div>
             ) : (
               /* Estado activo en Composición repetida */
-              <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-3.5">
+              <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-6">
                 {/* Repetitions Columns & Rows */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-0.5">
                     <span className="text-[11px] font-medium text-taupe">
                       Repetición en cuadrícula:
                     </span>
@@ -861,6 +877,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       {composition.repeatX} col × {composition.repeatY} fil
                     </span>
                   </div>
+
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <div className="flex items-center justify-between mb-1">
@@ -871,6 +888,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         type="range"
                         min={1}
                         max={10}
+                        step={1}
                         value={composition.repeatX}
                         onChange={(e) =>
                           onUpdateComposition({ repeatX: parseInt(e.target.value) })
@@ -887,6 +905,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                         type="range"
                         min={1}
                         max={10}
+                        step={1}
                         value={composition.repeatY}
                         onChange={(e) =>
                           onUpdateComposition({ repeatY: parseInt(e.target.value) })
@@ -895,10 +914,50 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       />
                     </div>
                   </div>
+
+                  {/* Estado de continuidad y botón de ajuste */}
+                  <div className="px-2.5 py-2.5 rounded-lg bg-[#F7F6F2] border border-[#E7E4DE] space-y-1.5">
+                    <div className="relative flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] font-semibold text-charcoal">
+                            Continuidad de patrón
+                          </span>
+
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${patternPeriod.isUniform || isAlreadyContinuous
+                              ? 'bg-emerald-500'
+                              : 'bg-red-500'
+                              }`}
+                            title={
+                              patternPeriod.isUniform || isAlreadyContinuous
+                                ? 'Patrón continuo'
+                                : 'Patrón no continuo'
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      {!patternPeriod.isUniform && !isAlreadyContinuous && (
+                        <button
+                          onClick={() => {
+                            onUpdateComposition({
+                              repeatX: closestCols,
+                              repeatY: closestRows
+                            });
+                          }}
+                          className="text-[10px] font-semibold text-charcoal bg-white hover:bg-[#F0EEE9] px-2.5 py-1 rounded border border-[#E7E4DE] shadow-2xs transition-colors cursor-pointer shrink-0 absolute -right-1"
+                          title={`Ajustar a las dimensiones más cercanas que completan el ciclo (${closestCols}×${closestRows})`}
+                        >
+                          Ajustar a {closestCols}×{closestRows}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Alignment: Regular vs Staggered */}
-                <div>
+                <div className="pt-2.5 border-t border-[#E7E4DE]">
                   <span className="text-[11px] font-medium text-taupe block mb-1.5">
                     Alineación de teselas:
                   </span>
@@ -940,7 +999,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       return (
                         <button
                           key={preset.id}
-                          onClick={() => onUpdateComposition({ plainTileCadence: preset.id, cellOverrides: {} })}
+                          onClick={() => onUpdateComposition({ plainTileCadence: preset.id, cellOverrides: {}, cellRotations: {}, isPatternTiled: false })}
                           className={`p-2 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${isActive
                             ? 'border-charcoal bg-charcoal text-white shadow-xs'
                             : 'border-[#E7E4DE] bg-white text-charcoal hover:bg-[#FAF9F5]'
@@ -968,30 +1027,32 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     })}
                   </div>
 
-                  {/* Manual canvas override indicator banner */}
+                  {/* Manual canvas override indicator banner & automatic pattern repetition status */}
                   {Boolean(
                     (composition.cellOverrides && Object.keys(composition.cellOverrides).length > 0) ||
-                    (composition.cellRotations && Object.keys(composition.cellRotations).length > 0)
+                    (composition.cellRotations && Object.keys(composition.cellRotations).length > 0) ||
+                    composition.isPatternTiled
                   ) && (() => {
                     const customCellKeys = new Set([
                       ...Object.keys(composition.cellOverrides || {}),
                       ...Object.keys(composition.cellRotations || {})
                     ]);
                     const count = customCellKeys.size;
+
                     return (
                       <div className="p-2.5 rounded-lg border-charcoal bg-charcoal shadow-xs flex items-center justify-between text-[11px] animate-fade-in">
                         <div className="flex items-center gap-1.5 text-white">
                           <div>
-                            <p className="font-semibold">Personalizado</p>
+                            <p className="font-semibold text-xs">Personalizado</p>
                             <span className="text-white/80 text-[10px] mt-0.5 leading-snug">
                               {count} celda{count > 1 ? 's' : ''} modificada{count > 1 ? 's' : ''}
                             </span>
                           </div>
                         </div>
                         <button
-                          onClick={() => onUpdateComposition({ cellOverrides: {}, cellRotations: {} })}
-                          className="text-[10px] font-semibold text-charcoal hover:text-black bg-white hover:bg-[#F0EEE9] px-2 py-0.5 rounded border border-[#E7E4DE] transition-colors"
-                          title="Restablecer patrón automático sin modificaciones manuales"
+                          onClick={() => onUpdateComposition({ isPatternTiled: false, cellOverrides: {}, cellRotations: {}, patternUnitX: undefined, patternUnitY: undefined })}
+                          className="text-[10px] font-semibold text-charcoal hover:text-black bg-white hover:bg-[#F0EEE9] px-2 py-0.5 rounded border border-[#E7E4DE] transition-colors cursor-pointer"
+                          title="Restablecer patrón sin modificaciones manuales"
                         >
                           Restablecer
                         </button>

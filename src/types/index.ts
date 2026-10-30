@@ -64,6 +64,8 @@ export interface CompositionSettings {
   repeatY: number;
   patternUnitX?: number; // Base module width (columns) for periodic pattern repetition (default 3)
   patternUnitY?: number; // Base module height (rows) for periodic pattern repetition (default 2)
+  isPatternTiled?: boolean; // When true, custom cell overrides and rotations repeat periodically across the grid
+  ensureContinuity?: boolean; // When true, snaps columns and rows to nearest multiples that ensure unbroken pattern repeat
   spacingX: number; // in pixels or unit delta
   spacingY: number;
   staggered: boolean;

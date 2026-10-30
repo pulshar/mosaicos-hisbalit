@@ -5,21 +5,50 @@ import { resolveEffectiveMotifCustomization } from './motifColorUtils';
 /**
  * Resolves the specific motif ID or null (plain tile) for a given cell (rowIndex, colIndex)
  */
+/**
+ * Resolves the specific motif ID or null (plain tile) for a given cell (rowIndex, colIndex),
+ * with modular periodic fallback when pattern repetition is active.
+ */
 export function getCellMotif(
   rowIndex: number,
   colIndex: number,
   cadence: PlainTileCadence = 'none',
   repeatX: number = 4,
   cellOverrides?: Record<string, boolean | string>,
-  defaultMotifId: string = 'soleil'
+  defaultMotifId: string = 'soleil',
+  patternUnitX?: number,
+  patternUnitY?: number,
+  isPatternTiled?: boolean,
+  repeatY?: number
 ): string | null {
-  const key = `${rowIndex}-${colIndex}`;
-  if (cellOverrides && cellOverrides[key] !== undefined) {
-    const val = cellOverrides[key];
+  const directKey = `${rowIndex}-${colIndex}`;
+  if (cellOverrides && cellOverrides[directKey] !== undefined) {
+    const val = cellOverrides[directKey];
     if (val === false || val === 'plain') return null;
     if (val === true) return defaultMotifId;
     return typeof val === 'string' ? val : defaultMotifId;
   }
+
+  const hasCustomEdits = Boolean(cellOverrides && Object.keys(cellOverrides).length > 0);
+  const shouldTile = isPatternTiled !== false && (isPatternTiled || hasCustomEdits || Boolean(patternUnitX && patternUnitY));
+
+  const pX = (patternUnitX && patternUnitX > 0) ? patternUnitX : repeatX;
+  const pY = (patternUnitY && patternUnitY > 0) ? patternUnitY : (repeatY || repeatX);
+
+  if (shouldTile && pX > 0 && pY > 0 && cellOverrides) {
+    const modR = ((rowIndex % pY) + pY) % pY;
+    const modC = ((colIndex % pX) + pX) % pX;
+    const modKey = `${modR}-${modC}`;
+    if (cellOverrides[modKey] !== undefined) {
+      const val = cellOverrides[modKey];
+      if (val === false || val === 'plain') return null;
+      if (val === true) return defaultMotifId;
+      return typeof val === 'string' ? val : defaultMotifId;
+    }
+  }
+
+  const r = shouldTile && pY > 0 ? ((rowIndex % pY) + pY) % pY : rowIndex;
+  const c = shouldTile && pX > 0 ? ((colIndex % pX) + pX) % pX : colIndex;
 
   let hasMotif = true;
   switch (cadence) {
@@ -27,25 +56,88 @@ export function getCellMotif(
       hasMotif = true;
       break;
     case 'checkerboard':
-      hasMotif = (rowIndex + colIndex) % 2 === 0;
+      hasMotif = (r + c) % 2 === 0;
       break;
     case 'ratio1_2':
-      hasMotif = (colIndex + rowIndex * 2) % 3 === 0;
+      hasMotif = (c + r * 2) % 3 === 0;
       break;
     case 'ratio1_3':
-      hasMotif = (colIndex + (rowIndex % 2) * 2) % 4 === 0;
+      hasMotif = (c + (r % 2) * 2) % 4 === 0;
       break;
     case 'rows':
-      hasMotif = rowIndex % 2 === 0;
+      hasMotif = r % 2 === 0;
       break;
     case 'cols':
-      hasMotif = colIndex % 2 === 0;
+      hasMotif = c % 2 === 0;
       break;
     default:
       hasMotif = true;
   }
 
   return hasMotif ? defaultMotifId : null;
+}
+
+/**
+ * Resolves the rotation offset (0, 90, 180, 270) for a cell, with modular periodic fallback when tiling is active
+ */
+export function getCellRotationOffset(
+  rowIndex: number,
+  colIndex: number,
+  cellRotations?: Record<string, number>,
+  patternUnitX?: number,
+  patternUnitY?: number,
+  isPatternTiled?: boolean,
+  repeatX?: number,
+  repeatY?: number
+): number {
+  const directKey = `${rowIndex}-${colIndex}`;
+  if (cellRotations && cellRotations[directKey] !== undefined) {
+    return cellRotations[directKey];
+  }
+
+  const hasCustomRotations = Boolean(cellRotations && Object.keys(cellRotations).length > 0);
+  const shouldTile = isPatternTiled !== false && (isPatternTiled || hasCustomRotations || Boolean(patternUnitX && patternUnitY));
+
+  const pX = (patternUnitX && patternUnitX > 0) ? patternUnitX : (repeatX || 4);
+  const pY = (patternUnitY && patternUnitY > 0) ? patternUnitY : (repeatY || repeatX || 4);
+
+  if (shouldTile && pX > 0 && pY > 0 && cellRotations) {
+    const modR = ((rowIndex % pY) + pY) % pY;
+    const modC = ((colIndex % pX) + pX) % pX;
+    const modKey = `${modR}-${modC}`;
+    if (cellRotations[modKey] !== undefined) {
+      return cellRotations[modKey];
+    }
+  }
+
+  return 0;
+}
+
+/**
+ * Resolves final rotation angle in [0..359] for a cell
+ */
+export function getCellRotation(
+  rowIndex: number,
+  colIndex: number,
+  baseRotation: number = 0,
+  cellRotations?: Record<string, number>,
+  patternUnitX?: number,
+  patternUnitY?: number,
+  isPatternTiled?: boolean,
+  repeatX?: number,
+  repeatY?: number
+): number {
+  const offset = getCellRotationOffset(
+    rowIndex,
+    colIndex,
+    cellRotations,
+    patternUnitX,
+    patternUnitY,
+    isPatternTiled,
+    repeatX,
+    repeatY
+  );
+  return (((baseRotation ?? 0) + offset) % 360 + 360) % 360;
 }
 
 /**
@@ -56,12 +148,26 @@ export function isCellWithMotif(
   colIndex: number,
   cadence: PlainTileCadence = 'none',
   repeatX: number = 4,
-  cellOverrides?: Record<string, boolean | string>
+  cellOverrides?: Record<string, boolean | string>,
+  patternUnitX?: number,
+  patternUnitY?: number,
+  isPatternTiled?: boolean
 ): boolean {
   const key = `${rowIndex}-${colIndex}`;
   if (cellOverrides && cellOverrides[key] !== undefined) {
     const val = cellOverrides[key];
     return val !== false && val !== 'plain';
+  }
+
+  const shouldTile = Boolean(isPatternTiled || (patternUnitX !== undefined && patternUnitY !== undefined && patternUnitX > 0 && patternUnitY > 0));
+  if (shouldTile && patternUnitX && patternUnitY && patternUnitX > 0 && patternUnitY > 0 && cellOverrides) {
+    const modR = ((rowIndex % patternUnitY) + patternUnitY) % patternUnitY;
+    const modC = ((colIndex % patternUnitX) + patternUnitX) % patternUnitX;
+    const modKey = `${modR}-${modC}`;
+    if (cellOverrides[modKey] !== undefined) {
+      const val = cellOverrides[modKey];
+      return val !== false && val !== 'plain';
+    }
   }
 
   switch (cadence) {
@@ -90,7 +196,10 @@ export function getCompositionPlatesCount(
   repeatY: number,
   cadence: PlainTileCadence = 'none',
   cellOverrides?: Record<string, boolean | string>,
-  defaultMotifId: string = 'soleil'
+  defaultMotifId: string = 'soleil',
+  patternUnitX?: number,
+  patternUnitY?: number,
+  isPatternTiled?: boolean
 ): {
   motifCount: number;
   plainCount: number;
@@ -103,7 +212,7 @@ export function getCompositionPlatesCount(
 
   for (let r = 0; r < repeatY; r++) {
     for (let c = 0; c < repeatX; c++) {
-      const mId = getCellMotif(r, c, cadence, repeatX, cellOverrides, defaultMotifId);
+      const mId = getCellMotif(r, c, cadence, repeatX, cellOverrides, defaultMotifId, patternUnitX, patternUnitY, isPatternTiled);
       if (mId) {
         motifCount++;
         motifCounts[mId] = (motifCounts[mId] || 0) + 1;
@@ -117,6 +226,126 @@ export function getCompositionPlatesCount(
     totalCount,
     motifCounts
   };
+}
+
+/**
+ * Calculates the fundamental repeat period (in columns and rows) for a given composition setup
+ * to ensure seamless pattern continuity without clipped edges.
+ */
+export function getPatternPeriod(
+  composition: CompositionSettings
+): { periodX: number; periodY: number; label: string; isUniform: boolean } {
+  const hasCustomEdits = Boolean(
+    (composition.cellOverrides && Object.keys(composition.cellOverrides).length > 0) ||
+    (composition.cellRotations && Object.keys(composition.cellRotations).length > 0)
+  );
+
+  // 1. Custom design with cell overrides or rotations
+  if (hasCustomEdits || composition.isPatternTiled) {
+    const pX = composition.patternUnitX && composition.patternUnitX > 0 ? composition.patternUnitX : 4;
+    const pY = composition.patternUnitY && composition.patternUnitY > 0 ? composition.patternUnitY : 4;
+    return {
+      periodX: Math.max(1, pX),
+      periodY: Math.max(1, pY),
+      label: `Personalizado (${pX}×${pY})`,
+      isUniform: pX === 1 && pY === 1
+    };
+  }
+
+  // 2. Motif combination
+  const isAlternating = composition.combineRatio === 'alternate' && Boolean(composition.secondaryMotifId);
+  if (isAlternating) {
+    return {
+      periodX: 2,
+      periodY: 2,
+      label: 'Alternado (2×2)',
+      isUniform: false
+    };
+  }
+
+  // 3. Cadence presets
+  const cadence = composition.plainTileCadence || 'none';
+  switch (cadence) {
+    case 'checkerboard':
+      return {
+        periodX: 2,
+        periodY: 2,
+        label: 'Ajedrezado (2×2)',
+        isUniform: false
+      };
+    case 'ratio1_2':
+      return {
+        periodX: 3,
+        periodY: composition.staggered ? 2 : 1,
+        label: `Intercalado 1:2 (${3}×${composition.staggered ? 2 : 1})`,
+        isUniform: false
+      };
+    case 'ratio1_3':
+      return {
+        periodX: 4,
+        periodY: 2,
+        label: 'Espaciado 1:3 (4×2)',
+        isUniform: false
+      };
+    case 'rows':
+      return {
+        periodX: 1,
+        periodY: 2,
+        label: 'Franjas horizontales (1×2)',
+        isUniform: false
+      };
+    case 'cols':
+      return {
+        periodX: 2,
+        periodY: 1,
+        label: 'Franjas verticales (2×1)',
+        isUniform: false
+      };
+    case 'none':
+    default:
+      return {
+        periodX: 1,
+        periodY: 1,
+        label: 'Continuo (1×1)',
+        isUniform: true
+      };
+  }
+}
+
+/**
+ * Snaps a given size to the nearest positive integer multiple of period within [min, max]
+ */
+export function snapToNearestMultiple(
+  value: number,
+  period: number,
+  min: number = 1,
+  max: number = 10
+): number {
+  if (period <= 1) return Math.min(max, Math.max(min, value));
+
+  const multiples: number[] = [];
+  for (let m = period; m <= max; m += period) {
+    multiples.push(m);
+  }
+
+  if (multiples.length === 0) {
+    return Math.min(max, Math.max(min, Math.round(value / period) * period || period));
+  }
+
+  let closest = multiples[0];
+  let minDiff = Math.abs(value - closest);
+
+  for (let i = 1; i < multiples.length; i++) {
+    const diff = Math.abs(value - multiples[i]);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = multiples[i];
+    } else if (diff === minDiff && multiples[i] > closest) {
+      closest = multiples[i];
+    }
+  }
+
+  return closest;
 }
 
 /**
@@ -380,11 +609,23 @@ export function generateCompositionSvg(
         composition.plainTileCadence || 'none',
         cols,
         composition.cellOverrides,
-        motif.id
+        motif.id,
+        composition.patternUnitX,
+        composition.patternUnitY,
+        composition.isPatternTiled
       );
 
-      const cellOffset = composition.cellRotations?.[cellKey] ?? 0;
-      const cellRot = ((baseRotation ?? 0) + cellOffset) % 360;
+      const cellRot = getCellRotation(
+        r,
+        c,
+        baseRotation ?? 0,
+        composition.cellRotations,
+        composition.patternUnitX,
+        composition.patternUnitY,
+        composition.isPatternTiled,
+        cols,
+        rows
+      );
 
       let content: string;
       if (!cellMotifId) {
@@ -896,11 +1137,23 @@ export function generateSimulationWallSvg(
         composition.plainTileCadence || 'none',
         compCols,
         composition.cellOverrides,
-        motif.id
+        motif.id,
+        composition.patternUnitX,
+        composition.patternUnitY,
+        composition.isPatternTiled
       );
 
-      const cellOffset = composition.cellRotations?.[cellKey] ?? 0;
-      const cellRot = ((baseRotation ?? 0) + cellOffset) % 360;
+      const cellRot = getCellRotation(
+        compR,
+        compC,
+        baseRotation ?? 0,
+        composition.cellRotations,
+        composition.patternUnitX,
+        composition.patternUnitY,
+        composition.isPatternTiled,
+        compCols,
+        compRows
+      );
 
       let content: string;
       if (!cellMotifId) {

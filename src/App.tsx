@@ -20,7 +20,7 @@ import {
   downloadFile,
   downloadSvgAsPng
 } from './utils/exportUtils';
-import { resolveEffectiveMotifCustomization } from './utils/motifColorUtils';
+import { resolveEffectiveMotifCustomization, convertCustomizationFormat } from './utils/motifColorUtils';
 import { ChevronLeft, ChevronRight, PaletteIcon } from 'lucide-react';
 
 const STORAGE_KEY_CUSTOMIZATION = 'mosaico_studio_customization';
@@ -482,32 +482,18 @@ export default function App() {
       setSelectedPieceIds([]);
     }
 
-    setCustomization(prev => {
-      const newPieceColors: Record<string, string> = {};
+    // 1. Convert active customization with homologous piece mapping
+    setCustomization(prev => convertCustomizationFormat(activeMotif.id, prev, format));
 
-      if (targetSvg) {
-        const prevSvg = targetMotif.svgData[prev.format];
-        targetSvg.motifPieces.forEach((targetPiece, index) => {
-          // Map homologous piece from previous format by position/index (e.g. p1 <-> h1, p4 <-> h4)
-          const prevPiece = prevSvg?.motifPieces[index];
-          if (prevPiece && prev.pieceColors[prevPiece.id]) {
-            newPieceColors[targetPiece.id] = prev.pieceColors[prevPiece.id];
-          } else if (prev.pieceColors[targetPiece.id]) {
-            newPieceColors[targetPiece.id] = prev.pieceColors[targetPiece.id];
-          } else {
-            const existingColors = Object.values(prev.pieceColors);
-            newPieceColors[targetPiece.id] = existingColors[0] || targetPiece.originalColor || '#000000';
-          }
-        });
+    // 2. Convert ALL saved customizations in customizationsMap so secondary/combined motifs never lose colors
+    setCustomizationsMap(prevMap => {
+      const nextMap: Record<string, MotifCustomization> = {};
+      for (const [mId, cust] of Object.entries(prevMap)) {
+        nextMap[mId] = convertCustomizationFormat(mId, cust, format);
       }
-
-      return {
-        ...prev,
-        format,
-        pieceColors: newPieceColors
-      };
+      return nextMap;
     });
-  }, [activeMotif, customization.format, selectedPieceId, setCustomization]);
+  }, [activeMotif.id, customization.format, selectedPieceIds, setCustomization]);
 
   const handleUpdateRotation = useCallback((rotation: number) => {
     setCustomization(prev => ({

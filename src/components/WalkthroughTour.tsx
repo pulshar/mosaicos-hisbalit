@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import {
     Grid3X3,
     Palette,
@@ -356,7 +356,7 @@ export const WalkthroughTour: React.FC<WalkthroughTourProps> = ({
 
                     {/* Pro Tip Box */}
                     {step.tip && (
-                        <div className="p-2.5 rounded-lg border bg-slate-100 text-slate-700 border-slate-300 text-[11px] text-taupe flex items-start gap-2">
+                        <div className="p-2.5 rounded-lg border bg-slate-100 text-slate-700 border-slate-300 text-[11px] flex items-start gap-2">
                             <Info className="w-4 h-4 shrink-0 stroke-2" />
                             <span className="leading-snug">{step.tip}</span>
                         </div>

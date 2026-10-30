@@ -746,8 +746,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
           {openSections.distribution && (
             isSingleMode ? (
               /* Estado disabled en Motivo individual con aviso pedagógico y acción directa */
-              <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-3">
-                <div className="p-3 bg-white rounded-xl border border-[#E7E4DE] space-y-2.5 shadow-2xs">
+              <div className="p-3.5 pt-3 border-t border-[#E7E4DE] space-y-3">
+                <div className="p-3 bg-white rounded-lg border border-[#E7E4DE] space-y-2.5 shadow-2xs">
                   <div className="flex items-start gap-2">
                     <Layers className="w-4 h-4 text-taupe shrink-0 mt-0.5" />
                     <p className="text-[11px] text-taupe leading-relaxed">

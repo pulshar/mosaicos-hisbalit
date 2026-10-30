@@ -536,7 +536,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
       {/* Top Floating Controls Bar */}
       <div className="absolute top-4 left-5 right-5 flex items-center justify-between z-20 pointer-events-none">
         {/* Active Motif Title Badge & Show Library Toggle */}
-        <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-xl border border-[#E7E4DE] shadow-xs flex items-center gap-3">
+        <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-lg border border-[#E7E4DE] shadow-xs flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-charcoal" />
           <div>
             <div className="flex items-center gap-2">
@@ -557,7 +557,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
 
         {/* View & Canvas Tools */}
-        <div className="pointer-events-auto flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-xl border border-[#E7E4DE] shadow-xs">
+        <div className="pointer-events-auto flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-lg border border-[#E7E4DE] shadow-xs">
           <button
             onClick={() => onUpdateComposition?.({ zoom: Math.max(0.4, Math.round((composition.zoom - 0.15) * 100) / 100) })}
             className="p-2 text-taupe hover:text-charcoal hover:bg-[#F7F6F2] rounded-lg transition-colors cursor-pointer"
@@ -623,7 +623,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
 
       {/* Floating Selected Piece(s) Tooltip / Quick Info */}
       {selectedPieceIds.length > 1 && !selectedPieceIds.includes('background') && viewMode !== 'simulation' && (
-        <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 px-4 rounded-xl border border-charcoal shadow-md flex items-center gap-3 animate-fade-in">
+        <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 px-4 rounded-lg border border-charcoal shadow-md flex items-center gap-3 animate-fade-in">
           <div className="flex -space-x-1.5 overflow-hidden">
             {selectedPieceIds.slice(0, 5).map(id => (
               <div
@@ -662,7 +662,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         const pieceColor = customization.pieceColors[selectedPiece.id] || selectedPiece.originalColor || '#000000';
         const pieceMat = findMaterialByHex(pieceColor);
         return (
-          <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-charcoal shadow-md flex items-center gap-3 animate-fade-in">
+          <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 rounded-lg border border-charcoal shadow-md flex items-center gap-3 animate-fade-in">
             <div
               className="w-7 h-7 rounded-full border border-black/10 shadow-xs shrink-0"
               style={{ backgroundColor: pieceColor }}
@@ -690,7 +690,7 @@ export const DesignCanvas: React.FC<DesignCanvasProps> = ({
         const bgHex = customization.backgroundColor || '#D9D9D9';
         const bgMat = findMaterialByHex(bgHex);
         return (
-          <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-charcoal shadow-md flex items-center gap-3 animate-fade-in">
+          <div className="absolute bottom-4 left-5 z-20 bg-white/95 backdrop-blur-md p-3 rounded-lg border border-charcoal shadow-md flex items-center gap-3 animate-fade-in">
             <div
               className="w-7 h-7 rounded-full border border-black/10 shadow-xs shrink-0"
               style={{ backgroundColor: bgHex }}

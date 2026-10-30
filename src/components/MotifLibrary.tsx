@@ -52,7 +52,7 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
                   onSelectMotif(motif);
                 }
               }}
-              className={`group relative p-3 rounded-xl border transition-all text-left ${isActive
+              className={`group relative p-3 rounded-lg border transition-all text-left ${isActive
                 ? 'border-charcoal bg-[#FBFBFA] shadow-xs ring-1 ring-charcoal/10'
                 : isAvailable
                   ? 'border-[#E7E4DE] bg-white hover:border-[#C5C1BA] hover:bg-[#FAF9F5] cursor-pointer'

@@ -234,7 +234,7 @@ export function getCompositionPlatesCount(
  */
 export function getPatternPeriod(
   composition: CompositionSettings
-): { periodX: number; periodY: number; label: string; isUniform: boolean } {
+): { periodX: number; periodY: number; label: string; isUniform: boolean; isCustom: boolean } {
   const hasCustomEdits = Boolean(
     (composition.cellOverrides && Object.keys(composition.cellOverrides).length > 0) ||
     (composition.cellRotations && Object.keys(composition.cellRotations).length > 0)
@@ -248,7 +248,8 @@ export function getPatternPeriod(
       periodX: Math.max(1, pX),
       periodY: Math.max(1, pY),
       label: `Personalizado (${pX}×${pY})`,
-      isUniform: pX === 1 && pY === 1
+      isUniform: true,
+      isCustom: true
     };
   }
 
@@ -259,7 +260,8 @@ export function getPatternPeriod(
       periodX: 2,
       periodY: 2,
       label: 'Alternado (2×2)',
-      isUniform: false
+      isUniform: false,
+      isCustom: false
     };
   }
 
@@ -271,35 +273,40 @@ export function getPatternPeriod(
         periodX: 2,
         periodY: 2,
         label: 'Ajedrezado (2×2)',
-        isUniform: false
+        isUniform: false,
+        isCustom: false
       };
     case 'ratio1_2':
       return {
         periodX: 3,
         periodY: 3,
         label: 'Intercalado 1:2 (3×3)',
-        isUniform: false
+        isUniform: false,
+        isCustom: false
       };
     case 'ratio1_3':
       return {
         periodX: 4,
         periodY: 2,
         label: 'Espaciado 1:3 (4×2)',
-        isUniform: false
+        isUniform: false,
+        isCustom: false
       };
     case 'rows':
       return {
         periodX: 1,
         periodY: 2,
         label: 'Franjas horizontales (1×2)',
-        isUniform: false
+        isUniform: false,
+        isCustom: false
       };
     case 'cols':
       return {
         periodX: 2,
         periodY: 1,
         label: 'Franjas verticales (2×1)',
-        isUniform: false
+        isUniform: false,
+        isCustom: false
       };
     case 'none':
     default:
@@ -307,7 +314,8 @@ export function getPatternPeriod(
         periodX: 1,
         periodY: 1,
         label: 'Continuo (1×1)',
-        isUniform: true
+        isUniform: true,
+        isCustom: false
       };
   }
 }

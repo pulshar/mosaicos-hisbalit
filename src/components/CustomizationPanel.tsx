@@ -40,6 +40,9 @@ import {
   MousePointerClick,
   CircleAlert,
   CircleCheck,
+  Minus,
+  Plus,
+  Component,
 } from 'lucide-react';
 
 interface CustomizationPanelProps {
@@ -286,7 +289,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
             <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-4">
               {/* Target selector: Pieza vs Fondo */}
               <div>
-                <label className="text-[11px] font-medium text-taupe block mb-1.5">
+                <label className="text-[11px] font-medium text-taupe block mb-2">
                   Elemento a personalizar:
                 </label>
                 <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F7F6F2] rounded-lg border border-[#E7E4DE]">
@@ -620,10 +623,10 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               </div>
 
               {/* Material Legend List */}
-              <div className="pt-2 border-t border-[#E7E4DE] text-[10px] text-taupe flex items-center justify-between">
+              {/* <div className="pt-2 border-t border-[#E7E4DE] text-[10px] text-taupe flex items-center justify-between">
                 <span>57 referencias oficiales Unicolor</span>
                 <span className="font-medium text-charcoal">Hisbalit Mosaico</span>
-              </div>
+              </div> */}
             </div>
           )}
         </div>
@@ -648,10 +651,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
           </button>
 
           {openSections.format && (
-            <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-2">
-              <p className="text-[11px] text-taupe leading-relaxed">
-                Selecciona la geometría de la tesela:
-              </p>
+            <div className="p-3.5 pt-3 border-t border-[#E7E4DE] space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => onUpdateFormat('round')}
@@ -703,7 +703,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
           </button>
 
           {openSections.rotation && (
-            <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-2.5">
+            <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[11px] font-medium text-taupe">Ángulo de giro:</span>
                 <span className="font-mono font-medium text-charcoal">
@@ -817,6 +817,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     </div>
                   </div>
 
+                  {/* Alineación regular / alternada */}
                   <div>
                     <span className="text-[11px] font-medium text-taupe block mb-1.5">
                       Alineación de teselas:
@@ -869,7 +870,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
               <div className="p-3.5 pt-2 border-t border-[#E7E4DE] space-y-6">
                 {/* Repetitions Columns & Rows */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-medium text-taupe">
                       Repetición en cuadrícula:
                     </span>
@@ -878,80 +879,145 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[10px] text-taupe-light">Columnas</label>
-                        <span className="text-[10px] font-mono text-charcoal font-semibold">{composition.repeatX}</span>
+                  <div className="pt-0">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-medium text-taupe">Columnas</label>
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => onUpdateComposition({ repeatX: Math.max(1, composition.repeatX - 1) })}
+                              disabled={composition.repeatX <= 1}
+                              className="w-5 h-5 rounded-full bg-white hover:bg-[#F0EEE9] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-charcoal transition-colors cursor-pointer"
+                              title="Disminuir columna"
+                            >
+                              <Minus className="w-2.5 h-2.5" />
+                            </button>
+                            <span className="text-[11px] font-mono text-charcoal font-bold w-4 text-center">
+                              {composition.repeatX}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => onUpdateComposition({ repeatX: Math.min(10, composition.repeatX + 1) })}
+                              disabled={composition.repeatX >= 10}
+                              className="w-5 h-5 rounded-full bg-white hover:bg-[#F0EEE9] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-charcoal transition-colors cursor-pointer"
+                              title="Aumentar columna"
+                            >
+                              <Plus className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <input
+                          type="range"
+                          min={1}
+                          max={10}
+                          step={1}
+                          value={composition.repeatX}
+                          onChange={(e) =>
+                            onUpdateComposition({ repeatX: parseInt(e.target.value) })
+                          }
+                          className="w-full accent-charcoal cursor-pointer"
+                        />
                       </div>
-                      <input
-                        type="range"
-                        min={1}
-                        max={10}
-                        step={1}
-                        value={composition.repeatX}
-                        onChange={(e) =>
-                          onUpdateComposition({ repeatX: parseInt(e.target.value) })
-                        }
-                        className="w-full accent-charcoal cursor-pointer"
-                      />
+
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-medium text-taupe">Filas</label>
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => onUpdateComposition({ repeatY: Math.max(1, composition.repeatY - 1) })}
+                              disabled={composition.repeatY <= 1}
+                              className="w-5 h-5 rounded-full bg-white hover:bg-[#F0EEE9] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-charcoal transition-colors cursor-pointer"
+                              title="Disminuir fila"
+                            >
+                              <Minus className="w-2.5 h-2.5" />
+                            </button>
+                            <span className="text-[11px] font-mono text-charcoal font-bold w-4 text-center">
+                              {composition.repeatY}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => onUpdateComposition({ repeatY: Math.min(10, composition.repeatY + 1) })}
+                              disabled={composition.repeatY >= 10}
+                              className="w-5 h-5 rounded-full bg-white hover:bg-[#F0EEE9] disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-charcoal transition-colors cursor-pointer"
+                              title="Aumentar fila"
+                            >
+                              <Plus className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <input
+                          type="range"
+                          min={1}
+                          max={10}
+                          step={1}
+                          value={composition.repeatY}
+                          onChange={(e) =>
+                            onUpdateComposition({ repeatY: parseInt(e.target.value) })
+                          }
+                          className="w-full accent-charcoal cursor-pointer"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[10px] text-taupe-light">Filas</label>
-                        <span className="text-[10px] font-mono text-charcoal font-semibold">{composition.repeatY}</span>
+                    <div className="px-2.5 py-2.5 rounded-lg bg-[#F7F6F2] border border-[#E7E4DE] space-y-1.5 mt-2">
+                      <div className="relative flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5">
+                            {patternPeriod.isCustom ? (
+                              <>
+                                <Component className="w-3.5 h-3.5" />
+                                <span className="text-[11px] font-semibold text-charcoal">
+                                  Personalizado
+                                </span>
+                                <button
+                                  onClick={() => onUpdateComposition({ isPatternTiled: false, cellOverrides: {}, cellRotations: {}, patternUnitX: undefined, patternUnitY: undefined })}
+                                  className="text-[10px] font-semibold text-taupe bg-white hover:text-charcoal px-2.5 py-1 rounded border border-[#E7E4DE] shadow-2xs transition-colors cursor-pointer shrink-0 absolute -right-1"
+                                  title="Restablecer patrón sin modificaciones manuales"
+                                >
+                                  Restablecer
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <span>
+                                  {patternPeriod.isUniform || isAlreadyContinuous ? (
+                                    <CircleCheck className="w-4 h-4" />
+                                  ) : (
+                                    <CircleAlert className="w-4 h-4 text-red-500" />
+                                  )}
+                                </span>
+                                <span className="text-[11px] font-semibold text-charcoal">
+                                  {patternPeriod.isUniform || isAlreadyContinuous
+                                    ? 'Periodicidad correcta'
+                                    : 'Periodicidad incorrecta'
+                                  }
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {!patternPeriod.isUniform && !isAlreadyContinuous && (
+                          <button
+                            onClick={() => {
+                              onUpdateComposition({
+                                repeatX: closestCols,
+                                repeatY: closestRows
+                              });
+                            }}
+                            className="text-[10px] font-semibold text-taupe bg-white hover:text-charcoal px-2.5 py-1 rounded border border-[#E7E4DE] shadow-2xs transition-colors cursor-pointer shrink-0 absolute -right-1"
+                            title={`Ajustar a las dimensiones más cercanas que completan el ciclo (${closestCols}×${closestRows})`}
+                          >
+                            Ajustar a {closestCols}×{closestRows}
+                          </button>
+                        )}
                       </div>
-                      <input
-                        type="range"
-                        min={1}
-                        max={10}
-                        step={1}
-                        value={composition.repeatY}
-                        onChange={(e) =>
-                          onUpdateComposition({ repeatY: parseInt(e.target.value) })
-                        }
-                        className="w-full accent-charcoal cursor-pointer"
-                      />
                     </div>
                   </div>
 
                   {/* Estado de continuidad y botón de ajuste */}
-                  <div className="px-2.5 py-2.5 rounded-lg bg-[#F7F6F2] border border-[#E7E4DE] space-y-1.5">
-                    <div className="relative flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <span>
-                            {patternPeriod.isUniform || isAlreadyContinuous ? (
-                              <CircleCheck className="w-4 h-4" />
-                            ) : (
-                              <CircleAlert className="w-4 h-4 text-red-500" />
-                            )}
-                          </span>
-                          <span className="text-[11px] font-semibold text-charcoal">
-                            {patternPeriod.isUniform || isAlreadyContinuous
-                              ? 'Periodicidad correcta'
-                              : 'Periodicidad incorrecta'
-                            }
-                          </span>
-                        </div>
-                      </div>
-
-                      {!patternPeriod.isUniform && !isAlreadyContinuous && (
-                        <button
-                          onClick={() => {
-                            onUpdateComposition({
-                              repeatX: closestCols,
-                              repeatY: closestRows
-                            });
-                          }}
-                          className="text-[10px] font-semibold text-charcoal bg-white hover:bg-[#F0EEE9] px-2.5 py-1 rounded border border-[#E7E4DE] shadow-2xs transition-colors cursor-pointer shrink-0 absolute -right-1"
-                          title={`Ajustar a las dimensiones más cercanas que completan el ciclo (${closestCols}×${closestRows})`}
-                        >
-                          Ajustar a {closestCols}×{closestRows}
-                        </button>
-                      )}
-                    </div>
-                  </div>
                 </div>
 
                 {/* Alignment: Regular vs Staggered */}
@@ -1038,11 +1104,11 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                     const count = customCellKeys.size;
 
                     return (
-                      <div className="p-2.5 rounded-lg border-charcoal bg-charcoal shadow-xs flex items-center justify-between text-[11px] animate-fade-in">
+                      <div className="p-2.5 rounded-lg mt-[-2px] border-charcoal bg-charcoal shadow-xs flex items-center justify-between text-[11px] animate-fade-in">
                         <div className="flex items-center gap-1.5 text-white">
                           <div>
                             <p className="font-semibold text-xs">Personalizado</p>
-                            <span className="text-white/80 text-[10px] mt-0.5 leading-snug">
+                            <span className="text-white/80 font-medium text-[10px] mt-0.5 leading-snug">
                               {count} celda{count > 1 ? 's' : ''} modificada{count > 1 ? 's' : ''}
                             </span>
                           </div>

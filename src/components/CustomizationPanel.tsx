@@ -780,90 +780,6 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                   )}
                 </div>
 
-                {/* Previsualización desactivada de los controles */}
-                <div className="space-y-3.5 opacity-40 pointer-events-none select-none">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-medium text-taupe">
-                        Repetición en cuadrícula:
-                      </span>
-                      <span className="text-[11px] font-mono text-taupe font-medium">
-                        {composition.repeatX} col × {composition.repeatY} fil
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] text-taupe-light block mb-1">Columnas</label>
-                        <input
-                          type="range"
-                          min={1}
-                          max={10}
-                          disabled
-                          value={composition.repeatX}
-                          className="w-full accent-charcoal"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-taupe-light block mb-1">Filas</label>
-                        <input
-                          type="range"
-                          min={1}
-                          max={10}
-                          disabled
-                          value={composition.repeatY}
-                          className="w-full accent-charcoal"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Alineación regular / alternada */}
-                  <div>
-                    <span className="text-[11px] font-medium text-taupe block mb-1.5">
-                      Alineación de teselas:
-                    </span>
-                    <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F7F6F2] rounded-lg border border-[#E7E4DE]">
-                      <button
-                        disabled
-                        className={`py-1.5 text-xs font-medium rounded-md ${!composition.staggered
-                          ? 'bg-white text-charcoal shadow-xs'
-                          : 'text-taupe'
-                          }`}
-                      >
-                        Regular
-                      </button>
-                      <button
-                        disabled
-                        className={`py-1.5 text-xs font-medium rounded-md ${composition.staggered
-                          ? 'bg-white text-charcoal shadow-xs'
-                          : 'text-taupe'
-                          }`}
-                      >
-                        Alternada
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-[11px] font-medium text-taupe block mb-1.5">
-                      Módulos lisos de fondo:
-                    </span>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {CADENCE_PRESETS.slice(0, 4).map((preset) => (
-                        <div
-                          key={preset.id}
-                          className="p-2 rounded-lg border border-[#E7E4DE] bg-white text-left"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-taupe">{preset.label}</span>
-                            <span className="text-[9px] font-mono text-taupe-light">{preset.badge}</span>
-                          </div>
-                          <span className="text-[10px] text-taupe-light">{preset.subtitle}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
               </div>
             ) : (
               /* Estado activo en Composición repetida */
@@ -960,6 +876,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                           className="w-full accent-charcoal cursor-pointer"
                         />
                       </div>
+                      {/* Estado de continuidad y botón de ajuste */}
                     </div>
                     <div className="px-2.5 py-2.5 rounded-lg bg-[#F7F6F2] border border-[#E7E4DE] space-y-1.5 mt-2">
                       <div className="relative flex items-center justify-between gap-2">
@@ -1016,8 +933,6 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       </div>
                     </div>
                   </div>
-
-                  {/* Estado de continuidad y botón de ajuste */}
                 </div>
 
                 {/* Alignment: Regular vs Staggered */}

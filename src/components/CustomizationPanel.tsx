@@ -80,6 +80,28 @@ const CADENCE_PRESETS: Array<{
     { id: 'cols', label: 'Franjas V.', subtitle: 'Columnas alternas', badge: 'Col.' }
   ];
 
+interface AccordionSections {
+  colors: boolean;
+  format: boolean;
+  distribution: boolean;
+  rotation: boolean;
+  composition: boolean;
+  export: boolean;
+}
+
+const STORAGE_KEY_PANEL_SCROLL = 'mosaico_studio_panel_scroll';
+const STORAGE_KEY_PANEL_SECTIONS = 'mosaico_studio_panel_sections';
+
+let inMemoryScrollTop = 0;
+try {
+  const savedScroll = sessionStorage.getItem(STORAGE_KEY_PANEL_SCROLL);
+  if (savedScroll !== null) {
+    inMemoryScrollTop = parseFloat(savedScroll) || 0;
+  }
+} catch {
+  // fallback to inMemoryScrollTop
+}
+
 export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   motif,
   customization,
@@ -100,18 +122,61 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   onDownloadPng,
   onChangeViewMode
 }) => {
-  // Accordion collapsed states
-  const [openSections, setOpenSections] = useState({
-    colors: true,
-    format: true,
-    distribution: true,
-    rotation: true,
-    composition: false,
-    export: true
+  const asideRef = React.useRef<HTMLElement | null>(null);
+
+  // Accordion collapsed states (persisted so section heights remain identical across unmount/remount)
+  const [openSections, setOpenSections] = useState<AccordionSections>(() => {
+    try {
+      const savedSections = sessionStorage.getItem(STORAGE_KEY_PANEL_SECTIONS);
+      if (savedSections) return JSON.parse(savedSections);
+    } catch {
+      // fallback
+    }
+    return {
+      colors: true,
+      format: true,
+      distribution: true,
+      rotation: true,
+      composition: false,
+      export: true
+    };
   });
 
   const toggleSection = (section: keyof typeof openSections) => {
-    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+    setOpenSections(prev => {
+      const next = { ...prev, [section]: !prev[section] };
+      try {
+        sessionStorage.setItem(STORAGE_KEY_PANEL_SECTIONS, JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  // Restore scroll position after mount and initial frame render
+  useEffect(() => {
+    if (inMemoryScrollTop > 0) {
+      if (asideRef.current) {
+        asideRef.current.scrollTop = inMemoryScrollTop;
+      }
+      const rafId = requestAnimationFrame(() => {
+        if (asideRef.current) {
+          asideRef.current.scrollTop = inMemoryScrollTop;
+        }
+      });
+      return () => cancelAnimationFrame(rafId);
+    }
+  }, []);
+
+  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
+    const top = e.currentTarget.scrollTop;
+    inMemoryScrollTop = top;
+    try {
+      sessionStorage.setItem(STORAGE_KEY_PANEL_SCROLL, String(top));
+    } catch {
+      // ignore
+    }
   };
 
   const isSingleMode = composition.viewMode === 'single';
@@ -244,7 +309,11 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
   });
 
   return (
-    <aside className="w-94 h-full border-l border-[#E7E4DE] bg-[#FFFFFF] flex flex-col shrink-0 select-none overflow-y-auto">
+    <aside
+      ref={asideRef}
+      onScroll={handleScroll}
+      className="w-94 h-full border-l border-[#E7E4DE] bg-[#FFFFFF] flex flex-col shrink-0 select-none overflow-y-auto"
+    >
       {/* Panel Title */}
       <div className="p-4 border-b border-[#E7E4DE] flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur-md z-20">
         <div>

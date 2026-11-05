@@ -10,12 +10,25 @@ interface MotifLibraryProps {
   getCustomizationForMotif?: (motifId: string) => MotifCustomization;
 }
 
+let inMemoryLibraryScrollTop = 0;
+
 export const MotifLibrary: React.FC<MotifLibraryProps> = ({
   activeMotifId,
   onSelectMotif,
   activeFormat,
   getCustomizationForMotif
 }) => {
+  const scrollRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (inMemoryLibraryScrollTop > 0) {
+      if (scrollRef.current) scrollRef.current.scrollTop = inMemoryLibraryScrollTop;
+      const raf = requestAnimationFrame(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = inMemoryLibraryScrollTop;
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+  }, []);
 
   return (
     <aside className="w-80 h-full border-r border-[#E7E4DE] bg-[#FFFFFF] flex flex-col shrink-0 select-none">
@@ -32,7 +45,13 @@ export const MotifLibrary: React.FC<MotifLibraryProps> = ({
       </div>
 
       {/* Motif items list */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div
+        ref={scrollRef}
+        onScroll={(e) => {
+          inMemoryLibraryScrollTop = e.currentTarget.scrollTop;
+        }}
+        className="flex-1 overflow-y-auto p-3 space-y-2"
+      >
         {PETITE_MOTIFS.map((motif) => {
           const isActive = motif.id === activeMotifId;
           const isAvailable = motif.available;

@@ -976,8 +976,8 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                                 </span>
                                 <span className="text-[11px] font-semibold text-charcoal">
                                   {patternPeriod.isUniform || isAlreadyContinuous
-                                    ? 'Periodicidad correcta'
-                                    : 'Periodicidad incorrecta'
+                                    ? 'Simetría correcta'
+                                    : 'Simetría incorrecta'
                                   }
                                 </span>
                               </>
@@ -1005,7 +1005,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                 </div>
 
                 {/* Alignment: Regular vs Staggered */}
-                <div className="pt-2.5 border-t border-[#E7E4DE]">
+                {/* <div className="pt-2.5 border-t border-[#E7E4DE]">
                   <span className="text-[11px] font-medium text-taupe block mb-1.5">
                     Alineación de teselas:
                   </span>
@@ -1029,7 +1029,7 @@ export const CustomizationPanel: React.FC<CustomizationPanelProps> = ({
                       Alternada
                     </button>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Módulos lisos de fondo (Intercalado) */}
                 <div className="pt-2.5 border-t border-[#E7E4DE] space-y-2">
